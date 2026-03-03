@@ -4,41 +4,27 @@ import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-                        <div className="grid gap-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full"
-                                asChild
-                            >
-                                <a href="/auth/google/redirect" tabIndex={1}>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        className="mr-2 size-4"
-                                        aria-hidden="true"
-                                    >
-                                        <path
-                                            fill="#EA4335"
-                                            d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.6C16.8 2.8 14.6 2 12 2 6.8 2.6 2.6 6.5 2.6 12s4.2 10 9.4 10c5.4 0 9-3.8 9-9.2 0-.6-.1-1.1-.2-1.6H12z"
-                                        />
-                                    </svg>
-                                    Continue with Google
-                                </a>
-                            </Button>
+import {
+    Card,
+    CardContent,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import AuthLayout from '@/layouts/auth-layout';
+import { login } from '@/routes';
+import { store } from '@/routes/register';
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full"
-                                asChild
-                            >
-                                <a href="/auth/github/redirect" tabIndex={2}>
-                                    <Github className="mr-2 size-4" aria-hidden="true" />
-                                    Continue with GitHub
-                                </a>
-                            </Button>
-                        </div>
+export default function Register() {
+    const [passwordValue, setPasswordValue] = useState('');
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+    const passwordChecks = useMemo(
+        () => [
+            {
+                label: 'At least 8 characters',
+                met: passwordValue.length >= 8,
+            },
             {
                 label: 'At least one uppercase letter',
                 met: /[A-Z]/.test(passwordValue),
@@ -73,27 +59,41 @@ import { Button } from '@/components/ui/button';
             >
                 {({ processing, errors }) => (
                     <>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            asChild
-                        >
-                            <a href="/auth/google/redirect" tabIndex={1}>
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    className="mr-2 size-4"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        fill="#EA4335"
-                                        d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.6C16.8 2.8 14.6 2 12 2 6.8 2 2.6 6.5 2.6 12s4.2 10 9.4 10c5.4 0 9-3.8 9-9.2 0-.6-.1-1.1-.2-1.6H12z"
-                                    />
-                                </svg>
-                                Continue with Google
-                            </a>
-                        </Button>
+                        <div className="grid gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                asChild
+                            >
+                                <a href="/auth/google/redirect" tabIndex={1}>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        className="mr-2 size-4"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            fill="#EA4335"
+                                            d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.6C16.8 2.8 14.6 2 12 2 6.8 2 2.6 6.5 2.6 12s4.2 10 9.4 10c5.4 0 9-3.8 9-9.2 0-.6-.1-1.1-.2-1.6H12z"
+                                        />
+                                    </svg>
+                                    Continue with Google
+                                </a>
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                asChild
+                            >
+                                <a href="/auth/github/redirect" tabIndex={2}>
+                                    <Github className="mr-2 size-4" aria-hidden="true" />
+                                    Continue with GitHub
+                                </a>
+                            </Button>
+                        </div>
 
                         <div className="relative text-center text-xs uppercase text-muted-foreground">
                             <span className="bg-card px-2">or continue with manual registration</span>
