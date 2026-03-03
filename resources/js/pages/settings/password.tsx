@@ -34,7 +34,7 @@ export default function Password() {
                     <Heading
                         variant="small"
                         title="Update password"
-                        description="Ensure your account is using a long, random password to stay secure"
+                        description="Use at least 8 characters with uppercase, lowercase, number, and special character"
                     />
 
                     <Form

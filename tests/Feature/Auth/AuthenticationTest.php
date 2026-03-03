@@ -21,7 +21,9 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'nickname' => 'Panda',
+        ]);
 
         $response = $this->post(route('login.store'), [
             'email' => $user->email,
@@ -29,6 +31,21 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_users_can_authenticate_with_nickname_using_the_login_screen()
+    {
+        $user = User::factory()->create([
+            'nickname' => 'Panda',
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'email' => 'Panda',
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 

@@ -16,6 +16,7 @@ trait ProfileValidationRules
     {
         return [
             'name' => $this->nameRules(),
+            'nickname' => $this->nicknameRules($userId),
             'email' => $this->emailRules($userId),
         ];
     }
@@ -28,6 +29,23 @@ trait ProfileValidationRules
     protected function nameRules(): array
     {
         return ['required', 'string', 'max:255'];
+    }
+
+    /**
+     * Get the validation rules used to validate user nicknames.
+     *
+     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
+     */
+    protected function nicknameRules(?int $userId = null): array
+    {
+        return [
+            $userId === null ? 'required' : 'sometimes',
+            'string',
+            'max:255',
+            $userId === null
+                ? Rule::unique(User::class, 'nickname')
+                : Rule::unique(User::class, 'nickname')->ignore($userId),
+        ];
     }
 
     /**

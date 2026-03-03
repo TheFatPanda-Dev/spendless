@@ -16,7 +16,7 @@ export default function ResetPassword({ token, email }: Props) {
     return (
         <AuthLayout
             title="Reset password"
-            description="Please enter your new password below"
+            description="Use at least 8 characters with uppercase, lowercase, number, and special character"
         >
             <Head title="Reset password" />
 
