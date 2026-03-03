@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
@@ -59,6 +59,33 @@ export default function Register() {
             >
                 {({ processing, errors }) => (
                     <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            asChild
+                        >
+                            <Link href="/auth/google/redirect" tabIndex={1}>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    className="mr-2 size-4"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill="#EA4335"
+                                        d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.6C16.8 2.8 14.6 2 12 2 6.8 2 2.6 6.5 2.6 12s4.2 10 9.4 10c5.4 0 9-3.8 9-9.2 0-.6-.1-1.1-.2-1.6H12z"
+                                    />
+                                </svg>
+                                Continue with Google
+                            </Link>
+                        </Button>
+
+                        <div className="relative text-center text-xs uppercase text-muted-foreground">
+                            <span className="bg-card px-2">or continue with manual registration</span>
+                            <div className="absolute top-1/2 -z-10 w-full border-t" />
+                        </div>
+
                         <Card className="gap-0 py-0">
                             <CardContent className="space-y-5 px-5 py-5 sm:px-6">
                                 <div className="grid gap-2">
@@ -68,7 +95,7 @@ export default function Register() {
                                         type="text"
                                         required
                                         autoFocus
-                                        tabIndex={1}
+                                        tabIndex={2}
                                         autoComplete="name"
                                         name="name"
                                         placeholder="Full name"
@@ -85,7 +112,7 @@ export default function Register() {
                                         id="nickname"
                                         type="text"
                                         required
-                                        tabIndex={2}
+                                        tabIndex={3}
                                         autoComplete="nickname"
                                         name="nickname"
                                         placeholder="How should we call you?"
@@ -99,7 +126,7 @@ export default function Register() {
                                         id="email"
                                         type="email"
                                         required
-                                        tabIndex={3}
+                                        tabIndex={4}
                                         autoComplete="email"
                                         name="email"
                                         placeholder="email@example.com"
@@ -118,7 +145,7 @@ export default function Register() {
                                                     : 'password'
                                             }
                                             required
-                                            tabIndex={4}
+                                            tabIndex={5}
                                             autoComplete="new-password"
                                             name="password"
                                             placeholder="Password"
@@ -187,7 +214,7 @@ export default function Register() {
                                                     : 'password'
                                             }
                                             required
-                                            tabIndex={5}
+                                            tabIndex={6}
                                             autoComplete="new-password"
                                             name="password_confirmation"
                                             placeholder="Confirm password"
@@ -229,7 +256,7 @@ export default function Register() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-brand text-brand-foreground hover:opacity-90"
-                                    tabIndex={6}
+                                    tabIndex={7}
                                     data-test="register-user-button"
                                 >
                                     {processing && <Spinner />}
@@ -240,7 +267,7 @@ export default function Register() {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={7}>
+                            <TextLink href={login()} tabIndex={8}>
                                 Log in
                             </TextLink>
                         </div>
