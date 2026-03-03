@@ -14,7 +14,7 @@ export default function Welcome({
         <>
             <Head title="SpendLess" />
 
-            <div className="relative flex min-h-screen items-center overflow-hidden bg-zinc-950 text-white">
+            <div className="relative flex min-h-screen items-center overflow-hidden bg-background text-foreground">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(16,185,129,0.18),transparent_40%),radial-gradient(circle_at_80%_85%,rgba(16,185,129,0.12),transparent_45%)]" />
 
                 <header className="absolute inset-x-0 top-0 z-20 p-4 sm:p-8">
@@ -23,11 +23,11 @@ export default function Welcome({
                             <img
                                 src="/images/spendless_logo.png"
                                 alt="SpendLess logo"
-                                className="h-10 w-10 rounded-full object-contain ring-1 ring-zinc-700/70"
+                                className="h-10 w-10 rounded-full object-contain ring-1 ring-border/70"
                             />
-                            <span className="text-base font-semibold tracking-tight text-zinc-100 sm:text-lg">
+                            <span className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
                                 <span>Spend</span>
-                                <span className="text-emerald-400">Less</span>
+                                <span className="text-brand">Less</span>
                             </span>
                         </Link>
 
@@ -35,7 +35,7 @@ export default function Welcome({
                             {auth.user ? (
                                 <Link
                                     href={dashboard()}
-                                    className="rounded-full border border-zinc-700 bg-zinc-900/70 px-5 py-2 text-sm font-medium text-zinc-100 transition hover:border-emerald-400 hover:text-emerald-300"
+                                    className="rounded-full border border-border bg-card/70 px-5 py-2 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand"
                                 >
                                     Dashboard
                                 </Link>
@@ -43,14 +43,14 @@ export default function Welcome({
                                 <>
                                     <Link
                                         href={login()}
-                                        className="rounded-full border border-transparent px-4 py-2 text-sm font-medium text-zinc-300 transition hover:text-white"
+                                        className="rounded-full border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
                                     >
                                         Log in
                                     </Link>
                                     {canRegister && (
                                         <Link
                                             href={register()}
-                                            className="rounded-full border border-zinc-700 bg-zinc-900/70 px-5 py-2 text-sm font-medium text-zinc-100 transition hover:border-emerald-400 hover:text-emerald-300"
+                                            className="rounded-full border border-border bg-card/70 px-5 py-2 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand"
                                         >
                                             Register
                                         </Link>
@@ -61,7 +61,7 @@ export default function Welcome({
 
                         <button
                             type="button"
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/70 text-zinc-100 md:hidden"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/70 text-foreground md:hidden"
                             aria-label="Toggle navigation menu"
                             aria-expanded={isMobileMenuOpen}
                             onClick={() => setIsMobileMenuOpen((open) => !open)}
@@ -93,11 +93,11 @@ export default function Welcome({
                         }`}
                     >
                         <nav className="flex justify-end">
-                            <div className="min-w-42.5 rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2 shadow-lg backdrop-blur">
+                            <div className="min-w-42.5 rounded-2xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
                                 {auth.user ? (
                                     <Link
                                         href={dashboard()}
-                                        className="block rounded-xl px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-zinc-900"
+                                        className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
                                         Dashboard
@@ -106,7 +106,7 @@ export default function Welcome({
                                     <>
                                         <Link
                                             href={login()}
-                                            className="block rounded-xl px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-zinc-900"
+                                            className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
                                             onClick={() => setIsMobileMenuOpen(false)}
                                         >
                                             Log in
@@ -114,7 +114,7 @@ export default function Welcome({
                                         {canRegister && (
                                             <Link
                                                 href={register()}
-                                                className="mt-1 block rounded-xl bg-emerald-500 px-3 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-400"
+                                                className="mt-1 block rounded-xl bg-brand px-3 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
                                                 Register
@@ -132,15 +132,15 @@ export default function Welcome({
                         <img
                             src="/images/spendless_logo.png"
                             alt="SpendLess logo"
-                            className="h-24 w-24 rounded-full object-contain ring-1 ring-zinc-700/70 sm:h-28 sm:w-28"
+                            className="h-24 w-24 rounded-full object-contain ring-1 ring-border/70 sm:h-28 sm:w-28"
                         />
 
                         <h1 className="mt-8 text-5xl font-extrabold tracking-tight sm:text-7xl md:text-8xl">
-                            <span className="block text-zinc-100">Spend</span>
-                            <span className="block text-emerald-400">Less</span>
+                            <span className="block text-foreground">Spend</span>
+                            <span className="block text-brand">Less</span>
                         </h1>
 
-                        <p className="mt-5 max-w-xl text-base text-zinc-400 sm:text-lg">
+                        <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
                             Budget smarter, track every movement, and stay in control
                             with a clean modern money dashboard.
                         </p>
