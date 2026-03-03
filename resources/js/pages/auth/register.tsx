@@ -1,30 +1,44 @@
 import { Form, Head } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Github } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { login } from '@/routes';
-import { store } from '@/routes/register';
+                        <div className="grid gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                asChild
+                            >
+                                <a href="/auth/google/redirect" tabIndex={1}>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        className="mr-2 size-4"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            fill="#EA4335"
+                                            d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.8-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.6C16.8 2.8 14.6 2 12 2 6.8 2.6 2.6 6.5 2.6 12s4.2 10 9.4 10c5.4 0 9-3.8 9-9.2 0-.6-.1-1.1-.2-1.6H12z"
+                                        />
+                                    </svg>
+                                    Continue with Google
+                                </a>
+                            </Button>
 
-export default function Register() {
-    const [passwordValue, setPasswordValue] = useState('');
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-
-    const passwordChecks = useMemo(
-        () => [
-            {
-                label: 'At least 8 characters',
-                met: passwordValue.length >= 8,
-            },
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                asChild
+                            >
+                                <a href="/auth/github/redirect" tabIndex={2}>
+                                    <Github className="mr-2 size-4" aria-hidden="true" />
+                                    Continue with GitHub
+                                </a>
+                            </Button>
+                        </div>
             {
                 label: 'At least one uppercase letter',
                 met: /[A-Z]/.test(passwordValue),
@@ -95,7 +109,7 @@ export default function Register() {
                                         type="text"
                                         required
                                         autoFocus
-                                        tabIndex={2}
+                                        tabIndex={3}
                                         autoComplete="name"
                                         name="name"
                                         placeholder="Full name"
@@ -112,7 +126,7 @@ export default function Register() {
                                         id="nickname"
                                         type="text"
                                         required
-                                        tabIndex={3}
+                                        tabIndex={4}
                                         autoComplete="nickname"
                                         name="nickname"
                                         placeholder="How should we call you?"
@@ -126,7 +140,7 @@ export default function Register() {
                                         id="email"
                                         type="email"
                                         required
-                                        tabIndex={4}
+                                        tabIndex={5}
                                         autoComplete="email"
                                         name="email"
                                         placeholder="email@example.com"
@@ -145,7 +159,7 @@ export default function Register() {
                                                     : 'password'
                                             }
                                             required
-                                            tabIndex={5}
+                                            tabIndex={6}
                                             autoComplete="new-password"
                                             name="password"
                                             placeholder="Password"
@@ -214,7 +228,7 @@ export default function Register() {
                                                     : 'password'
                                             }
                                             required
-                                            tabIndex={6}
+                                            tabIndex={7}
                                             autoComplete="new-password"
                                             name="password_confirmation"
                                             placeholder="Confirm password"
@@ -256,7 +270,7 @@ export default function Register() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-brand text-brand-foreground hover:opacity-90"
-                                    tabIndex={7}
+                                    tabIndex={8}
                                     data-test="register-user-button"
                                 >
                                     {processing && <Spinner />}
@@ -267,7 +281,7 @@ export default function Register() {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={8}>
+                            <TextLink href={login()} tabIndex={9}>
                                 Log in
                             </TextLink>
                         </div>
