@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "SpendLess/spendless",
+    "name": "spendless/spendless",
     "type": "project",
     "description": "A sleek, open-source personal finance tracker designed to help you spend less and save more.",
     "keywords": [

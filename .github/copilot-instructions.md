@@ -77,6 +77,7 @@ You are coding in a monorepo-style Laravel application using:
             Category.php
             BudgetAllocation.php
     ```
+
     - Use explicit method names, small units, testable.
 
 ---
@@ -308,6 +309,14 @@ When you propose or generate code:
 - Provide complete, working snippets (not pseudo-code) whenever possible.
 
 Follow these instructions strictly when generating code, refactors, or suggestions.
+
+---
+
+## 11) Design requirement
+
+- All UI work must be mobile friendly by default (responsive layouts, touch-friendly targets, and readable typography on small screens).
+- Interfaces should look modern and clean while staying consistent with the existing design system (Tailwind + shadcn/ui + radix-ui).
+- Prefer simple, polished layouts with clear hierarchy, spacing, and accessible interaction states across screen sizes.
 
 ---
 
