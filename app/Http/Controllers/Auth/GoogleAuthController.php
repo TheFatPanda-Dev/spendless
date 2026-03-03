@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class GoogleAuthController extends Controller
 {
@@ -16,8 +17,11 @@ class GoogleAuthController extends Controller
      */
     public function redirect(): RedirectResponse
     {
+        $callbackUrl = url('/auth/google/callback');
+
         return app('Laravel\\Socialite\\Contracts\\Factory')
             ->driver('google')
+            ->redirectUrl($callbackUrl)
             ->redirect();
     }
 
@@ -26,16 +30,33 @@ class GoogleAuthController extends Controller
      */
     public function callback(): RedirectResponse
     {
-        $googleUser = app('Laravel\\Socialite\\Contracts\\Factory')
-            ->driver('google')
-            ->user();
+        $callbackUrl = url('/auth/google/callback');
+
+        try {
+            $googleUser = app('Laravel\\Socialite\\Contracts\\Factory')
+                ->driver('google')
+                ->redirectUrl($callbackUrl)
+                ->user();
+        } catch (InvalidStateException) {
+            return to_route('login')->withErrors([
+                'email' => 'Google sign-in expired or host changed. Please try again from the same browser tab.',
+            ]);
+        }
 
         $googleEmail = (string) $googleUser->getEmail();
+        $googleEmailVerified = (bool) data_get($googleUser->user, 'email_verified', false);
+
+        if ($googleEmail === '' || ! $googleEmailVerified) {
+            return to_route('login')->withErrors([
+                'email' => 'Your Google account email must be verified before signing in.',
+            ]);
+        }
 
         $user = User::query()
             ->where('google_id', $googleUser->getId())
             ->orWhere('email', $googleEmail)
             ->first();
+        $created = false;
 
         if ($user) {
             if (! $user->google_id) {
@@ -55,11 +76,14 @@ class GoogleAuthController extends Controller
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(40)),
             ]);
+            $created = true;
         }
 
         Auth::login($user, remember: true);
 
-        return to_route('dashboard')->with('success', 'Registration successful');
+        $successMessage = $created ? 'Registration successful' : 'Login successful';
+
+        return to_route('dashboard')->with('success', $successMessage);
     }
 
     /**

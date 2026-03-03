@@ -22,7 +22,7 @@ export default function AppSidebarLayout({
 
         setShowToast(true);
 
-        const timeout = window.setTimeout(() => setShowToast(false), 2600);
+        const timeout = window.setTimeout(() => setShowToast(false), 4000);
 
         return () => window.clearTimeout(timeout);
     }, [flash?.success]);

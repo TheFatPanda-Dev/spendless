@@ -1,4 +1,4 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
@@ -65,7 +65,7 @@ export default function Register() {
                             className="w-full"
                             asChild
                         >
-                            <Link href="/auth/google/redirect" tabIndex={1}>
+                            <a href="/auth/google/redirect" tabIndex={1}>
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 24 24"
@@ -78,7 +78,7 @@ export default function Register() {
                                     />
                                 </svg>
                                 Continue with Google
-                            </Link>
+                            </a>
                         </Button>
 
                         <div className="relative text-center text-xs uppercase text-muted-foreground">
