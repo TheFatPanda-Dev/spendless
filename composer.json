@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "SpendLess/spendless",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "A sleek, open-source personal finance tracker designed to help you spend less and save more.",
     "keywords": [
         "laravel",
         "framework"
