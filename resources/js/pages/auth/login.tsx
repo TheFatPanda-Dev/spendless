@@ -14,13 +14,11 @@ import { request } from '@/routes/password';
 
 type Props = {
     status?: string;
-    canResetPassword: boolean;
     canRegister: boolean;
 };
 
 export default function Login({
     status,
-    canResetPassword,
     canRegister,
 }: Props) {
     return (
@@ -97,15 +95,13 @@ export default function Login({
                             <div className="grid gap-2">
                                 <div className="flex items-center">
                                     <Label htmlFor="password">Password</Label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={7}
-                                        >
-                                            Forgot password?
-                                        </TextLink>
-                                    )}
+                                    <TextLink
+                                        href={request()}
+                                        className="ml-auto text-sm"
+                                        tabIndex={7}
+                                    >
+                                        Forgot password?
+                                    </TextLink>
                                 </div>
                                 <Input
                                     id="password"
