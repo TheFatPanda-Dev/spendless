@@ -117,21 +117,21 @@ class ProfileController extends Controller
         }
 
         if (! $user->google_id) {
-            return back()->with('error', 'Google account is not linked.');
+            return to_route('profile.edit')->with('error', 'Google account is not linked.');
         }
 
         $hasPassword = (bool) $user->has_password_set;
         $hasAlternativeOauth = (bool) $user->github_id;
 
         if (! $hasPassword && ! $hasAlternativeOauth) {
-            return back()->with('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
+            return to_route('profile.edit')->with('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
         }
 
         $user->google_id = null;
         $user->google_avatar = null;
         $user->save();
 
-        return back()->with('success', 'Google account disconnected.');
+        return to_route('profile.edit')->with('success', 'Google account disconnected.');
     }
 
     public function unlinkGithub(Request $request): RedirectResponse
@@ -143,21 +143,21 @@ class ProfileController extends Controller
         }
 
         if (! $user->github_id) {
-            return back()->with('error', 'GitHub account is not linked.');
+            return to_route('profile.edit')->with('error', 'GitHub account is not linked.');
         }
 
         $hasPassword = (bool) $user->has_password_set;
         $hasAlternativeOauth = (bool) $user->google_id;
 
         if (! $hasPassword && ! $hasAlternativeOauth) {
-            return back()->with('error', 'Set a password before disconnecting GitHub. It is currently your only sign-in method.');
+            return to_route('profile.edit')->with('error', 'Set a password before disconnecting GitHub. It is currently your only sign-in method.');
         }
 
         $user->github_id = null;
         $user->github_avatar = null;
         $user->save();
 
-        return back()->with('success', 'GitHub account disconnected.');
+        return to_route('profile.edit')->with('success', 'GitHub account disconnected.');
     }
 
     /**

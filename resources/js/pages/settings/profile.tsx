@@ -7,6 +7,10 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import {
+    DISABLE_2FA_PASSWORD_DESCRIPTION,
+    default as SecureAccountVerification,
+} from '@/components/secure-account-verification';
 import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,8 +31,8 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils';
 import { edit } from '@/routes/profile';
-import { send } from '@/routes/verification';
 import { disable, enable } from '@/routes/two-factor';
+import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -80,7 +84,6 @@ export default function Profile({
     const [isDisablingTwoFactor, setIsDisablingTwoFactor] = useState(false);
     const {
         qrCodeSvg,
-        hasSetupData,
         manualSetupKey,
         clearSetupData,
         fetchSetupData,
@@ -90,6 +93,7 @@ export default function Profile({
     } = useTwoFactorAuth();
     const canUnlinkGoogle = password.hasPasswordSet || oauthState.githubLinked;
     const canUnlinkGithub = password.hasPasswordSet || oauthState.googleLinked;
+    const canEnableTwoFactor = password.hasPasswordSet;
     const passwordsMatch = newPasswordValue !== ''
         && confirmPasswordValue !== ''
         && newPasswordValue === confirmPasswordValue;
@@ -234,7 +238,7 @@ export default function Profile({
             setIsDisableTwoFactorModalOpen(false);
             setDisableTwoFactorPassword('');
             setDisableTwoFactorPasswordError(undefined);
-            router.reload({ only: ['twoFactor'], preserveScroll: true, preserveState: true });
+            router.reload({ only: ['twoFactor'] });
         } finally {
             setIsDisablingTwoFactor(false);
         }
@@ -613,7 +617,7 @@ export default function Profile({
 
                             <div className="flex items-center gap-3">
                                 <span
-                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauth.googleLinked
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauthState.googleLinked
                                         ? 'bg-brand/15 text-brand'
                                         : 'bg-muted text-muted-foreground'}`}
                                 >
@@ -764,17 +768,30 @@ export default function Profile({
                                 When you enable two-factor authentication, you will be prompted for a secure pin during login.
                             </p>
 
-                            <Button
-                                type="button"
-                                onClick={() => {
-                                    clearSetupData();
-                                    setRequireTwoFactorPasswordStep(true);
-                                    setShowSetupModal(true);
-                                }}
-                            >
-                                <ShieldCheck />
-                                Enable 2FA
-                            </Button>
+                            {canEnableTwoFactor ? (
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        clearSetupData();
+                                        setRequireTwoFactorPasswordStep(true);
+                                        setShowSetupModal(true);
+                                    }}
+                                >
+                                    <ShieldCheck />
+                                    Enable 2FA
+                                </Button>
+                            ) : (
+                                <Button type="button" variant="outline" disabled>
+                                    <ShieldCheck />
+                                    Enable 2FA
+                                </Button>
+                            )}
+
+                            {!canEnableTwoFactor ? (
+                                <p className="-mt-1 rounded-md border border-yellow-300/40 bg-yellow-100/40 px-2.5 py-2 text-xs text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/6 dark:text-yellow-300">
+                                    Password not set. Set a password before enabling two-factor authentication.
+                                </p>
+                            ) : null}
                         </div>
                     )}
 
@@ -815,47 +832,42 @@ export default function Profile({
                             setIsDisableTwoFactorModalOpen(open);
                         }}
                     >
-                        <DialogContent className="border-brand/25 bg-background sm:max-w-md">
-                            <DialogHeader>
+                        <DialogContent className="border-brand/25 bg-background outline-none focus:outline-none focus-visible:outline-none sm:max-w-md">
+                            <DialogHeader className="items-center text-center">
+                                <div className="mb-1 rounded-full border border-brand/25 bg-brand/5 p-1">
+                                    <img
+                                        src="/images/spendless_logo.png"
+                                        alt="SpendLess logo"
+                                        className="size-10 rounded-full border border-brand/20 bg-background object-contain p-1"
+                                    />
+                                </div>
+                                <div className="mb-2 inline-flex items-center rounded-full border border-brand/20 bg-brand/5 px-3 py-1">
+                                    <span className="text-sm font-semibold tracking-tight text-foreground">
+                                        <span>Spend</span>
+                                        <span className="text-brand">Less</span>
+                                    </span>
+                                </div>
                                 <DialogTitle>Confirm your password</DialogTitle>
                                 <DialogDescription>
-                                    Enter your password to disable two-factor authentication.
+                                    {DISABLE_2FA_PASSWORD_DESCRIPTION}
                                 </DialogDescription>
                             </DialogHeader>
 
-                            <form onSubmit={handleDisableTwoFactor} className="space-y-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="disable_two_factor_password">Password</Label>
-                                    <Input
-                                        id="disable_two_factor_password"
-                                        type="password"
-                                        autoComplete="current-password"
-                                        placeholder="Password"
-                                        value={disableTwoFactorPassword}
-                                        onChange={(event) => setDisableTwoFactorPassword(event.target.value)}
-                                        autoFocus
-                                    />
-                                    <InputError message={disableTwoFactorPasswordError} />
-                                </div>
-
-                                <div className="flex items-center justify-end gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setIsDisableTwoFactorModalOpen(false)}
-                                        disabled={isDisablingTwoFactor}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        variant="destructive"
-                                        disabled={isDisablingTwoFactor || disableTwoFactorPassword.trim() === ''}
-                                    >
-                                        Disable 2FA
-                                    </Button>
-                                </div>
-                            </form>
+                            <SecureAccountVerification
+                                onSubmit={handleDisableTwoFactor}
+                                password={disableTwoFactorPassword}
+                                onPasswordChange={setDisableTwoFactorPassword}
+                                passwordError={disableTwoFactorPasswordError}
+                                processing={isDisablingTwoFactor}
+                                submitLabel="Disable 2FA"
+                                submitVariant="destructive"
+                                submitDisabled={isDisablingTwoFactor || disableTwoFactorPassword.trim() === ''}
+                                description={DISABLE_2FA_PASSWORD_DESCRIPTION}
+                                passwordId="disable_two_factor_password"
+                                autoFocus
+                                cancelLabel="Cancel"
+                                onCancel={() => setIsDisableTwoFactorModalOpen(false)}
+                            />
                         </DialogContent>
                     </Dialog>
                 </div>

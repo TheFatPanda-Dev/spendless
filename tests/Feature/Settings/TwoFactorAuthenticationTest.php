@@ -75,4 +75,35 @@ class TwoFactorAuthenticationTest extends TestCase
             ->get(route('two-factor.show'))
             ->assertRedirect(route('profile.edit'));
     }
+
+    public function test_user_without_password_cannot_enable_two_factor_authentication(): void
+    {
+        if (! Features::canManageTwoFactorAuthentication()) {
+            $this->markTestSkipped('Two-factor authentication is not enabled.');
+        }
+
+        $user = User::factory()->create([
+            'password_set_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->post('/user/two-factor-authentication')
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHas('error', 'Set a password before enabling two-factor authentication.');
+    }
+
+    public function test_user_with_password_can_reach_enable_two_factor_authentication_flow(): void
+    {
+        if (! Features::canManageTwoFactorAuthentication()) {
+            $this->markTestSkipped('Two-factor authentication is not enabled.');
+        }
+
+        $user = User::factory()->create([
+            'password_set_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->post('/user/two-factor-authentication')
+            ->assertSessionMissing('error');
+    }
 }

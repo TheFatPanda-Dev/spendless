@@ -64,6 +64,11 @@ export default function BankConnections({ connections = [] }: { connections?: Ba
                     setSelectedInstitution(resolvedInstitutions[0].name);
                 }
             } catch {
+                if (!isMounted) {
+                    return;
+                }
+
+                setInstitutions([]);
             }
         };
 
