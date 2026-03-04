@@ -1,19 +1,34 @@
 import { Transition } from '@headlessui/react';
-import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { Eye, EyeOff, ShieldBan, ShieldCheck } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
+import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
+import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { cn } from '@/lib/utils';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
+import { disable, enable } from '@/routes/two-factor';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,6 +41,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Profile({
     mustVerifyEmail,
     oauth,
+    password,
+    twoFactor,
     pendingEmail,
     preferredName,
     status,
@@ -35,6 +52,13 @@ export default function Profile({
         googleLinked: boolean;
         githubLinked: boolean;
     };
+    password: {
+        hasPasswordSet: boolean;
+    };
+    twoFactor: {
+        enabled: boolean;
+        requiresConfirmation: boolean;
+    };
     pendingEmail?: string | null;
     preferredName?: string | null;
     status?: string;
@@ -43,6 +67,178 @@ export default function Profile({
     const getInitials = useInitials();
     const displayName = auth.user.display_name ?? auth.user.name;
     const [isChangingEmail, setIsChangingEmail] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [newPasswordValue, setNewPasswordValue] = useState('');
+    const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
+    const [oauthState, setOauthState] = useState(oauth);
+    const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
+    const [requireTwoFactorPasswordStep, setRequireTwoFactorPasswordStep] = useState<boolean>(false);
+    const [isDisableTwoFactorModalOpen, setIsDisableTwoFactorModalOpen] = useState(false);
+    const [disableTwoFactorPassword, setDisableTwoFactorPassword] = useState('');
+    const [disableTwoFactorPasswordError, setDisableTwoFactorPasswordError] = useState<string | undefined>(undefined);
+    const [isDisablingTwoFactor, setIsDisablingTwoFactor] = useState(false);
+    const {
+        qrCodeSvg,
+        hasSetupData,
+        manualSetupKey,
+        clearSetupData,
+        fetchSetupData,
+        recoveryCodesList,
+        fetchRecoveryCodes,
+        errors: twoFactorErrors,
+    } = useTwoFactorAuth();
+    const canUnlinkGoogle = password.hasPasswordSet || oauthState.githubLinked;
+    const canUnlinkGithub = password.hasPasswordSet || oauthState.googleLinked;
+    const passwordsMatch = newPasswordValue !== ''
+        && confirmPasswordValue !== ''
+        && newPasswordValue === confirmPasswordValue;
+    const passwordsMismatch = newPasswordValue !== ''
+        && confirmPasswordValue !== ''
+        && newPasswordValue !== confirmPasswordValue;
+    const passwordMatchBorderClass = passwordsMatch
+        ? 'border-2 border-success focus-visible:ring-success/40'
+        : passwordsMismatch
+            ? 'border-2 border-destructive focus-visible:ring-destructive/40'
+            : '';
+    const passwordChecks = useMemo(
+        () => [
+            {
+                label: 'At least 8 characters',
+                met: newPasswordValue.length >= 8,
+            },
+            {
+                label: 'At least one uppercase letter',
+                met: /[A-Z]/.test(newPasswordValue),
+            },
+            {
+                label: 'At least one lowercase letter',
+                met: /[a-z]/.test(newPasswordValue),
+            },
+            {
+                label: 'At least one number',
+                met: /\d/.test(newPasswordValue),
+            },
+            {
+                label: 'At least one special character',
+                met: /[^A-Za-z0-9]/.test(newPasswordValue),
+            },
+        ],
+        [newPasswordValue],
+    );
+
+    const getCookieValue = (name: string): string | undefined => {
+        const match = document.cookie.match(
+            new RegExp(`(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`),
+        );
+
+        return match ? decodeURIComponent(match[1]) : undefined;
+    };
+
+    const getCsrfData = (): { csrfToken?: string; xsrfToken?: string } => {
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? undefined;
+        const xsrfToken = getCookieValue('XSRF-TOKEN');
+
+        return { csrfToken, xsrfToken };
+    };
+
+    const confirmPasswordForSensitiveAction = async (passwordToConfirm: string): Promise<string | null> => {
+        const { csrfToken, xsrfToken } = getCsrfData();
+        const payload = new URLSearchParams();
+
+        payload.set('password', passwordToConfirm);
+
+        if (csrfToken) {
+            payload.set('_token', csrfToken);
+        }
+
+        const response = await fetch('/user/confirm-password', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            body: payload.toString(),
+        });
+
+        if (response.ok) {
+            return null;
+        }
+
+        try {
+            const payload = (await response.json()) as {
+                message?: string;
+                errors?: { password?: string[] };
+            };
+
+            return payload.errors?.password?.[0] ?? payload.message ?? 'Password confirmation failed.';
+        } catch {
+            return 'Password confirmation failed.';
+        }
+    };
+
+    const handleDisableTwoFactor = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+        event.preventDefault();
+
+        if (isDisablingTwoFactor) {
+            return;
+        }
+
+        setDisableTwoFactorPasswordError(undefined);
+        setIsDisablingTwoFactor(true);
+
+        const confirmationError = await confirmPasswordForSensitiveAction(disableTwoFactorPassword);
+
+        if (confirmationError) {
+            setDisableTwoFactorPasswordError(confirmationError);
+            setIsDisablingTwoFactor(false);
+
+            return;
+        }
+
+        const { csrfToken, xsrfToken } = getCsrfData();
+        const payload = new URLSearchParams();
+
+        payload.set('_method', 'DELETE');
+
+        if (csrfToken) {
+            payload.set('_token', csrfToken);
+        }
+
+        try {
+            const response = await fetch(disable.url(), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+                },
+                body: payload.toString(),
+            });
+
+            if (!response.ok) {
+                setDisableTwoFactorPasswordError('Unable to disable two-factor authentication. Please try again.');
+
+                return;
+            }
+
+            setIsDisableTwoFactorModalOpen(false);
+            setDisableTwoFactorPassword('');
+            setDisableTwoFactorPasswordError(undefined);
+            router.reload({ only: ['twoFactor'], preserveScroll: true, preserveState: true });
+        } finally {
+            setIsDisablingTwoFactor(false);
+        }
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -51,7 +247,7 @@ export default function Profile({
             <h1 className="sr-only">Profile settings</h1>
 
             <SettingsLayout>
-                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                <div id="oauth-authentication" className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
                     <Heading
                         variant="small"
                         title="Profile information"
@@ -247,6 +443,163 @@ export default function Profile({
                 <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
                     <Heading
                         variant="small"
+                        title="Password"
+                        description="Manage your password used for email sign-in"
+                    />
+
+                    {password.hasPasswordSet ? (
+                        <p className="text-xs text-muted-foreground">
+                            Your account password is set.
+                        </p>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">
+                            Password not set yet. You signed up with OAuth. Set a password to enable email and password sign-in.
+                        </p>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={() => setIsChangingPassword((value) => !value)}
+                        className="w-fit text-sm font-medium text-foreground underline underline-offset-4"
+                    >
+                        {password.hasPasswordSet ? 'Change password' : 'Set password'}
+                    </button>
+
+                    {isChangingPassword ? (
+                        <Form
+                            {...PasswordController.update.form()}
+                            options={{
+                                preserveScroll: true,
+                            }}
+                            resetOnError={[
+                                'password',
+                                'password_confirmation',
+                                'current_password',
+                            ]}
+                            resetOnSuccess
+                            onSuccess={() => {
+                                setNewPasswordValue('');
+                                setConfirmPasswordValue('');
+                                setIsPasswordVisible(false);
+                                setIsChangingPassword(false);
+                            }}
+                            className="space-y-4"
+                        >
+                            {({ errors, processing, recentlySuccessful }) => (
+                                <>
+                                    {password.hasPasswordSet ? (
+                                        <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                            <Label htmlFor="current_password">Current password</Label>
+                                            <Input
+                                                id="current_password"
+                                                name="current_password"
+                                                type="password"
+                                                autoComplete="current-password"
+                                                placeholder="Current password"
+                                            />
+                                            <InputError message={errors.current_password} />
+                                        </div>
+                                    ) : null}
+
+                                    <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                        <Label htmlFor="password">New password</Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="password"
+                                                name="password"
+                                                type={isPasswordVisible ? 'text' : 'password'}
+                                                autoComplete="new-password"
+                                                placeholder="New password"
+                                                value={newPasswordValue}
+                                                onChange={(event) => setNewPasswordValue(event.target.value)}
+                                                className={cn('pr-10', passwordMatchBorderClass)}
+                                            />
+                                            <button
+                                                type="button"
+                                                tabIndex={-1}
+                                                onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                                                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                                            >
+                                                {isPasswordVisible ? (
+                                                    <EyeOff className="size-4" aria-hidden="true" />
+                                                ) : (
+                                                    <Eye className="size-4" aria-hidden="true" />
+                                                )}
+                                            </button>
+                                        </div>
+                                        <ul className="list-disc space-y-1 pl-5 text-xs">
+                                            {passwordChecks.map((check) => (
+                                                <li
+                                                    key={check.label}
+                                                    className={check.met ? 'text-success' : 'text-destructive'}
+                                                >
+                                                    {check.label}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <InputError message={errors.password} />
+                                    </div>
+
+                                    <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                        <Label htmlFor="password_confirmation">Confirm password</Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="password_confirmation"
+                                                name="password_confirmation"
+                                                type={isPasswordVisible ? 'text' : 'password'}
+                                                autoComplete="new-password"
+                                                placeholder="Confirm password"
+                                                value={confirmPasswordValue}
+                                                onChange={(event) => setConfirmPasswordValue(event.target.value)}
+                                                className={cn('pr-10', passwordMatchBorderClass)}
+                                            />
+                                            <button
+                                                type="button"
+                                                tabIndex={-1}
+                                                onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                                                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                                            >
+                                                {isPasswordVisible ? (
+                                                    <EyeOff className="size-4" aria-hidden="true" />
+                                                ) : (
+                                                    <Eye className="size-4" aria-hidden="true" />
+                                                )}
+                                            </button>
+                                        </div>
+                                        <InputError
+                                            message={
+                                                typeof errors.password_confirmation === 'string'
+                                                    && /match/i.test(errors.password_confirmation)
+                                                    ? undefined
+                                                    : errors.password_confirmation
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-4">
+                                        <Button disabled={processing}>Save password</Button>
+
+                                        <Transition
+                                            show={recentlySuccessful}
+                                            enter="transition ease-in-out"
+                                            enterFrom="opacity-0"
+                                            leave="transition ease-in-out"
+                                            leaveTo="opacity-0"
+                                        >
+                                            <p className="text-sm text-muted-foreground">Saved</p>
+                                        </Transition>
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    ) : null}
+                </div>
+
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                    <Heading
+                        variant="small"
                         title="OAuth Authentication"
                         description="Connect Google or GitHub to sign in faster and keep your account linked"
                     />
@@ -264,20 +617,52 @@ export default function Profile({
                                         ? 'bg-brand/15 text-brand'
                                         : 'bg-muted text-muted-foreground'}`}
                                 >
-                                    {oauth.googleLinked ? 'Connected' : 'Not connected'}
+                                    {oauthState.googleLinked ? 'Connected' : 'Not connected'}
                                 </span>
 
-                                {oauth.googleLinked ? (
-                                    <Button variant="outline" disabled>
-                                        Linked
-                                    </Button>
+                                {oauthState.googleLinked ? (
+                                    canUnlinkGoogle ? (
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={() => router.delete('/settings/oauth/google', {
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                                onSuccess: (page) => {
+                                                    const flash = page.props.flash as { error?: string } | undefined;
+
+                                                    if (!flash?.error) {
+                                                        setOauthState((current) => ({
+                                                            ...current,
+                                                            googleLinked: false,
+                                                        }));
+                                                    }
+                                                },
+                                            })}
+                                        >
+                                            Unlink
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" disabled>
+                                            Unlink
+                                        </Button>
+                                    )
                                 ) : (
-                                    <Button asChild>
-                                        <a href="/settings/oauth/google/redirect">Link Google</a>
+                                    <Button
+                                        type="button"
+                                        onClick={() => window.location.assign('/settings/oauth/google/redirect')}
+                                    >
+                                        Link Google
                                     </Button>
                                 )}
                             </div>
                         </div>
+
+                        {oauthState.googleLinked && !canUnlinkGoogle ? (
+                            <p className="-mt-1 text-xs text-muted-foreground">
+                                Set a password before disconnecting Google. It is your only sign-in method.
+                            </p>
+                        ) : null}
 
                         <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
@@ -287,25 +672,192 @@ export default function Profile({
 
                             <div className="flex items-center gap-3">
                                 <span
-                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauth.githubLinked
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauthState.githubLinked
                                         ? 'bg-brand/15 text-brand'
                                         : 'bg-muted text-muted-foreground'}`}
                                 >
-                                    {oauth.githubLinked ? 'Connected' : 'Not connected'}
+                                    {oauthState.githubLinked ? 'Connected' : 'Not connected'}
                                 </span>
 
-                                {oauth.githubLinked ? (
-                                    <Button variant="outline" disabled>
-                                        Linked
-                                    </Button>
+                                {oauthState.githubLinked ? (
+                                    canUnlinkGithub ? (
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={() => router.delete('/settings/oauth/github', {
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                                onSuccess: (page) => {
+                                                    const flash = page.props.flash as { error?: string } | undefined;
+
+                                                    if (!flash?.error) {
+                                                        setOauthState((current) => ({
+                                                            ...current,
+                                                            githubLinked: false,
+                                                        }));
+                                                    }
+                                                },
+                                            })}
+                                        >
+                                            Unlink
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" disabled>
+                                            Unlink
+                                        </Button>
+                                    )
                                 ) : (
-                                    <Button asChild>
-                                        <a href="/settings/oauth/github/redirect">Link GitHub</a>
+                                    <Button
+                                        type="button"
+                                        onClick={() => window.location.assign('/settings/oauth/github/redirect')}
+                                    >
+                                        Link GitHub
                                     </Button>
                                 )}
                             </div>
                         </div>
+
+                        {oauthState.githubLinked && !canUnlinkGithub ? (
+                            <p className="-mt-1 text-xs text-muted-foreground">
+                                Set a password before disconnecting GitHub. It is your only sign-in method.
+                            </p>
+                        ) : null}
                     </div>
+                </div>
+
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                    <Heading
+                        variant="small"
+                        title="Two-factor authentication"
+                        description="Add an extra security layer to your account"
+                    />
+
+                    {twoFactor.enabled ? (
+                        <div className="flex flex-col items-start justify-start space-y-4">
+                            <Badge variant="default" className="bg-brand text-brand-foreground">Enabled</Badge>
+                            <p className="text-muted-foreground">
+                                With two-factor authentication enabled, you will be prompted for a secure pin during login from your authenticator app.
+                            </p>
+
+                            <TwoFactorRecoveryCodes
+                                recoveryCodesList={recoveryCodesList}
+                                fetchRecoveryCodes={fetchRecoveryCodes}
+                                errors={twoFactorErrors}
+                            />
+
+                            <Button
+                                variant="destructive"
+                                type="button"
+                                onClick={() => {
+                                    setDisableTwoFactorPassword('');
+                                    setDisableTwoFactorPasswordError(undefined);
+                                    setIsDisableTwoFactorModalOpen(true);
+                                }}
+                            >
+                                <ShieldBan /> Disable 2FA
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-start justify-start space-y-4">
+                            <Badge variant="outline" className="border-brand/40 bg-brand/10 text-foreground">Disabled</Badge>
+                            <p className="text-muted-foreground">
+                                When you enable two-factor authentication, you will be prompted for a secure pin during login.
+                            </p>
+
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    clearSetupData();
+                                    setRequireTwoFactorPasswordStep(true);
+                                    setShowSetupModal(true);
+                                }}
+                            >
+                                <ShieldCheck />
+                                Enable 2FA
+                            </Button>
+                        </div>
+                    )}
+
+                    <TwoFactorSetupModal
+                        isOpen={showSetupModal}
+                        onClose={() => setShowSetupModal(false)}
+                        requirePasswordStep={requireTwoFactorPasswordStep}
+                        onPasswordConfirmed={() => new Promise<void>((resolve, reject) => {
+                            router.post(enable.url(), {}, {
+                                preserveScroll: true,
+                                preserveState: true,
+                                onSuccess: () => {
+                                    setRequireTwoFactorPasswordStep(false);
+                                    resolve();
+                                },
+                                onError: () => {
+                                    reject(new Error('Failed to enable two-factor authentication.'));
+                                },
+                            });
+                        })}
+                        requiresConfirmation={twoFactor.requiresConfirmation}
+                        twoFactorEnabled={twoFactor.enabled}
+                        qrCodeSvg={qrCodeSvg}
+                        manualSetupKey={manualSetupKey}
+                        clearSetupData={clearSetupData}
+                        fetchSetupData={fetchSetupData}
+                        errors={twoFactorErrors}
+                    />
+
+                    <Dialog
+                        open={isDisableTwoFactorModalOpen}
+                        onOpenChange={(open) => {
+                            if (!open) {
+                                setDisableTwoFactorPassword('');
+                                setDisableTwoFactorPasswordError(undefined);
+                            }
+
+                            setIsDisableTwoFactorModalOpen(open);
+                        }}
+                    >
+                        <DialogContent className="border-brand/25 bg-background sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Confirm your password</DialogTitle>
+                                <DialogDescription>
+                                    Enter your password to disable two-factor authentication.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <form onSubmit={handleDisableTwoFactor} className="space-y-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="disable_two_factor_password">Password</Label>
+                                    <Input
+                                        id="disable_two_factor_password"
+                                        type="password"
+                                        autoComplete="current-password"
+                                        placeholder="Password"
+                                        value={disableTwoFactorPassword}
+                                        onChange={(event) => setDisableTwoFactorPassword(event.target.value)}
+                                        autoFocus
+                                    />
+                                    <InputError message={disableTwoFactorPasswordError} />
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsDisableTwoFactorModalOpen(false)}
+                                        disabled={isDisablingTwoFactor}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="destructive"
+                                        disabled={isDisablingTwoFactor || disableTwoFactorPassword.trim() === ''}
+                                    >
+                                        Disable 2FA
+                                    </Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 <DeleteUser />

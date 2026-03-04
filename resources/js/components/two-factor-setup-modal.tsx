@@ -12,11 +12,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
@@ -228,9 +230,114 @@ function TwoFactorVerificationStep({
     );
 }
 
+function TwoFactorPasswordStep({
+    onConfirmed,
+}: {
+    onConfirmed: () => Promise<void>;
+}) {
+    const [password, setPassword] = useState('');
+    const [isPreparingSetup, setIsPreparingSetup] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | undefined>(
+        undefined,
+    );
+
+    const getCookieValue = (name: string): string | undefined => {
+        const match = document.cookie.match(
+            new RegExp(`(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`),
+        );
+
+        return match ? decodeURIComponent(match[1]) : undefined;
+    };
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (isPreparingSetup) {
+            return;
+        }
+
+        setPasswordError(undefined);
+
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content');
+        const xsrfToken = getCookieValue('XSRF-TOKEN');
+
+        const response = await fetch('/user/confirm-password', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            },
+            body: JSON.stringify({ password }),
+        });
+
+        if (!response.ok) {
+            let message = 'The password confirmation failed.';
+
+            try {
+                const payload = (await response.json()) as {
+                    message?: string;
+                    errors?: { password?: string[] };
+                };
+
+                message = payload.errors?.password?.[0] ?? payload.message ?? message;
+            } catch {
+                message = 'The password confirmation failed.';
+            }
+
+            setPasswordError(message);
+
+            return;
+        }
+
+        setIsPreparingSetup(true);
+
+        try {
+            await onConfirmed();
+            setPassword('');
+        } finally {
+            setIsPreparingSetup(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    autoComplete="current-password"
+                    autoFocus
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                />
+                <InputError message={passwordError} />
+            </div>
+
+            <Button
+                className="w-full"
+                disabled={isPreparingSetup || password.trim() === ''}
+            >
+                {isPreparingSetup ? <Spinner /> : null}
+                Continue
+            </Button>
+        </form>
+    );
+}
+
 type Props = {
     isOpen: boolean;
     onClose: () => void;
+    requirePasswordStep?: boolean;
+    onPasswordConfirmed?: () => Promise<void>;
     requiresConfirmation: boolean;
     twoFactorEnabled: boolean;
     qrCodeSvg: string | null;
@@ -243,6 +350,8 @@ type Props = {
 export default function TwoFactorSetupModal({
     isOpen,
     onClose,
+    requirePasswordStep = false,
+    onPasswordConfirmed,
     requiresConfirmation,
     twoFactorEnabled,
     qrCodeSvg,
@@ -253,6 +362,16 @@ export default function TwoFactorSetupModal({
 }: Props) {
     const [showVerificationStep, setShowVerificationStep] =
         useState<boolean>(false);
+    const [passwordConfirmed, setPasswordConfirmed] = useState<boolean>(
+        !requirePasswordStep,
+    );
+
+    useEffect(() => {
+        if (isOpen) {
+            setPasswordConfirmed(!requirePasswordStep);
+            setShowVerificationStep(false);
+        }
+    }, [isOpen, requirePasswordStep]);
 
     const modalConfig = useMemo<{
         title: string;
@@ -277,13 +396,22 @@ export default function TwoFactorSetupModal({
             };
         }
 
+        if (!passwordConfirmed) {
+            return {
+                title: 'Confirm your password',
+                description:
+                    'For security, confirm your password before enabling two-factor authentication.',
+                buttonText: 'Continue',
+            };
+        }
+
         return {
             title: 'Enable two-factor authentication',
             description:
                 'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
             buttonText: 'Continue',
         };
-    }, [twoFactorEnabled, showVerificationStep]);
+    }, [twoFactorEnabled, showVerificationStep, passwordConfirmed]);
 
     const handleModalNextStep = useCallback(() => {
         if (requiresConfirmation) {
@@ -304,10 +432,10 @@ export default function TwoFactorSetupModal({
     }, [twoFactorEnabled, clearSetupData]);
 
     useEffect(() => {
-        if (isOpen && !qrCodeSvg) {
+        if (isOpen && passwordConfirmed && !qrCodeSvg) {
             fetchSetupData();
         }
-    }, [isOpen, qrCodeSvg, fetchSetupData]);
+    }, [isOpen, passwordConfirmed, qrCodeSvg, fetchSetupData]);
 
     const handleClose = useCallback(() => {
         resetModalState();
@@ -326,7 +454,17 @@ export default function TwoFactorSetupModal({
                 </DialogHeader>
 
                 <div className="flex flex-col items-center space-y-5">
-                    {showVerificationStep ? (
+                    {!passwordConfirmed ? (
+                        <TwoFactorPasswordStep
+                            onConfirmed={async () => {
+                                if (onPasswordConfirmed) {
+                                    await onPasswordConfirmed();
+                                }
+
+                                setPasswordConfirmed(true);
+                            }}
+                        />
+                    ) : showVerificationStep ? (
                         <TwoFactorVerificationStep
                             onClose={onClose}
                             onBack={() => setShowVerificationStep(false)}

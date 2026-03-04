@@ -50,6 +50,35 @@ class GoogleAuthController extends Controller
             ]);
         }
 
+        $intent = session()->pull('oauth_link_intent');
+
+        if ($intent === 'google' && Auth::check()) {
+            $authenticatedUser = Auth::user();
+
+            if (! $authenticatedUser instanceof User) {
+                return to_route('login');
+            }
+
+            $googleId = $googleUser->getId();
+
+            $alreadyLinkedToAnotherUser = User::query()
+                ->where('google_id', $googleId)
+                ->whereKeyNot($authenticatedUser->id)
+                ->exists();
+
+            if ($alreadyLinkedToAnotherUser) {
+                return redirect()->to(route('profile.edit').'#oauth-authentication')
+                    ->with('error', 'This Google account is already linked to another SpendLess profile.');
+            }
+
+            $authenticatedUser->google_id = $googleId;
+            $authenticatedUser->google_avatar = $googleUser->getAvatar();
+            $authenticatedUser->save();
+
+            return redirect()->to(route('profile.edit').'#oauth-authentication')
+                ->with('success', 'Google account linked successfully.');
+        }
+
         $googleEmail = (string) $googleUser->getEmail();
         $googleEmailVerified = true;
 
@@ -85,6 +114,7 @@ class GoogleAuthController extends Controller
                 'google_avatar' => $googleUser->getAvatar(),
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(40)),
+                'password_set_at' => null,
             ]);
             $created = true;
         }
@@ -101,7 +131,9 @@ class GoogleAuthController extends Controller
      */
     public function linkRedirect(): RedirectResponse
     {
-        $callbackUrl = url('/settings/oauth/google/callback');
+        session()->put('oauth_link_intent', 'google');
+
+        $callbackUrl = url('/auth/google/callback');
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
 
@@ -117,7 +149,7 @@ class GoogleAuthController extends Controller
      */
     public function linkCallback(): RedirectResponse
     {
-        $callbackUrl = url('/settings/oauth/google/callback');
+        $callbackUrl = url('/auth/google/callback');
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');

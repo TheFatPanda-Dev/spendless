@@ -17,7 +17,7 @@ export default function Privacy() {
 
                     <div className="space-y-4 text-sm text-muted-foreground">
                         <p>
-                            This page describes how Spendless collects, uses, and stores personal and financial data.
+                            This page describes how <span>Spend</span><span className="text-brand">Less</span> collects, uses, and stores personal and financial data.
                         </p>
                         <p>
                             Connected bank data is used only to provide account synchronization and transaction insights inside the app.

@@ -52,6 +52,42 @@ class GithubAuthController extends Controller
             ]);
         }
 
+        $intent = session()->pull('oauth_link_intent');
+
+        if ($intent === 'github' && Auth::check()) {
+            $authenticatedUser = Auth::user();
+
+            if (! $authenticatedUser instanceof User) {
+                return to_route('login');
+            }
+
+            $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
+
+            if ($githubEmail === null) {
+                return redirect()->to(route('profile.edit').'#oauth-authentication')
+                    ->with('error', 'Your GitHub account needs a primary verified email to be linked.');
+            }
+
+            $githubId = (string) $githubUser->getId();
+
+            $alreadyLinkedToAnotherUser = User::query()
+                ->where('github_id', $githubId)
+                ->whereKeyNot($authenticatedUser->id)
+                ->exists();
+
+            if ($alreadyLinkedToAnotherUser) {
+                return redirect()->to(route('profile.edit').'#oauth-authentication')
+                    ->with('error', 'This GitHub account is already linked to another SpendLess profile.');
+            }
+
+            $authenticatedUser->github_id = $githubId;
+            $authenticatedUser->github_avatar = $githubUser->getAvatar();
+            $authenticatedUser->save();
+
+            return redirect()->to(route('profile.edit').'#oauth-authentication')
+                ->with('success', 'GitHub account linked successfully.');
+        }
+
         $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
 
         if ($githubEmail === null) {
@@ -82,6 +118,7 @@ class GithubAuthController extends Controller
                 'github_avatar' => $githubUser->getAvatar(),
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(40)),
+                'password_set_at' => null,
             ]);
             $created = true;
         }
@@ -98,7 +135,9 @@ class GithubAuthController extends Controller
      */
     public function linkRedirect(): RedirectResponse
     {
-        $callbackUrl = url('/settings/oauth/github/callback');
+        session()->put('oauth_link_intent', 'github');
+
+        $callbackUrl = url('/auth/github/callback');
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')
             ->driver('github')
@@ -116,7 +155,7 @@ class GithubAuthController extends Controller
      */
     public function linkCallback(): RedirectResponse
     {
-        $callbackUrl = url('/settings/oauth/github/callback');
+        $callbackUrl = url('/auth/github/callback');
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('github');

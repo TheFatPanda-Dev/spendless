@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 
 class ProfileController extends Controller
 {
@@ -33,6 +34,13 @@ class ProfileController extends Controller
             'oauth' => [
                 'googleLinked' => (bool) $user?->google_id,
                 'githubLinked' => (bool) $user?->github_id,
+            ],
+            'password' => [
+                'hasPasswordSet' => (bool) $user?->has_password_set,
+            ],
+            'twoFactor' => [
+                'enabled' => $user?->hasEnabledTwoFactorAuthentication() ?? false,
+                'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
             ],
             'status' => $request->session()->get('status'),
         ]);
@@ -98,6 +106,58 @@ class ProfileController extends Controller
         }
 
         return to_route('login')->with('status', 'Email address updated successfully.');
+    }
+
+    public function unlinkGoogle(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return to_route('login');
+        }
+
+        if (! $user->google_id) {
+            return back()->with('error', 'Google account is not linked.');
+        }
+
+        $hasPassword = (bool) $user->has_password_set;
+        $hasAlternativeOauth = (bool) $user->github_id;
+
+        if (! $hasPassword && ! $hasAlternativeOauth) {
+            return back()->with('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
+        }
+
+        $user->google_id = null;
+        $user->google_avatar = null;
+        $user->save();
+
+        return back()->with('success', 'Google account disconnected.');
+    }
+
+    public function unlinkGithub(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return to_route('login');
+        }
+
+        if (! $user->github_id) {
+            return back()->with('error', 'GitHub account is not linked.');
+        }
+
+        $hasPassword = (bool) $user->has_password_set;
+        $hasAlternativeOauth = (bool) $user->google_id;
+
+        if (! $hasPassword && ! $hasAlternativeOauth) {
+            return back()->with('error', 'Set a password before disconnecting GitHub. It is currently your only sign-in method.');
+        }
+
+        $user->github_id = null;
+        $user->github_avatar = null;
+        $user->save();
+
+        return back()->with('success', 'GitHub account disconnected.');
     }
 
     /**

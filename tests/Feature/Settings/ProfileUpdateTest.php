@@ -30,6 +30,7 @@ class ProfileUpdateTest extends TestCase
                 ->component('settings/profile')
                 ->where('oauth.googleLinked', false)
                 ->where('oauth.githubLinked', false)
+                ->where('password.hasPasswordSet', true)
             );
     }
 
@@ -50,6 +51,7 @@ class ProfileUpdateTest extends TestCase
                 ->component('settings/profile')
                 ->where('oauth.googleLinked', true)
                 ->where('oauth.githubLinked', true)
+                ->where('password.hasPasswordSet', true)
             );
     }
 
@@ -244,5 +246,69 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('profile.edit'));
 
         $this->assertNotNull($user->fresh());
+    }
+
+    public function test_google_link_can_be_removed_when_user_has_password_set(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => 'google-1',
+            'google_avatar' => 'https://example.com/google.png',
+            'password_set_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('settings.google.unlink'));
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertNull($user->google_id);
+        $this->assertNull($user->google_avatar);
+    }
+
+    public function test_google_link_cannot_be_removed_if_it_is_only_login_method_and_password_not_set(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => 'google-1',
+            'password_set_at' => null,
+            'github_id' => null,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('settings.google.unlink'));
+
+        $response->assertRedirect(route('profile.edit'));
+        $response->assertSessionHas('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
+
+        $this->assertSame('google-1', $user->refresh()->google_id);
+    }
+
+    public function test_github_link_can_be_removed_when_another_oauth_login_exists_without_password(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => 'google-1',
+            'github_id' => 'github-1',
+            'github_avatar' => 'https://example.com/github.png',
+            'password_set_at' => null,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('settings.github.unlink'));
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertNull($user->github_id);
+        $this->assertNull($user->github_avatar);
+        $this->assertSame('google-1', $user->google_id);
     }
 }

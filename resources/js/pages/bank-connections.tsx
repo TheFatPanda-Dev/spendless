@@ -175,7 +175,10 @@ export default function BankConnections({ connections = [] }: { connections?: Ba
                                                 variant="destructive"
                                                 size="sm"
                                                 onClick={() => {
-                                                    router.delete(`/banking/connections/${connection.id}`);
+                                                    router.delete(`/banking/connections/${connection.id}`, {
+                                                        preserveScroll: true,
+                                                        preserveState: true,
+                                                    });
                                                 }}
                                             >
                                                 Delete connection

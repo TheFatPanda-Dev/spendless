@@ -8,6 +8,7 @@
 
 @php
     $logoUrl = $logoSrc ?: asset('images/spendless_logo.png');
+    $styledTitle = str_replace('SpendLess', 'Spend<span style="color:#10b981;">Less</span>', e($title));
 @endphp
 
 <!DOCTYPE html>
@@ -39,7 +40,7 @@
 
                 <tr>
                     <td style="padding:28px 24px;">
-                        <h1 style="margin:0 0 16px 0; font-size:26px; line-height:1.2; font-weight:700; color:#111827;">{{ $title }}</h1>
+                        <h1 style="margin:0 0 16px 0; font-size:26px; line-height:1.2; font-weight:700; color:#111827;">{!! $styledTitle !!}</h1>
 
                         <div style="font-size:15px; line-height:1.7; color:#374151;">
                             {{ $slot }}
@@ -69,7 +70,7 @@
                 <tr>
                     <td style="padding:18px 24px 24px 24px; border-top:1px solid #e5e7eb; background:#fafafa;">
                         <p style="margin:0; font-size:12px; line-height:1.6; color:#6b7280;">
-                            You received this email from SpendLess. If this wasn’t expected, you can safely ignore it.
+                            You received this email from <span style="color:#111827;">Spend</span><span style="color:#10b981;">Less</span>. If this wasn’t expected, you can safely ignore it.
                         </p>
                     </td>
                 </tr>

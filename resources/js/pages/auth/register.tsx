@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Eye, EyeOff, Github } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
+import { redirect as githubRedirect } from '@/routes/github';
+import { redirect as googleRedirect } from '@/routes/google';
 import { store } from '@/routes/register';
 
 export default function Register() {
@@ -66,7 +68,7 @@ export default function Register() {
                                 className="w-full"
                                 asChild
                             >
-                                <a href="/auth/google/redirect" tabIndex={1}>
+                                <Link href={googleRedirect()} tabIndex={1}>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 24 24"
@@ -79,7 +81,7 @@ export default function Register() {
                                         />
                                     </svg>
                                     Continue with Google
-                                </a>
+                                </Link>
                             </Button>
 
                             <Button
@@ -88,10 +90,10 @@ export default function Register() {
                                 className="w-full"
                                 asChild
                             >
-                                <a href="/auth/github/redirect" tabIndex={2}>
+                                <Link href={githubRedirect()} tabIndex={2}>
                                     <Github className="mr-2 size-4" aria-hidden="true" />
                                     Continue with GitHub
-                                </a>
+                                </Link>
                             </Button>
                         </div>
 

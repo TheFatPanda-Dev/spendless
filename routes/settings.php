@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -17,11 +16,15 @@ Route::middleware(['auth'])->group(function () {
         ->name('settings.google.redirect');
     Route::get('settings/oauth/google/callback', [GoogleAuthController::class, 'linkCallback'])
         ->name('settings.google.callback');
+    Route::delete('settings/oauth/google', [ProfileController::class, 'unlinkGoogle'])
+        ->name('settings.google.unlink');
 
     Route::get('settings/oauth/github/redirect', [GithubAuthController::class, 'linkRedirect'])
         ->name('settings.github.redirect');
     Route::get('settings/oauth/github/callback', [GithubAuthController::class, 'linkCallback'])
         ->name('settings.github.callback');
+    Route::delete('settings/oauth/github', [ProfileController::class, 'unlinkGithub'])
+        ->name('settings.github.unlink');
 });
 
 Route::get('settings/profile/email/confirm/{user}', [ProfileController::class, 'confirmEmailChange'])
@@ -39,6 +42,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 
-    Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
+    Route::redirect('settings/two-factor', '/settings/profile')
         ->name('two-factor.show');
 });

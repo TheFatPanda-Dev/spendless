@@ -32,6 +32,7 @@ class User extends Authenticatable
         'github_avatar',
         'avatar_path',
         'password',
+        'password_set_at',
     ];
 
     /**
@@ -42,6 +43,7 @@ class User extends Authenticatable
     protected $appends = [
         'avatar',
         'display_name',
+        'has_password_set',
     ];
 
     /**
@@ -66,6 +68,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_set_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
@@ -95,5 +98,10 @@ class User extends Authenticatable
     public function getDisplayNameAttribute(): string
     {
         return $this->preferred_name ?: $this->name;
+    }
+
+    public function getHasPasswordSetAttribute(): bool
+    {
+        return $this->password_set_at !== null;
     }
 }

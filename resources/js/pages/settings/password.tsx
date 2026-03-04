@@ -1,6 +1,7 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head } from '@inertiajs/react';
-import { useRef } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { cn } from '@/lib/utils';
 import { edit } from '@/routes/user-password';
 import type { BreadcrumbItem } from '@/types';
 
@@ -22,6 +24,45 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Password() {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [newPasswordValue, setNewPasswordValue] = useState('');
+    const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
+    const passwordsMatch = newPasswordValue !== ''
+        && confirmPasswordValue !== ''
+        && newPasswordValue === confirmPasswordValue;
+    const passwordsMismatch = newPasswordValue !== ''
+        && confirmPasswordValue !== ''
+        && newPasswordValue !== confirmPasswordValue;
+    const passwordMatchBorderClass = passwordsMatch
+        ? 'border-2 border-success focus-visible:ring-success/40'
+        : passwordsMismatch
+            ? 'border-2 border-destructive focus-visible:ring-destructive/40'
+            : '';
+    const passwordChecks = useMemo(
+        () => [
+            {
+                label: 'At least 8 characters',
+                met: newPasswordValue.length >= 8,
+            },
+            {
+                label: 'At least one uppercase letter',
+                met: /[A-Z]/.test(newPasswordValue),
+            },
+            {
+                label: 'At least one lowercase letter',
+                met: /[a-z]/.test(newPasswordValue),
+            },
+            {
+                label: 'At least one number',
+                met: /\d/.test(newPasswordValue),
+            },
+            {
+                label: 'At least one special character',
+                met: /[^A-Za-z0-9]/.test(newPasswordValue),
+            },
+        ],
+        [newPasswordValue],
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -48,6 +89,11 @@ export default function Password() {
                             'current_password',
                         ]}
                         resetOnSuccess
+                        onSuccess={() => {
+                            setNewPasswordValue('');
+                            setConfirmPasswordValue('');
+                            setIsPasswordVisible(false);
+                        }}
                         onError={(errors) => {
                             if (errors.password) {
                                 passwordInput.current?.focus();
@@ -86,15 +132,44 @@ export default function Password() {
                                         New password
                                     </Label>
 
-                                    <Input
-                                        id="password"
-                                        ref={passwordInput}
-                                        name="password"
-                                        type="password"
-                                        className="mt-1 block w-full"
-                                        autoComplete="new-password"
-                                        placeholder="New password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            ref={passwordInput}
+                                            name="password"
+                                            type={isPasswordVisible ? 'text' : 'password'}
+                                            className={cn('mt-1 block w-full pr-10', passwordMatchBorderClass)}
+                                            autoComplete="new-password"
+                                            placeholder="New password"
+                                            value={newPasswordValue}
+                                            onChange={(event) => setNewPasswordValue(event.target.value)}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            tabIndex={-1}
+                                            onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                                            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                                        >
+                                            {isPasswordVisible ? (
+                                                <EyeOff className="size-4" aria-hidden="true" />
+                                            ) : (
+                                                <Eye className="size-4" aria-hidden="true" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <ul className="list-disc space-y-1 pl-5 text-xs">
+                                        {passwordChecks.map((check) => (
+                                            <li
+                                                key={check.label}
+                                                className={check.met ? 'text-success' : 'text-destructive'}
+                                            >
+                                                {check.label}
+                                            </li>
+                                        ))}
+                                    </ul>
 
                                     <InputError message={errors.password} />
                                 </div>
@@ -104,17 +179,40 @@ export default function Password() {
                                         Confirm password
                                     </Label>
 
-                                    <Input
-                                        id="password_confirmation"
-                                        name="password_confirmation"
-                                        type="password"
-                                        className="mt-1 block w-full"
-                                        autoComplete="new-password"
-                                        placeholder="Confirm password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password_confirmation"
+                                            name="password_confirmation"
+                                            type={isPasswordVisible ? 'text' : 'password'}
+                                            className={cn('mt-1 block w-full pr-10', passwordMatchBorderClass)}
+                                            autoComplete="new-password"
+                                            placeholder="Confirm password"
+                                            value={confirmPasswordValue}
+                                            onChange={(event) => setConfirmPasswordValue(event.target.value)}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            tabIndex={-1}
+                                            onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                                            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                                        >
+                                            {isPasswordVisible ? (
+                                                <EyeOff className="size-4" aria-hidden="true" />
+                                            ) : (
+                                                <Eye className="size-4" aria-hidden="true" />
+                                            )}
+                                        </button>
+                                    </div>
 
                                     <InputError
-                                        message={errors.password_confirmation}
+                                        message={
+                                            typeof errors.password_confirmation === 'string'
+                                                && /match/i.test(errors.password_confirmation)
+                                                ? undefined
+                                                : errors.password_confirmation
+                                        }
                                     />
                                 </div>
 

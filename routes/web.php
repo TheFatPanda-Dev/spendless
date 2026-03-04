@@ -29,11 +29,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('banking.callback');
 });
 
-Route::middleware('guest')->group(function () {
-    Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
-    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
-    Route::get('auth/github/redirect', [GithubAuthController::class, 'redirect'])->name('github.redirect');
-    Route::get('auth/github/callback', [GithubAuthController::class, 'callback'])->name('github.callback');
-});
+Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+Route::get('auth/github/redirect', [GithubAuthController::class, 'redirect'])->name('github.redirect');
+Route::get('auth/github/callback', [GithubAuthController::class, 'callback'])->name('github.callback');
 
 require __DIR__.'/settings.php';

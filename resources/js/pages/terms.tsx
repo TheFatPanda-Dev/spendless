@@ -17,7 +17,7 @@ export default function Terms() {
 
                     <div className="space-y-4 text-sm text-muted-foreground">
                         <p>
-                            These terms govern your use of Spendless and its bank-connection features.
+                            These terms govern your use of <span>Spend</span><span className="text-brand">Less</span> and its bank-connection features.
                         </p>
                         <p>
                             By using the app, you agree to comply with applicable laws and use connected financial data responsibly.
