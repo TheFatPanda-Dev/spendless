@@ -1,5 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -24,16 +25,19 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile({
     mustVerifyEmail,
+    pendingEmail,
     preferredName,
     status,
 }: {
     mustVerifyEmail: boolean;
+    pendingEmail?: string | null;
     preferredName?: string | null;
     status?: string;
 }) {
     const { auth } = usePage().props;
     const getInitials = useInitials();
     const displayName = auth.user.display_name ?? auth.user.name;
+    const [isChangingEmail, setIsChangingEmail] = useState(false);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -106,12 +110,46 @@ export default function Profile({
                                         id="email"
                                         type="email"
                                         className="mt-1 block w-full"
-                                        defaultValue={auth.user.email}
-                                        name="email"
-                                        required
+                                        value={auth.user.email}
+                                        readOnly
+                                        disabled
                                         autoComplete="email"
                                         placeholder="Email address"
                                     />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsChangingEmail((value) => !value)}
+                                        className="w-fit text-sm font-medium text-foreground underline underline-offset-4"
+                                    >
+                                        Change email address
+                                    </button>
+
+                                    {isChangingEmail ? (
+                                        <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                            <Label htmlFor="new_email">New email address</Label>
+                                            <Input
+                                                id="new_email"
+                                                type="email"
+                                                name="new_email"
+                                                autoComplete="email"
+                                                placeholder="new-email@example.com"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Your current email is updated only after you confirm the link we send to the new address.
+                                            </p>
+                                            <InputError
+                                                className="mt-1"
+                                                message={errors.new_email}
+                                            />
+                                        </div>
+                                    ) : null}
+
+                                    {pendingEmail ? (
+                                        <p className="text-xs font-medium text-muted-foreground">
+                                            Pending confirmation: {pendingEmail}
+                                        </p>
+                                    ) : null}
 
                                     <InputError
                                         className="mt-2"

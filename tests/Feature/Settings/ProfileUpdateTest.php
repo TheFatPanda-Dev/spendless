@@ -3,9 +3,12 @@
 namespace Tests\Feature\Settings;
 
 use App\Models\User;
+use App\Notifications\ConfirmEmailChangeNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -32,7 +35,6 @@ class ProfileUpdateTest extends TestCase
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
                 'preferred_name' => 'Panda',
-                'email' => 'test@example.com',
             ]);
 
         $response
@@ -43,26 +45,62 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('Panda', $user->preferred_name);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
+        $this->assertNotNull($user->email_verified_at);
     }
 
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
+    public function test_email_change_request_sends_confirmation_to_new_email_and_keeps_current_email_until_confirmed(): void
     {
+        Notification::fake();
+
         $user = User::factory()->create();
+        $currentEmail = $user->email;
+        $newEmail = 'new-email@example.com';
 
         $response = $this
             ->actingAs($user)
             ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => $user->email,
+                'name' => $user->name,
+                'new_email' => $newEmail,
             ]);
 
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('profile.edit'));
 
-        $this->assertNotNull($user->refresh()->email_verified_at);
+        $user->refresh();
+
+        $this->assertSame($currentEmail, $user->email);
+        $this->assertSame($newEmail, $user->pending_email);
+
+        Notification::assertSentOnDemand(ConfirmEmailChangeNotification::class);
+    }
+
+    public function test_email_is_updated_only_after_signed_confirmation_link_is_opened(): void
+    {
+        $user = User::factory()->create([
+            'pending_email' => 'new-email@example.com',
+            'pending_email_requested_at' => now(),
+        ]);
+
+        $signedUrl = URL::temporarySignedRoute(
+            'profile.email.confirm',
+            now()->addMinutes(30),
+            [
+                'user' => $user->id,
+                'email' => 'new-email@example.com',
+            ],
+        );
+
+        $response = $this->actingAs($user)->get($signedUrl);
+
+        $response->assertRedirect(route('profile.edit', absolute: false));
+
+        $user->refresh();
+
+        $this->assertSame('new-email@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+        $this->assertNull($user->pending_email_requested_at);
+        $this->assertNotNull($user->email_verified_at);
     }
 
     public function test_profile_avatar_can_be_uploaded(): void
@@ -75,7 +113,6 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->patch(route('profile.update'), [
                 'name' => $user->name,
-                'email' => $user->email,
                 'avatar' => UploadedFile::fake()->image('avatar.png', 128, 128),
             ]);
 
@@ -103,7 +140,6 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->patch(route('profile.update'), [
                 'name' => $user->name,
-                'email' => $user->email,
                 'avatar' => UploadedFile::fake()->image('new-avatar.png', 128, 128),
             ]);
 

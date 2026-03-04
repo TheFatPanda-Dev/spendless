@@ -24,6 +24,8 @@ class User extends Authenticatable
         'name',
         'preferred_name',
         'email',
+        'pending_email',
+        'pending_email_requested_at',
         'google_id',
         'google_avatar',
         'github_id',

@@ -12,6 +12,10 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
+Route::get('settings/profile/email/confirm/{user}', [ProfileController::class, 'confirmEmailChange'])
+    ->middleware('signed')
+    ->name('profile.email.confirm');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 

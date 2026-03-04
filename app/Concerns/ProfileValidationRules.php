@@ -17,7 +17,7 @@ trait ProfileValidationRules
         return [
             'name' => $this->nameRules(),
             'preferred_name' => $this->preferredNameRules(),
-            'email' => $this->emailRules($userId),
+            'new_email' => $this->newEmailRules($userId),
         ];
     }
 
@@ -46,14 +46,14 @@ trait ProfileValidationRules
     }
 
     /**
-     * Get the validation rules used to validate user emails.
+     * Get the validation rules used to validate requested new emails.
      *
      * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
      */
-    protected function emailRules(?int $userId = null): array
+    protected function newEmailRules(?int $userId = null): array
     {
         return [
-            'required',
+            'nullable',
             'string',
             'email',
             'max:255',
