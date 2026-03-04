@@ -16,6 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 type ConnectionAccount = {
     id: number;
     name: string | null;
+    account_type: string | null;
     iban: string | null;
     currency: string | null;
 };
@@ -79,12 +80,12 @@ export default function BankConnections({ connections = [] }: { connections?: Ba
         return match?.country ?? 'SI';
     }, [institutions, selectedInstitution]);
 
-    const getDisplayName = (connection: BankConnection): string => {
-        const primaryAccountName = connection.accounts.find(
-            (account) => account.name !== null && account.name.trim() !== '',
-        )?.name;
+    const getAccountType = (account: ConnectionAccount): string => {
+        if (account.account_type && account.account_type.trim() !== '') {
+            return account.account_type.toUpperCase();
+        }
 
-        return primaryAccountName ?? connection.aspsp_name;
+        return 'ACCOUNT';
     };
 
     return (
@@ -162,7 +163,7 @@ export default function BankConnections({ connections = [] }: { connections?: Ba
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="space-y-1">
                                                 <p className="font-semibold text-foreground">
-                                                    {getDisplayName(connection)}
+                                                    {connection.aspsp_name}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground uppercase tracking-wide">
                                                     {connection.aspsp_country} • {connection.status}
@@ -189,7 +190,7 @@ export default function BankConnections({ connections = [] }: { connections?: Ba
                                                         className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm"
                                                     >
                                                         <p className="font-medium text-foreground">
-                                                            {account.name ?? 'Unnamed account'}
+                                                            {getAccountType(account)}
                                                         </p>
                                                         <p className="text-muted-foreground">
                                                             {account.iban ?? 'No IBAN available'}

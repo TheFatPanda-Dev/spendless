@@ -13,7 +13,7 @@ class BankConnectionsController extends Controller
         $connections = $request->user()
             ->bankConnections()
             ->where('status', '!=', 'failed')
-            ->with(['accounts:id,bank_connection_id,name,iban,currency'])
+            ->with(['accounts:id,bank_connection_id,name,iban,currency,raw_payload'])
             ->latest()
             ->get()
             ->map(fn ($connection) => [
@@ -25,6 +25,10 @@ class BankConnectionsController extends Controller
                 'accounts' => $connection->accounts->map(fn ($account) => [
                     'id' => $account->id,
                     'name' => $account->name,
+                    'account_type' => data_get($account->raw_payload, 'cash_account_type')
+                        ?? data_get($account->raw_payload, 'cashAccountType')
+                        ?? data_get($account->raw_payload, 'account_type')
+                        ?? data_get($account->raw_payload, 'accountType'),
                     'iban' => $account->iban,
                     'currency' => $account->currency,
                 ])->values(),

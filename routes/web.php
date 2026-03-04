@@ -12,6 +12,9 @@ Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
+Route::inertia('/privacy', 'privacy')->name('privacy');
+Route::inertia('/terms', 'terms')->name('terms');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('bank-connections', BankConnectionsController::class)->name('bank-connections');

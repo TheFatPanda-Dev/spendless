@@ -93,7 +93,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 <SheetHeader className="flex justify-start text-left">
                                     <img
                                         src="/images/spendless_logo.png"
-                                        alt="SpenLess logo"
+                                        alt="Spendless logo"
                                         className="h-7 w-7 object-contain"
                                     />
                                 </SheetHeader>
