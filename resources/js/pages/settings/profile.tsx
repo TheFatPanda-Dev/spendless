@@ -25,11 +25,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile({
     mustVerifyEmail,
+    oauth,
     pendingEmail,
     preferredName,
     status,
 }: {
     mustVerifyEmail: boolean;
+    oauth: {
+        googleLinked: boolean;
+        githubLinked: boolean;
+    };
     pendingEmail?: string | null;
     preferredName?: string | null;
     status?: string;
@@ -237,6 +242,70 @@ export default function Profile({
                             </>
                         )}
                     </Form>
+                </div>
+
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                    <Heading
+                        variant="small"
+                        title="OAuth Authentication"
+                        description="Connect Google or GitHub to sign in faster and keep your account linked"
+                    />
+
+                    <div className="space-y-3">
+                        <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-foreground">Google</p>
+                                <p className="text-xs text-muted-foreground">Use your Google account to sign in.</p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauth.googleLinked
+                                        ? 'bg-brand/15 text-brand'
+                                        : 'bg-muted text-muted-foreground'}`}
+                                >
+                                    {oauth.googleLinked ? 'Connected' : 'Not connected'}
+                                </span>
+
+                                {oauth.googleLinked ? (
+                                    <Button variant="outline" disabled>
+                                        Linked
+                                    </Button>
+                                ) : (
+                                    <Button asChild>
+                                        <a href="/settings/oauth/google/redirect">Link Google</a>
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-foreground">GitHub</p>
+                                <p className="text-xs text-muted-foreground">Use your GitHub account to sign in.</p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauth.githubLinked
+                                        ? 'bg-brand/15 text-brand'
+                                        : 'bg-muted text-muted-foreground'}`}
+                                >
+                                    {oauth.githubLinked ? 'Connected' : 'Not connected'}
+                                </span>
+
+                                {oauth.githubLinked ? (
+                                    <Button variant="outline" disabled>
+                                        Linked
+                                    </Button>
+                                ) : (
+                                    <Button asChild>
+                                        <a href="/settings/oauth/github/redirect">Link GitHub</a>
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <DeleteUser />

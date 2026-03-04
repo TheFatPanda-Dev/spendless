@@ -95,4 +95,63 @@ class GoogleAuthController extends Controller
 
         return to_route('dashboard')->with('success', $successMessage);
     }
+
+    /**
+     * Redirect the authenticated user to Google OAuth for account linking.
+     */
+    public function linkRedirect(): RedirectResponse
+    {
+        $callbackUrl = url('/settings/oauth/google/callback');
+
+        $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
+
+        if (method_exists($driver, 'redirectUrl')) {
+            $driver = $driver->redirectUrl($callbackUrl);
+        }
+
+        return $driver->redirect();
+    }
+
+    /**
+     * Handle Google callback and link account to the authenticated user.
+     */
+    public function linkCallback(): RedirectResponse
+    {
+        $callbackUrl = url('/settings/oauth/google/callback');
+
+        try {
+            $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
+
+            if (method_exists($driver, 'redirectUrl')) {
+                $driver = $driver->redirectUrl($callbackUrl);
+            }
+
+            $googleUser = $driver->user();
+        } catch (InvalidStateException) {
+            return to_route('profile.edit')->with('error', 'Google link expired or host changed. Please try again from the same browser tab.');
+        }
+
+        $authenticatedUser = Auth::user();
+
+        if (! $authenticatedUser instanceof User) {
+            return to_route('login');
+        }
+
+        $googleId = $googleUser->getId();
+
+        $alreadyLinkedToAnotherUser = User::query()
+            ->where('google_id', $googleId)
+            ->whereKeyNot($authenticatedUser->id)
+            ->exists();
+
+        if ($alreadyLinkedToAnotherUser) {
+            return to_route('profile.edit')->with('error', 'This Google account is already linked to another SpendLess profile.');
+        }
+
+        $authenticatedUser->google_id = $googleId;
+        $authenticatedUser->google_avatar = $googleUser->getAvatar();
+        $authenticatedUser->save();
+
+        return to_route('profile.edit')->with('success', 'Google account linked successfully.');
+    }
 }

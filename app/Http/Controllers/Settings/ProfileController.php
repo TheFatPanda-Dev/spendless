@@ -30,6 +30,10 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'preferredName' => $user?->preferred_name,
             'pendingEmail' => $user?->pending_email,
+            'oauth' => [
+                'googleLinked' => (bool) $user?->google_id,
+                'githubLinked' => (bool) $user?->github_id,
+            ],
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -75,7 +79,11 @@ class ProfileController extends Controller
     {
         $email = (string) $request->query('email', '');
 
-        if ($email === '' || $user->pending_email !== $email) {
+        if (
+            $email === ''
+            || ! is_string($user->pending_email)
+            || strcasecmp($user->pending_email, $email) !== 0
+        ) {
             abort(403);
         }
 

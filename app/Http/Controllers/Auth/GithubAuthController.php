@@ -94,6 +94,73 @@ class GithubAuthController extends Controller
     }
 
     /**
+     * Redirect the authenticated user to GitHub OAuth for account linking.
+     */
+    public function linkRedirect(): RedirectResponse
+    {
+        $callbackUrl = url('/settings/oauth/github/callback');
+
+        $driver = app('Laravel\\Socialite\\Contracts\\Factory')
+            ->driver('github')
+            ->scopes(['read:user', 'user:email']);
+
+        if (method_exists($driver, 'redirectUrl')) {
+            $driver = $driver->redirectUrl($callbackUrl);
+        }
+
+        return $driver->redirect();
+    }
+
+    /**
+     * Handle GitHub callback and link account to the authenticated user.
+     */
+    public function linkCallback(): RedirectResponse
+    {
+        $callbackUrl = url('/settings/oauth/github/callback');
+
+        try {
+            $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('github');
+
+            if (method_exists($driver, 'redirectUrl')) {
+                $driver = $driver->redirectUrl($callbackUrl);
+            }
+
+            $githubUser = $driver->user();
+        } catch (InvalidStateException) {
+            return to_route('profile.edit')->with('error', 'GitHub link expired or host changed. Please try again from the same browser tab.');
+        }
+
+        $authenticatedUser = Auth::user();
+
+        if (! $authenticatedUser instanceof User) {
+            return to_route('login');
+        }
+
+        $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
+
+        if ($githubEmail === null) {
+            return to_route('profile.edit')->with('error', 'Your GitHub account needs a primary verified email to be linked.');
+        }
+
+        $githubId = (string) $githubUser->getId();
+
+        $alreadyLinkedToAnotherUser = User::query()
+            ->where('github_id', $githubId)
+            ->whereKeyNot($authenticatedUser->id)
+            ->exists();
+
+        if ($alreadyLinkedToAnotherUser) {
+            return to_route('profile.edit')->with('error', 'This GitHub account is already linked to another SpendLess profile.');
+        }
+
+        $authenticatedUser->github_id = $githubId;
+        $authenticatedUser->github_avatar = $githubUser->getAvatar();
+        $authenticatedUser->save();
+
+        return to_route('profile.edit')->with('success', 'GitHub account linked successfully.');
+    }
+
+    /**
      * Resolve a verified GitHub email.
      */
     private function resolveVerifiedGithubEmail(string $token, string $fallbackEmail): ?string

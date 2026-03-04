@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Auth\GithubAuthController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
@@ -10,10 +12,20 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('settings/oauth/google/redirect', [GoogleAuthController::class, 'linkRedirect'])
+        ->name('settings.google.redirect');
+    Route::get('settings/oauth/google/callback', [GoogleAuthController::class, 'linkCallback'])
+        ->name('settings.google.callback');
+
+    Route::get('settings/oauth/github/redirect', [GithubAuthController::class, 'linkRedirect'])
+        ->name('settings.github.redirect');
+    Route::get('settings/oauth/github/callback', [GithubAuthController::class, 'linkCallback'])
+        ->name('settings.github.callback');
 });
 
 Route::get('settings/profile/email/confirm/{user}', [ProfileController::class, 'confirmEmailChange'])
-    ->middleware('signed')
+    ->middleware('signed:relative')
     ->name('profile.email.confirm');
 
 Route::middleware(['auth', 'verified'])->group(function () {

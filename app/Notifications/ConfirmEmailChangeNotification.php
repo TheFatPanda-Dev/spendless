@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\Mime\Email;
 
 class ConfirmEmailChangeNotification extends Notification
 {
@@ -34,21 +35,37 @@ class ConfirmEmailChangeNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $confirmationUrl = URL::temporarySignedRoute(
+        $confirmationPath = URL::temporarySignedRoute(
             'profile.email.confirm',
-            now()->addMinutes(60),
+            now()->addMinutes(5),
             [
                 'user' => $this->userId,
                 'email' => $this->newEmail,
             ],
+            absolute: false,
         );
 
-        return (new MailMessage)
+        $confirmationUrl = rtrim((string) config('app.url'), '/').$confirmationPath;
+
+        $logoPath = public_path('images/spendless_logo.png');
+        $logoCid = 'spendless-logo';
+        $defaultLogoUrl = rtrim((string) config('app.url'), '/').'/images/spendless_logo.png';
+        $logoSrc = is_file($logoPath) ? 'cid:'.$logoCid : $defaultLogoUrl;
+
+        $message = (new MailMessage)
             ->subject('Confirm your new email address')
-            ->line('You requested to change the email address on your Spendless account.')
-            ->line('Confirm this new email address to finish the update.')
-            ->action('Confirm new email address', $confirmationUrl)
-            ->line('If you did not request this change, you can safely ignore this email.');
+            ->view('emails.confirm-email-change', [
+                'confirmationUrl' => $confirmationUrl,
+                'logoSrc' => $logoSrc,
+            ]);
+
+        if (is_file($logoPath)) {
+            $message->withSymfonyMessage(function (Email $email) use ($logoCid, $logoPath): void {
+                $email->embedFromPath($logoPath, $logoCid, 'image/png');
+            });
+        }
+
+        return $message;
     }
 
     /**

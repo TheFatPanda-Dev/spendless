@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -23,7 +24,33 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->get(route('profile.edit'));
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings/profile')
+                ->where('oauth.googleLinked', false)
+                ->where('oauth.githubLinked', false)
+            );
+    }
+
+    public function test_profile_page_shows_linked_oauth_providers_status(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => 'google-123',
+            'github_id' => 'github-456',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('profile.edit'));
+
+        $response
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings/profile')
+                ->where('oauth.googleLinked', true)
+                ->where('oauth.githubLinked', true)
+            );
     }
 
     public function test_profile_information_can_be_updated()
@@ -75,6 +102,33 @@ class ProfileUpdateTest extends TestCase
         Notification::assertSentOnDemand(ConfirmEmailChangeNotification::class);
     }
 
+    public function test_new_email_must_be_different_from_current_email(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from(route('profile.edit'))
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'new_email' => $user->email,
+            ]);
+
+        $response
+            ->assertSessionHasErrors([
+                'new_email' => 'The new email address must be different from your current email address.',
+            ])
+            ->assertRedirect(route('profile.edit'));
+
+        Notification::assertNothingSent();
+
+        $user->refresh();
+
+        $this->assertNull($user->pending_email);
+    }
+
     public function test_email_is_updated_only_after_signed_confirmation_link_is_opened(): void
     {
         $user = User::factory()->create([
@@ -89,6 +143,7 @@ class ProfileUpdateTest extends TestCase
                 'user' => $user->id,
                 'email' => 'new-email@example.com',
             ],
+            absolute: false,
         );
 
         $response = $this->actingAs($user)->get($signedUrl);

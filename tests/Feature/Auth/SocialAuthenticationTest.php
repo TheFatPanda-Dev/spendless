@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class SocialAuthenticationTest extends TestCase
@@ -129,5 +130,116 @@ class SocialAuthenticationTest extends TestCase
             'google_id' => 'google-789',
         ]);
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_authenticated_user_can_link_google_account_from_profile_settings(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => null,
+            'google_avatar' => null,
+        ]);
+
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function redirectUrl(string $url): self
+                    {
+                        return $this;
+                    }
+
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public function getId(): string
+                            {
+                                return 'google-link-1';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/google-link-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->actingAs($user)->get(route('settings.google.callback'));
+
+        $response->assertRedirect(route('profile.edit', absolute: false));
+
+        $user->refresh();
+
+        $this->assertSame('google-link-1', $user->google_id);
+        $this->assertSame('https://example.com/google-link-avatar.png', $user->google_avatar);
+    }
+
+    public function test_authenticated_user_can_link_github_account_from_profile_settings(): void
+    {
+        Http::fake([
+            'https://api.github.com/user/emails' => Http::response([
+                [
+                    'email' => 'linked-github@example.com',
+                    'primary' => true,
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create([
+            'github_id' => null,
+            'github_avatar' => null,
+        ]);
+
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function redirectUrl(string $url): self
+                    {
+                        return $this;
+                    }
+
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public string $token = 'fake-github-token';
+
+                            public function getId(): string
+                            {
+                                return 'github-link-1';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'linked-github@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/github-link-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->actingAs($user)->get(route('settings.github.callback'));
+
+        $response->assertRedirect(route('profile.edit', absolute: false));
+
+        $user->refresh();
+
+        $this->assertSame('github-link-1', $user->github_id);
+        $this->assertSame('https://example.com/github-link-avatar.png', $user->github_avatar);
     }
 }
