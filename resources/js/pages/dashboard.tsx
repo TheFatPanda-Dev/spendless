@@ -1,6 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
@@ -20,7 +26,8 @@ export default function Dashboard() {
                     <CardHeader className="gap-2">
                         <CardTitle className="text-lg">Dashboard</CardTitle>
                         <CardDescription>
-                            Welcome back. Open your bank connections to manage syncing.
+                            Welcome back. Open your bank connections to manage
+                            syncing.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Settings;
 
 use App\Models\User;
+use App\Notifications\AccountDeletedNotification;
 use App\Notifications\ConfirmEmailChangeNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -52,6 +53,27 @@ class ProfileUpdateTest extends TestCase
                 ->where('oauth.googleLinked', true)
                 ->where('oauth.githubLinked', true)
                 ->where('password.hasPasswordSet', true)
+            );
+    }
+
+    public function test_profile_page_falls_back_to_google_avatar_when_local_avatar_file_is_missing(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create([
+            'avatar_path' => 'avatars/missing-avatar.png',
+            'google_avatar' => 'https://example.com/google-fallback.png',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('profile.edit'));
+
+        $response
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings/profile')
+                ->where('auth.user.avatar', 'https://example.com/google-fallback.png')
             );
     }
 
@@ -183,6 +205,30 @@ class ProfileUpdateTest extends TestCase
         Storage::disk('public')->assertExists($user->avatar_path);
     }
 
+    public function test_profile_avatar_can_be_uploaded_with_post_method_spoofing_patch(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('profile.update'), [
+                '_method' => 'PATCH',
+                'name' => $user->name,
+                'avatar' => UploadedFile::fake()->image('avatar-spoofed.png', 128, 128),
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertNotNull($user->avatar_path);
+        Storage::disk('public')->assertExists($user->avatar_path);
+    }
+
     public function test_replacing_profile_avatar_deletes_previous_file(): void
     {
         Storage::fake('public');
@@ -214,7 +260,10 @@ class ProfileUpdateTest extends TestCase
 
     public function test_user_can_delete_their_account()
     {
+        Notification::fake();
+
         $user = User::factory()->create();
+        $deletedEmail = $user->email;
 
         $response = $this
             ->actingAs($user)
@@ -228,6 +277,15 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
+
+        Notification::assertSentOnDemand(
+            AccountDeletedNotification::class,
+            function (AccountDeletedNotification $notification, array $channels, object $notifiable) use ($deletedEmail): bool {
+                return in_array('mail', $channels, true)
+                    && isset($notifiable->routes['mail'])
+                    && $notifiable->routes['mail'] === $deletedEmail;
+            },
+        );
     }
 
     public function test_correct_password_must_be_provided_to_delete_account()
@@ -244,6 +302,26 @@ class ProfileUpdateTest extends TestCase
         $response
             ->assertSessionHasErrors('password')
             ->assertRedirect(route('profile.edit'));
+
+        $this->assertNotNull($user->fresh());
+    }
+
+    public function test_account_cannot_be_deleted_when_password_is_not_set(): void
+    {
+        $user = User::factory()->create([
+            'password_set_at' => null,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from(route('profile.edit'))
+            ->delete(route('profile.destroy'), [
+                'password' => 'password',
+            ]);
+
+        $response
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHas('error', 'Password not set. Set a password before deleting your account.');
 
         $this->assertNotNull($user->fresh());
     }

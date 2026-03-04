@@ -51,9 +51,7 @@ export default function SecureAccountVerification({
                 <p className="text-sm font-medium text-foreground">
                     Secure Account Verification
                 </p>
-                <p className="text-xs text-muted-foreground">
-                    {description}
-                </p>
+                <p className="text-xs text-muted-foreground">{description}</p>
             </div>
 
             <div className="grid gap-2">

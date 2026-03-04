@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ],
+            "cwd": "./"
+        },
+        "chrome-devtools": {
+            "command": "/home/thefatpanda/.nvm/versions/node/v22.19.0/bin/chrome-devtools-mcp",
+            "args": []
+        }
+    }
+}

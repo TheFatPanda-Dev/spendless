@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\OAuthRegistrationController;
 use App\Http\Controllers\BankConnectionsController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\DashboardController;
@@ -33,5 +34,7 @@ Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->n
 Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 Route::get('auth/github/redirect', [GithubAuthController::class, 'redirect'])->name('github.redirect');
 Route::get('auth/github/callback', [GithubAuthController::class, 'callback'])->name('github.callback');
+Route::post('auth/oauth/register', [OAuthRegistrationController::class, 'register'])->name('oauth.register');
+Route::post('auth/oauth/cancel', [OAuthRegistrationController::class, 'cancel'])->name('oauth.cancel');
 
 require __DIR__.'/settings.php';

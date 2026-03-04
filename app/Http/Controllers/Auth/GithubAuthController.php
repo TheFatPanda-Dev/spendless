@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Two\InvalidStateException;
 
 class GithubAuthController extends Controller
@@ -16,8 +16,12 @@ class GithubAuthController extends Controller
     /**
      * Redirect the user to GitHub's OAuth page.
      */
-    public function redirect(): RedirectResponse
+    public function redirect(Request $request): RedirectResponse
     {
+        if ($request->boolean('popup')) {
+            session()->put('oauth_popup_github', true);
+        }
+
         $callbackUrl = url('/auth/github/callback');
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')
@@ -34,8 +38,9 @@ class GithubAuthController extends Controller
     /**
      * Handle GitHub callback and authenticate the user.
      */
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse|View
     {
+        $usePopup = $request->boolean('popup') || (bool) $request->session()->pull('oauth_popup_github', false);
         $callbackUrl = url('/auth/github/callback');
 
         try {
@@ -47,6 +52,13 @@ class GithubAuthController extends Controller
 
             $githubUser = $driver->user();
         } catch (InvalidStateException) {
+            if ($usePopup) {
+                return $this->popupResponse([
+                    'type' => 'error',
+                    'message' => 'GitHub sign-in expired or host changed. Please try again.',
+                ]);
+            }
+
             return to_route('login')->withErrors([
                 'email' => 'GitHub sign-in expired or host changed. Please try again from the same browser tab.',
             ]);
@@ -91,6 +103,13 @@ class GithubAuthController extends Controller
         $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
 
         if ($githubEmail === null) {
+            if ($usePopup) {
+                return $this->popupResponse([
+                    'type' => 'error',
+                    'message' => 'Your GitHub account needs a primary verified email to sign in.',
+                ]);
+            }
+
             return to_route('login')->withErrors([
                 'email' => 'Your GitHub account needs a primary verified email to sign in.',
             ]);
@@ -100,34 +119,56 @@ class GithubAuthController extends Controller
             ->where('github_id', (string) $githubUser->getId())
             ->orWhere('email', $githubEmail)
             ->first();
-        $created = false;
 
-        if ($user) {
-            if (! $user->github_id) {
-                $user->github_id = (string) $githubUser->getId();
+        if (! $user) {
+            session()->put('oauth_registration_candidate', [
+                'provider' => 'github',
+                'provider_label' => 'GitHub',
+                'provider_id' => (string) $githubUser->getId(),
+                'email' => $githubEmail,
+                'name' => (string) ($githubUser->getName() ?: 'GitHub User'),
+                'avatar' => (string) $githubUser->getAvatar(),
+            ]);
+
+            $message = 'No SpendLess account was found for this GitHub email.';
+
+            if ($usePopup) {
+                return $this->popupResponse([
+                    'type' => 'prompt',
+                    'provider' => 'GitHub',
+                    'email' => $githubEmail,
+                ]);
             }
 
-            $user->github_avatar = $githubUser->getAvatar();
-            $user->email_verified_at ??= now();
-            $user->save();
-        } else {
-            $user = User::create([
-                'name' => $githubUser->getName() ?: 'GitHub User',
-                'email' => $githubEmail,
-                'github_id' => (string) $githubUser->getId(),
-                'github_avatar' => $githubUser->getAvatar(),
-                'email_verified_at' => now(),
-                'password' => Hash::make(Str::random(40)),
-                'password_set_at' => null,
-            ]);
-            $created = true;
+            return to_route('login')
+                ->withErrors(['email' => $message])
+                ->with('error', $message)
+                ->with('oauth_prompt', [
+                    'provider' => 'GitHub',
+                    'email' => $githubEmail,
+                ]);
         }
+
+        if (! $user->github_id) {
+            $user->github_id = (string) $githubUser->getId();
+        }
+
+        $user->github_avatar = $githubUser->getAvatar();
+        $user->email_verified_at ??= now();
+        $user->save();
 
         Auth::login($user, remember: true);
 
-        $successMessage = $created ? 'Registration successful' : 'Login successful';
+        if ($usePopup) {
+            $redirectTo = (string) $request->session()->pull('url.intended', route('dashboard', absolute: false));
 
-        return to_route('dashboard')->with('success', $successMessage);
+            return $this->popupResponse([
+                'type' => 'success',
+                'redirect' => $redirectTo,
+            ]);
+        }
+
+        return to_route('dashboard')->with('success', 'Login successful');
     }
 
     /**
@@ -137,7 +178,7 @@ class GithubAuthController extends Controller
     {
         session()->put('oauth_link_intent', 'github');
 
-        $callbackUrl = url('/auth/github/callback');
+        $callbackUrl = route('github.callback', absolute: true);
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')
             ->driver('github')
@@ -155,7 +196,7 @@ class GithubAuthController extends Controller
      */
     public function linkCallback(): RedirectResponse
     {
-        $callbackUrl = url('/auth/github/callback');
+        $callbackUrl = route('github.callback', absolute: true);
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('github');
@@ -240,5 +281,17 @@ class GithubAuthController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Return popup completion view with payload.
+     *
+     * @param  array<string, string>  $payload
+     */
+    private function popupResponse(array $payload): View
+    {
+        return view('auth.oauth-popup', [
+            'payload' => $payload,
+        ]);
     }
 }

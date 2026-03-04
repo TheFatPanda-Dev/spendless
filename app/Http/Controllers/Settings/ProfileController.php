@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
+use App\Notifications\AccountDeletedNotification;
 use App\Notifications\ConfirmEmailChangeNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
+use Throwable;
 
 class ProfileController extends Controller
 {
@@ -167,12 +169,27 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        if (! $user->has_password_set) {
+            return to_route('profile.edit')
+                ->with('error', 'Password not set. Set a password before deleting your account.');
+        }
+
+        $deletedEmail = (string) $user->email;
+        $deletedName = (string) $user->name;
+
         Auth::logout();
 
         $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        try {
+            Notification::route('mail', $deletedEmail)
+                ->notify(new AccountDeletedNotification($deletedName));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return redirect('/');
     }

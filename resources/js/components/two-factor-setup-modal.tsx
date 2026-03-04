@@ -97,7 +97,8 @@ function TwoFactorSetupStep({
                                 Scan to link your authenticator app
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                Use Google Authenticator, 1Password, or another TOTP app.
+                                Use Google Authenticator, 1Password, or another
+                                TOTP app.
                             </p>
                         </div>
 
@@ -196,7 +197,8 @@ function TwoFactorVerificationStep({
                             Enter your 6-digit code
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            Open your authenticator app and type the current code.
+                            Open your authenticator app and type the current
+                            code.
                         </p>
                     </div>
 
@@ -267,7 +269,9 @@ function TwoFactorPasswordStep({
 
     const getCookieValue = (name: string): string | undefined => {
         const match = document.cookie.match(
-            new RegExp(`(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`),
+            new RegExp(
+                `(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`,
+            ),
         );
 
         return match ? decodeURIComponent(match[1]) : undefined;
@@ -310,7 +314,8 @@ function TwoFactorPasswordStep({
                     errors?: { password?: string[] };
                 };
 
-                message = payload.errors?.password?.[0] ?? payload.message ?? message;
+                message =
+                    payload.errors?.password?.[0] ?? payload.message ?? message;
             } catch {
                 message = 'The password confirmation failed.';
             }
@@ -456,7 +461,11 @@ export default function TwoFactorSetupModal({
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="border-brand/25 bg-background outline-none focus:outline-none focus-visible:outline-none sm:max-w-md">
                 <DialogHeader className="flex items-center justify-center">
-                    {!passwordConfirmed ? <BrandHeaderIcon /> : <GridScanIcon />}
+                    {!passwordConfirmed ? (
+                        <BrandHeaderIcon />
+                    ) : (
+                        <GridScanIcon />
+                    )}
 
                     {!passwordConfirmed ? (
                         <div className="mb-2 flex items-center gap-2 rounded-full border border-brand/20 bg-brand/5 px-3 py-1">

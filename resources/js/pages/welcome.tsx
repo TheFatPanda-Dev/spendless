@@ -19,7 +19,10 @@ export default function Welcome({
 
                 <header className="absolute inset-x-0 top-0 z-20 p-4 sm:p-8">
                     <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
-                        <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2.5 sm:gap-3"
+                        >
                             <img
                                 src="/images/spendless_logo.png"
                                 alt="SpendLess logo"
@@ -89,7 +92,7 @@ export default function Welcome({
                         className={`mx-auto mt-3 w-full max-w-7xl transition-all duration-200 md:hidden ${
                             isMobileMenuOpen
                                 ? 'translate-y-0 opacity-100'
-                                : '-translate-y-1 opacity-0 pointer-events-none'
+                                : 'pointer-events-none -translate-y-1 opacity-0'
                         }`}
                     >
                         <nav className="flex justify-end">
@@ -98,7 +101,9 @@ export default function Welcome({
                                     <Link
                                         href={dashboard()}
                                         className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
-                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        onClick={() =>
+                                            setIsMobileMenuOpen(false)
+                                        }
                                     >
                                         Dashboard
                                     </Link>
@@ -107,7 +112,9 @@ export default function Welcome({
                                         <Link
                                             href={login()}
                                             className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
-                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            onClick={() =>
+                                                setIsMobileMenuOpen(false)
+                                            }
                                         >
                                             Log in
                                         </Link>
@@ -115,7 +122,9 @@ export default function Welcome({
                                             <Link
                                                 href={register()}
                                                 className="mt-1 block rounded-xl bg-brand px-3 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                onClick={() =>
+                                                    setIsMobileMenuOpen(false)
+                                                }
                                             >
                                                 Register
                                             </Link>
@@ -141,8 +150,8 @@ export default function Welcome({
                         </h1>
 
                         <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-                            Budget smarter, track every movement, and stay in control
-                            with a clean modern money dashboard.
+                            Budget smarter, track every movement, and stay in
+                            control with a clean modern money dashboard.
                         </p>
                     </div>
                 </main>

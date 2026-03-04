@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Two\InvalidStateException;
 
 class GoogleAuthController extends Controller
@@ -16,8 +16,12 @@ class GoogleAuthController extends Controller
     /**
      * Redirect the user to Google's OAuth page.
      */
-    public function redirect(): RedirectResponse
+    public function redirect(Request $request): RedirectResponse
     {
+        if ($request->boolean('popup')) {
+            session()->put('oauth_popup_google', true);
+        }
+
         $callbackUrl = url('/auth/google/callback');
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
@@ -32,8 +36,9 @@ class GoogleAuthController extends Controller
     /**
      * Handle Google callback and authenticate the user.
      */
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse|View
     {
+        $usePopup = $request->boolean('popup') || (bool) $request->session()->pull('oauth_popup_google', false);
         $callbackUrl = url('/auth/google/callback');
 
         try {
@@ -45,6 +50,13 @@ class GoogleAuthController extends Controller
 
             $googleUser = $driver->user();
         } catch (InvalidStateException) {
+            if ($usePopup) {
+                return $this->popupResponse([
+                    'type' => 'error',
+                    'message' => 'Google sign-in expired or host changed. Please try again.',
+                ]);
+            }
+
             return to_route('login')->withErrors([
                 'email' => 'Google sign-in expired or host changed. Please try again from the same browser tab.',
             ]);
@@ -72,7 +84,12 @@ class GoogleAuthController extends Controller
             }
 
             $authenticatedUser->google_id = $googleId;
-            $authenticatedUser->google_avatar = $googleUser->getAvatar();
+            $googleAvatar = $this->resolveGoogleAvatar($googleUser);
+
+            if ($googleAvatar !== null) {
+                $authenticatedUser->google_avatar = $googleAvatar;
+            }
+
             $authenticatedUser->save();
 
             return redirect()->to(route('profile.edit').'#oauth-authentication')
@@ -80,6 +97,7 @@ class GoogleAuthController extends Controller
         }
 
         $googleEmail = (string) $googleUser->getEmail();
+        $googleAvatar = $this->resolveGoogleAvatar($googleUser);
         $googleEmailVerified = true;
 
         if (property_exists($googleUser, 'user')) {
@@ -87,6 +105,13 @@ class GoogleAuthController extends Controller
         }
 
         if ($googleEmail === '' || ! $googleEmailVerified) {
+            if ($usePopup) {
+                return $this->popupResponse([
+                    'type' => 'error',
+                    'message' => 'Your Google account email must be verified before signing in.',
+                ]);
+            }
+
             return to_route('login')->withErrors([
                 'email' => 'Your Google account email must be verified before signing in.',
             ]);
@@ -96,34 +121,59 @@ class GoogleAuthController extends Controller
             ->where('google_id', $googleUser->getId())
             ->orWhere('email', $googleEmail)
             ->first();
-        $created = false;
 
-        if ($user) {
-            if (! $user->google_id) {
-                $user->google_id = $googleUser->getId();
+        if (! $user) {
+            session()->put('oauth_registration_candidate', [
+                'provider' => 'google',
+                'provider_label' => 'Google',
+                'provider_id' => (string) $googleUser->getId(),
+                'email' => $googleEmail,
+                'name' => (string) ($googleUser->getName() ?: 'Google User'),
+                'avatar' => $googleAvatar,
+            ]);
+
+            $message = 'No SpendLess account was found for this Google email.';
+
+            if ($usePopup) {
+                return $this->popupResponse([
+                    'type' => 'prompt',
+                    'provider' => 'Google',
+                    'email' => $googleEmail,
+                ]);
             }
 
-            $user->google_avatar = $googleUser->getAvatar();
-            $user->email_verified_at ??= now();
-            $user->save();
-        } else {
-            $user = User::create([
-                'name' => $googleUser->getName() ?: 'Google User',
-                'email' => $googleEmail,
-                'google_id' => $googleUser->getId(),
-                'google_avatar' => $googleUser->getAvatar(),
-                'email_verified_at' => now(),
-                'password' => Hash::make(Str::random(40)),
-                'password_set_at' => null,
-            ]);
-            $created = true;
+            return to_route('login')
+                ->withErrors(['email' => $message])
+                ->with('error', $message)
+                ->with('oauth_prompt', [
+                    'provider' => 'Google',
+                    'email' => $googleEmail,
+                ]);
         }
+
+        if (! $user->google_id) {
+            $user->google_id = $googleUser->getId();
+        }
+
+        if ($googleAvatar !== null) {
+            $user->google_avatar = $googleAvatar;
+        }
+
+        $user->email_verified_at ??= now();
+        $user->save();
 
         Auth::login($user, remember: true);
 
-        $successMessage = $created ? 'Registration successful' : 'Login successful';
+        if ($usePopup) {
+            $redirectTo = (string) $request->session()->pull('url.intended', route('dashboard', absolute: false));
 
-        return to_route('dashboard')->with('success', $successMessage);
+            return $this->popupResponse([
+                'type' => 'success',
+                'redirect' => $redirectTo,
+            ]);
+        }
+
+        return to_route('dashboard')->with('success', 'Login successful');
     }
 
     /**
@@ -133,7 +183,7 @@ class GoogleAuthController extends Controller
     {
         session()->put('oauth_link_intent', 'google');
 
-        $callbackUrl = url('/auth/google/callback');
+        $callbackUrl = route('google.callback', absolute: true);
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
 
@@ -149,7 +199,7 @@ class GoogleAuthController extends Controller
      */
     public function linkCallback(): RedirectResponse
     {
-        $callbackUrl = url('/auth/google/callback');
+        $callbackUrl = route('google.callback', absolute: true);
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
@@ -181,9 +231,49 @@ class GoogleAuthController extends Controller
         }
 
         $authenticatedUser->google_id = $googleId;
-        $authenticatedUser->google_avatar = $googleUser->getAvatar();
+        $googleAvatar = $this->resolveGoogleAvatar($googleUser);
+
+        if ($googleAvatar !== null) {
+            $authenticatedUser->google_avatar = $googleAvatar;
+        }
+
         $authenticatedUser->save();
 
         return to_route('profile.edit')->with('success', 'Google account linked successfully.');
+    }
+
+    /**
+     * Resolve Google avatar URL from provider payload.
+     */
+    private function resolveGoogleAvatar(object $googleUser): ?string
+    {
+        $avatar = $googleUser->getAvatar();
+
+        if (is_string($avatar) && $avatar !== '') {
+            return $avatar;
+        }
+
+        if (property_exists($googleUser, 'user')) {
+            $picture = Arr::get($googleUser->user, 'picture')
+                ?? Arr::get($googleUser->user, 'avatar_url');
+
+            if (is_string($picture) && $picture !== '') {
+                return $picture;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Return popup completion view with payload.
+     *
+     * @param  array<string, string>  $payload
+     */
+    private function popupResponse(array $payload): View
+    {
+        return view('auth.oauth-popup', [
+            'payload' => $payload,
+        ]);
     }
 }

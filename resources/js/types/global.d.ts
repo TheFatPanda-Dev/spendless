@@ -8,6 +8,10 @@ declare module '@inertiajs/core' {
             flash?: {
                 success?: string;
                 error?: string;
+                oauthPrompt?: {
+                    provider: string;
+                    email: string;
+                };
             };
             sidebarOpen: boolean;
             [key: string]: unknown;

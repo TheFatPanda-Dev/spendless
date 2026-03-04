@@ -32,7 +32,7 @@ class SocialAuthenticationTest extends TestCase
         $response->assertRedirect('https://accounts.google.com/o/oauth2/auth');
     }
 
-    public function test_user_can_register_and_authenticate_with_google()
+    public function test_user_cannot_login_with_google_when_account_does_not_exist()
     {
         app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
         {
@@ -71,13 +71,16 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->get(route('google.callback'));
 
-        $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', [
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
             'email' => 'panda@example.com',
-            'google_id' => 'google-123',
         ]);
-        $response->assertRedirect(route('dashboard', absolute: false));
-        $response->assertSessionHas('success', 'Registration successful');
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHasErrors('email');
+        $response->assertSessionHas('oauth_prompt', [
+            'provider' => 'Google',
+            'email' => 'panda@example.com',
+        ]);
     }
 
     public function test_existing_user_can_login_with_google_using_same_email()
@@ -128,8 +131,347 @@ class SocialAuthenticationTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'google_id' => 'google-789',
+            'google_avatar' => 'https://example.com/avatar-2.png',
         ]);
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_user_cannot_login_with_google_when_account_does_not_exist_even_with_avatar_in_raw_payload(): void
+    {
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            /** @var array<string, mixed> */
+                            public array $user = [
+                                'picture' => 'https://example.com/avatar-from-picture.png',
+                                'email_verified' => true,
+                            ];
+
+                            public function getId(): string
+                            {
+                                return 'google-456';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Picture Panda';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'picture@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return '';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->get(route('google.callback'));
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'picture@example.com',
+        ]);
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHasErrors('email');
+        $response->assertSessionHas('oauth_prompt', [
+            'provider' => 'Google',
+            'email' => 'picture@example.com',
+        ]);
+    }
+
+    public function test_google_popup_callback_returns_prompt_payload_when_account_does_not_exist(): void
+    {
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public function getId(): string
+                            {
+                                return 'google-popup-missing-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Popup Missing User';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'popup-missing@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/popup-missing-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->withSession([
+            'oauth_popup_google' => true,
+        ])->get(route('google.callback'));
+
+        $response->assertOk();
+        $response->assertViewIs('auth.oauth-popup');
+        $response->assertViewHas('payload', [
+            'type' => 'prompt',
+            'provider' => 'Google',
+            'email' => 'popup-missing@example.com',
+        ]);
+        $response->assertSessionHas('oauth_registration_candidate');
+    }
+
+    public function test_google_popup_callback_returns_success_payload_for_existing_user(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'popup-existing@example.com',
+            'google_id' => null,
+        ]);
+
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public function getId(): string
+                            {
+                                return 'google-popup-existing-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Popup Existing User';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'popup-existing@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/popup-existing-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->withSession([
+            'oauth_popup_google' => true,
+        ])->get(route('google.callback'));
+
+        $response->assertOk();
+        $response->assertViewIs('auth.oauth-popup');
+        $response->assertViewHas('payload', [
+            'type' => 'success',
+            'redirect' => route('dashboard', absolute: false),
+        ]);
+        $this->assertAuthenticatedAs($user->fresh());
+    }
+
+    public function test_user_cannot_login_with_github_when_account_does_not_exist(): void
+    {
+        Http::fake([
+            'https://api.github.com/user/emails' => Http::response([
+                [
+                    'email' => 'new-github-user@example.com',
+                    'primary' => true,
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public string $token = 'fake-github-token';
+
+                            public function getId(): string
+                            {
+                                return 'github-new-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'New GitHub User';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'new-github-user@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/new-github-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->get(route('github.callback'));
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'new-github-user@example.com',
+        ]);
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHasErrors('email');
+        $response->assertSessionHas('oauth_prompt', [
+            'provider' => 'GitHub',
+            'email' => 'new-github-user@example.com',
+        ]);
+    }
+
+    public function test_user_can_confirm_oauth_prompt_and_register_with_google(): void
+    {
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public function getId(): string
+                            {
+                                return 'google-prompt-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Prompt Panda';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'prompt-google@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/prompt-google-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $this->get(route('google.callback'));
+
+        $response = $this->post(route('oauth.register'));
+
+        $response->assertRedirect(route('profile.edit', absolute: false));
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', [
+            'email' => 'prompt-google@example.com',
+            'google_id' => 'google-prompt-1',
+            'google_avatar' => 'https://example.com/prompt-google-avatar.png',
+        ]);
+    }
+
+    public function test_user_can_confirm_oauth_prompt_and_register_with_github(): void
+    {
+        Http::fake([
+            'https://api.github.com/user/emails' => Http::response([
+                [
+                    'email' => 'prompt-github@example.com',
+                    'primary' => true,
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public string $token = 'fake-github-token';
+
+                            public function getId(): string
+                            {
+                                return 'github-prompt-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Prompt GitHub User';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'prompt-github@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/prompt-github-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $this->get(route('github.callback'));
+
+        $response = $this->post(route('oauth.register'));
+
+        $response->assertRedirect(route('profile.edit', absolute: false));
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', [
+            'email' => 'prompt-github@example.com',
+            'github_id' => 'github-prompt-1',
+            'github_avatar' => 'https://example.com/prompt-github-avatar.png',
+        ]);
     }
 
     public function test_authenticated_user_can_link_google_account_from_profile_settings(): void

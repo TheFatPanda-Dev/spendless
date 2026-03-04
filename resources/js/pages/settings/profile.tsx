@@ -23,6 +23,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Hint } from '@/components/ui/hint';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
@@ -31,6 +32,8 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils';
 import { edit } from '@/routes/profile';
+import { redirect as githubSettingsRedirect } from '@/routes/settings/github';
+import { redirect as googleSettingsRedirect } from '@/routes/settings/google';
 import { disable, enable } from '@/routes/two-factor';
 import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
@@ -77,10 +80,14 @@ export default function Profile({
     const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
     const [oauthState, setOauthState] = useState(oauth);
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
-    const [requireTwoFactorPasswordStep, setRequireTwoFactorPasswordStep] = useState<boolean>(false);
-    const [isDisableTwoFactorModalOpen, setIsDisableTwoFactorModalOpen] = useState(false);
-    const [disableTwoFactorPassword, setDisableTwoFactorPassword] = useState('');
-    const [disableTwoFactorPasswordError, setDisableTwoFactorPasswordError] = useState<string | undefined>(undefined);
+    const [requireTwoFactorPasswordStep, setRequireTwoFactorPasswordStep] =
+        useState<boolean>(false);
+    const [isDisableTwoFactorModalOpen, setIsDisableTwoFactorModalOpen] =
+        useState(false);
+    const [disableTwoFactorPassword, setDisableTwoFactorPassword] =
+        useState('');
+    const [disableTwoFactorPasswordError, setDisableTwoFactorPasswordError] =
+        useState<string | undefined>(undefined);
     const [isDisablingTwoFactor, setIsDisablingTwoFactor] = useState(false);
     const {
         qrCodeSvg,
@@ -94,17 +101,19 @@ export default function Profile({
     const canUnlinkGoogle = password.hasPasswordSet || oauthState.githubLinked;
     const canUnlinkGithub = password.hasPasswordSet || oauthState.googleLinked;
     const canEnableTwoFactor = password.hasPasswordSet;
-    const passwordsMatch = newPasswordValue !== ''
-        && confirmPasswordValue !== ''
-        && newPasswordValue === confirmPasswordValue;
-    const passwordsMismatch = newPasswordValue !== ''
-        && confirmPasswordValue !== ''
-        && newPasswordValue !== confirmPasswordValue;
+    const passwordsMatch =
+        newPasswordValue !== '' &&
+        confirmPasswordValue !== '' &&
+        newPasswordValue === confirmPasswordValue;
+    const passwordsMismatch =
+        newPasswordValue !== '' &&
+        confirmPasswordValue !== '' &&
+        newPasswordValue !== confirmPasswordValue;
     const passwordMatchBorderClass = passwordsMatch
         ? 'border-2 border-success focus-visible:ring-success/40'
         : passwordsMismatch
-            ? 'border-2 border-destructive focus-visible:ring-destructive/40'
-            : '';
+          ? 'border-2 border-destructive focus-visible:ring-destructive/40'
+          : '';
     const passwordChecks = useMemo(
         () => [
             {
@@ -133,22 +142,27 @@ export default function Profile({
 
     const getCookieValue = (name: string): string | undefined => {
         const match = document.cookie.match(
-            new RegExp(`(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`),
+            new RegExp(
+                `(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`,
+            ),
         );
 
         return match ? decodeURIComponent(match[1]) : undefined;
     };
 
     const getCsrfData = (): { csrfToken?: string; xsrfToken?: string } => {
-        const csrfToken = document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? undefined;
+        const csrfToken =
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? undefined;
         const xsrfToken = getCookieValue('XSRF-TOKEN');
 
         return { csrfToken, xsrfToken };
     };
 
-    const confirmPasswordForSensitiveAction = async (passwordToConfirm: string): Promise<string | null> => {
+    const confirmPasswordForSensitiveAction = async (
+        passwordToConfirm: string,
+    ): Promise<string | null> => {
         const { csrfToken, xsrfToken } = getCsrfData();
         const payload = new URLSearchParams();
 
@@ -163,7 +177,8 @@ export default function Profile({
             credentials: 'same-origin',
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Content-Type':
+                    'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-Requested-With': 'XMLHttpRequest',
                 ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
                 ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
@@ -181,13 +196,19 @@ export default function Profile({
                 errors?: { password?: string[] };
             };
 
-            return payload.errors?.password?.[0] ?? payload.message ?? 'Password confirmation failed.';
+            return (
+                payload.errors?.password?.[0] ??
+                payload.message ??
+                'Password confirmation failed.'
+            );
         } catch {
             return 'Password confirmation failed.';
         }
     };
 
-    const handleDisableTwoFactor = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    const handleDisableTwoFactor = async (
+        event: React.FormEvent<HTMLFormElement>,
+    ): Promise<void> => {
         event.preventDefault();
 
         if (isDisablingTwoFactor) {
@@ -197,7 +218,9 @@ export default function Profile({
         setDisableTwoFactorPasswordError(undefined);
         setIsDisablingTwoFactor(true);
 
-        const confirmationError = await confirmPasswordForSensitiveAction(disableTwoFactorPassword);
+        const confirmationError = await confirmPasswordForSensitiveAction(
+            disableTwoFactorPassword,
+        );
 
         if (confirmationError) {
             setDisableTwoFactorPasswordError(confirmationError);
@@ -221,7 +244,8 @@ export default function Profile({
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'application/json',
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Content-Type':
+                        'application/x-www-form-urlencoded; charset=UTF-8',
                     'X-Requested-With': 'XMLHttpRequest',
                     ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
                     ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
@@ -230,7 +254,9 @@ export default function Profile({
             });
 
             if (!response.ok) {
-                setDisableTwoFactorPasswordError('Unable to disable two-factor authentication. Please try again.');
+                setDisableTwoFactorPasswordError(
+                    'Unable to disable two-factor authentication. Please try again.',
+                );
 
                 return;
             }
@@ -251,7 +277,10 @@ export default function Profile({
             <h1 className="sr-only">Profile settings</h1>
 
             <SettingsLayout>
-                <div id="oauth-authentication" className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                <div
+                    id="oauth-authentication"
+                    className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5"
+                >
                     <Heading
                         variant="small"
                         title="Profile information"
@@ -259,7 +288,8 @@ export default function Profile({
                     />
 
                     <Form
-                        {...ProfileController.update.form()}
+                        action={ProfileController.update.url()}
+                        method="post"
                         options={{
                             preserveScroll: true,
                         }}
@@ -267,6 +297,12 @@ export default function Profile({
                     >
                         {({ processing, recentlySuccessful, errors }) => (
                             <>
+                                <input
+                                    type="hidden"
+                                    name="_method"
+                                    value="patch"
+                                />
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="name">Name</Label>
 
@@ -287,7 +323,9 @@ export default function Profile({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="preferred_name">What should we call you?</Label>
+                                    <Label htmlFor="preferred_name">
+                                        What should we call you?
+                                    </Label>
 
                                     <Input
                                         id="preferred_name"
@@ -299,7 +337,8 @@ export default function Profile({
                                     />
 
                                     <p className="text-xs text-muted-foreground">
-                                        If set, this name is shown in the app. Otherwise, we use your full name.
+                                        If set, this name is shown in the app.
+                                        Otherwise, we use your full name.
                                     </p>
 
                                     <InputError
@@ -324,7 +363,11 @@ export default function Profile({
 
                                     <button
                                         type="button"
-                                        onClick={() => setIsChangingEmail((value) => !value)}
+                                        onClick={() =>
+                                            setIsChangingEmail(
+                                                (value) => !value,
+                                            )
+                                        }
                                         className="w-fit text-sm font-medium text-foreground underline underline-offset-4"
                                     >
                                         Change email address
@@ -332,7 +375,9 @@ export default function Profile({
 
                                     {isChangingEmail ? (
                                         <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
-                                            <Label htmlFor="new_email">New email address</Label>
+                                            <Label htmlFor="new_email">
+                                                New email address
+                                            </Label>
                                             <Input
                                                 id="new_email"
                                                 type="email"
@@ -341,7 +386,9 @@ export default function Profile({
                                                 placeholder="new-email@example.com"
                                             />
                                             <p className="text-xs text-muted-foreground">
-                                                Your current email is updated only after you confirm the link we send to the new address.
+                                                Your current email is updated
+                                                only after you confirm the link
+                                                we send to the new address.
                                             </p>
                                             <InputError
                                                 className="mt-1"
@@ -367,7 +414,10 @@ export default function Profile({
 
                                     <div className="flex items-center gap-4">
                                         <Avatar className="size-12 border border-brand/30">
-                                            <AvatarImage src={auth.user.avatar} alt={displayName} />
+                                            <AvatarImage
+                                                src={auth.user.avatar}
+                                                alt={displayName}
+                                            />
                                             <AvatarFallback className="bg-brand/10 text-foreground">
                                                 {getInitials(displayName)}
                                             </AvatarFallback>
@@ -457,7 +507,8 @@ export default function Profile({
                         </p>
                     ) : (
                         <p className="text-xs text-muted-foreground">
-                            Password not set yet. You signed up with OAuth. Set a password to enable email and password sign-in.
+                            Password not set yet. You signed up with OAuth. Set
+                            a password to enable email and password sign-in.
                         </p>
                     )}
 
@@ -466,7 +517,9 @@ export default function Profile({
                         onClick={() => setIsChangingPassword((value) => !value)}
                         className="w-fit text-sm font-medium text-foreground underline underline-offset-4"
                     >
-                        {password.hasPasswordSet ? 'Change password' : 'Set password'}
+                        {password.hasPasswordSet
+                            ? 'Change password'
+                            : 'Set password'}
                     </button>
 
                     {isChangingPassword ? (
@@ -493,7 +546,9 @@ export default function Profile({
                                 <>
                                     {password.hasPasswordSet ? (
                                         <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
-                                            <Label htmlFor="current_password">Current password</Label>
+                                            <Label htmlFor="current_password">
+                                                Current password
+                                            </Label>
                                             <Input
                                                 id="current_password"
                                                 name="current_password"
@@ -501,34 +556,65 @@ export default function Profile({
                                                 autoComplete="current-password"
                                                 placeholder="Current password"
                                             />
-                                            <InputError message={errors.current_password} />
+                                            <InputError
+                                                message={
+                                                    errors.current_password
+                                                }
+                                            />
                                         </div>
                                     ) : null}
 
                                     <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
-                                        <Label htmlFor="password">New password</Label>
+                                        <Label htmlFor="password">
+                                            New password
+                                        </Label>
                                         <div className="relative">
                                             <Input
                                                 id="password"
                                                 name="password"
-                                                type={isPasswordVisible ? 'text' : 'password'}
+                                                type={
+                                                    isPasswordVisible
+                                                        ? 'text'
+                                                        : 'password'
+                                                }
                                                 autoComplete="new-password"
                                                 placeholder="New password"
                                                 value={newPasswordValue}
-                                                onChange={(event) => setNewPasswordValue(event.target.value)}
-                                                className={cn('pr-10', passwordMatchBorderClass)}
+                                                onChange={(event) =>
+                                                    setNewPasswordValue(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                className={cn(
+                                                    'pr-10',
+                                                    passwordMatchBorderClass,
+                                                )}
                                             />
                                             <button
                                                 type="button"
                                                 tabIndex={-1}
-                                                onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                                onClick={() =>
+                                                    setIsPasswordVisible(
+                                                        (visible) => !visible,
+                                                    )
+                                                }
                                                 className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
-                                                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                                                aria-label={
+                                                    isPasswordVisible
+                                                        ? 'Hide password'
+                                                        : 'Show password'
+                                                }
                                             >
                                                 {isPasswordVisible ? (
-                                                    <EyeOff className="size-4" aria-hidden="true" />
+                                                    <EyeOff
+                                                        className="size-4"
+                                                        aria-hidden="true"
+                                                    />
                                                 ) : (
-                                                    <Eye className="size-4" aria-hidden="true" />
+                                                    <Eye
+                                                        className="size-4"
+                                                        aria-hidden="true"
+                                                    />
                                                 )}
                                             </button>
                                         </div>
@@ -536,7 +622,11 @@ export default function Profile({
                                             {passwordChecks.map((check) => (
                                                 <li
                                                     key={check.label}
-                                                    className={check.met ? 'text-success' : 'text-destructive'}
+                                                    className={
+                                                        check.met
+                                                            ? 'text-success'
+                                                            : 'text-destructive'
+                                                    }
                                                 >
                                                     {check.label}
                                                 </li>
@@ -546,36 +636,66 @@ export default function Profile({
                                     </div>
 
                                     <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
-                                        <Label htmlFor="password_confirmation">Confirm password</Label>
+                                        <Label htmlFor="password_confirmation">
+                                            Confirm password
+                                        </Label>
                                         <div className="relative">
                                             <Input
                                                 id="password_confirmation"
                                                 name="password_confirmation"
-                                                type={isPasswordVisible ? 'text' : 'password'}
+                                                type={
+                                                    isPasswordVisible
+                                                        ? 'text'
+                                                        : 'password'
+                                                }
                                                 autoComplete="new-password"
                                                 placeholder="Confirm password"
                                                 value={confirmPasswordValue}
-                                                onChange={(event) => setConfirmPasswordValue(event.target.value)}
-                                                className={cn('pr-10', passwordMatchBorderClass)}
+                                                onChange={(event) =>
+                                                    setConfirmPasswordValue(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                className={cn(
+                                                    'pr-10',
+                                                    passwordMatchBorderClass,
+                                                )}
                                             />
                                             <button
                                                 type="button"
                                                 tabIndex={-1}
-                                                onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                                onClick={() =>
+                                                    setIsPasswordVisible(
+                                                        (visible) => !visible,
+                                                    )
+                                                }
                                                 className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
-                                                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                                                aria-label={
+                                                    isPasswordVisible
+                                                        ? 'Hide password'
+                                                        : 'Show password'
+                                                }
                                             >
                                                 {isPasswordVisible ? (
-                                                    <EyeOff className="size-4" aria-hidden="true" />
+                                                    <EyeOff
+                                                        className="size-4"
+                                                        aria-hidden="true"
+                                                    />
                                                 ) : (
-                                                    <Eye className="size-4" aria-hidden="true" />
+                                                    <Eye
+                                                        className="size-4"
+                                                        aria-hidden="true"
+                                                    />
                                                 )}
                                             </button>
                                         </div>
                                         <InputError
                                             message={
-                                                typeof errors.password_confirmation === 'string'
-                                                    && /match/i.test(errors.password_confirmation)
+                                                typeof errors.password_confirmation ===
+                                                    'string' &&
+                                                /match/i.test(
+                                                    errors.password_confirmation,
+                                                )
                                                     ? undefined
                                                     : errors.password_confirmation
                                             }
@@ -583,7 +703,9 @@ export default function Profile({
                                     </div>
 
                                     <div className="flex items-center gap-4">
-                                        <Button disabled={processing}>Save password</Button>
+                                        <Button disabled={processing}>
+                                            Save password
+                                        </Button>
 
                                         <Transition
                                             show={recentlySuccessful}
@@ -592,7 +714,9 @@ export default function Profile({
                                             leave="transition ease-in-out"
                                             leaveTo="opacity-0"
                                         >
-                                            <p className="text-sm text-muted-foreground">Saved</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Saved
+                                            </p>
                                         </Transition>
                                     </div>
                                 </>
@@ -611,17 +735,25 @@ export default function Profile({
                     <div className="space-y-3">
                         <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p className="text-sm font-medium text-foreground">Google</p>
-                                <p className="text-xs text-muted-foreground">Use your Google account to sign in.</p>
+                                <p className="text-sm font-medium text-foreground">
+                                    Google
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Use your Google account to sign in.
+                                </p>
                             </div>
 
                             <div className="flex items-center gap-3">
                                 <span
-                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauthState.googleLinked
-                                        ? 'bg-brand/15 text-brand'
-                                        : 'bg-muted text-muted-foreground'}`}
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                        oauthState.googleLinked
+                                            ? 'bg-brand/15 text-brand'
+                                            : 'bg-muted text-muted-foreground'
+                                    }`}
                                 >
-                                    {oauthState.googleLinked ? 'Connected' : 'Not connected'}
+                                    {oauthState.googleLinked
+                                        ? 'Connected'
+                                        : 'Not connected'}
                                 </span>
 
                                 {oauthState.googleLinked ? (
@@ -629,20 +761,34 @@ export default function Profile({
                                         <Button
                                             variant="outline"
                                             type="button"
-                                            onClick={() => router.delete('/settings/oauth/google', {
-                                                preserveScroll: true,
-                                                preserveState: true,
-                                                onSuccess: (page) => {
-                                                    const flash = page.props.flash as { error?: string } | undefined;
+                                            onClick={() =>
+                                                router.delete(
+                                                    '/settings/oauth/google',
+                                                    {
+                                                        preserveScroll: true,
+                                                        preserveState: true,
+                                                        onSuccess: (page) => {
+                                                            const flash = page
+                                                                .props.flash as
+                                                                | {
+                                                                      error?: string;
+                                                                  }
+                                                                | undefined;
 
-                                                    if (!flash?.error) {
-                                                        setOauthState((current) => ({
-                                                            ...current,
-                                                            googleLinked: false,
-                                                        }));
-                                                    }
-                                                },
-                                            })}
+                                                            if (!flash?.error) {
+                                                                setOauthState(
+                                                                    (
+                                                                        current,
+                                                                    ) => ({
+                                                                        ...current,
+                                                                        googleLinked: false,
+                                                                    }),
+                                                                );
+                                                            }
+                                                        },
+                                                    },
+                                                )
+                                            }
                                         >
                                             Unlink
                                         </Button>
@@ -654,7 +800,11 @@ export default function Profile({
                                 ) : (
                                     <Button
                                         type="button"
-                                        onClick={() => window.location.assign('/settings/oauth/google/redirect')}
+                                        onClick={() =>
+                                            window.location.assign(
+                                                googleSettingsRedirect().url,
+                                            )
+                                        }
                                     >
                                         Link Google
                                     </Button>
@@ -663,24 +813,34 @@ export default function Profile({
                         </div>
 
                         {oauthState.googleLinked && !canUnlinkGoogle ? (
-                            <p className="-mt-1 text-xs text-muted-foreground">
-                                Set a password before disconnecting Google. It is your only sign-in method.
+                            <p className="-mt-1 inline-block w-fit rounded-md border border-yellow-300/40 bg-yellow-100/40 px-2.5 py-2 text-xs text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/6 dark:text-yellow-300">
+                                Password not set. Set a password before
+                                disconnecting Google. It is currently your only
+                                sign-in method.
                             </p>
                         ) : null}
 
                         <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p className="text-sm font-medium text-foreground">GitHub</p>
-                                <p className="text-xs text-muted-foreground">Use your GitHub account to sign in.</p>
+                                <p className="text-sm font-medium text-foreground">
+                                    GitHub
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Use your GitHub account to sign in.
+                                </p>
                             </div>
 
                             <div className="flex items-center gap-3">
                                 <span
-                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${oauthState.githubLinked
-                                        ? 'bg-brand/15 text-brand'
-                                        : 'bg-muted text-muted-foreground'}`}
+                                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                        oauthState.githubLinked
+                                            ? 'bg-brand/15 text-brand'
+                                            : 'bg-muted text-muted-foreground'
+                                    }`}
                                 >
-                                    {oauthState.githubLinked ? 'Connected' : 'Not connected'}
+                                    {oauthState.githubLinked
+                                        ? 'Connected'
+                                        : 'Not connected'}
                                 </span>
 
                                 {oauthState.githubLinked ? (
@@ -688,20 +848,34 @@ export default function Profile({
                                         <Button
                                             variant="outline"
                                             type="button"
-                                            onClick={() => router.delete('/settings/oauth/github', {
-                                                preserveScroll: true,
-                                                preserveState: true,
-                                                onSuccess: (page) => {
-                                                    const flash = page.props.flash as { error?: string } | undefined;
+                                            onClick={() =>
+                                                router.delete(
+                                                    '/settings/oauth/github',
+                                                    {
+                                                        preserveScroll: true,
+                                                        preserveState: true,
+                                                        onSuccess: (page) => {
+                                                            const flash = page
+                                                                .props.flash as
+                                                                | {
+                                                                      error?: string;
+                                                                  }
+                                                                | undefined;
 
-                                                    if (!flash?.error) {
-                                                        setOauthState((current) => ({
-                                                            ...current,
-                                                            githubLinked: false,
-                                                        }));
-                                                    }
-                                                },
-                                            })}
+                                                            if (!flash?.error) {
+                                                                setOauthState(
+                                                                    (
+                                                                        current,
+                                                                    ) => ({
+                                                                        ...current,
+                                                                        githubLinked: false,
+                                                                    }),
+                                                                );
+                                                            }
+                                                        },
+                                                    },
+                                                )
+                                            }
                                         >
                                             Unlink
                                         </Button>
@@ -713,7 +887,11 @@ export default function Profile({
                                 ) : (
                                     <Button
                                         type="button"
-                                        onClick={() => window.location.assign('/settings/oauth/github/redirect')}
+                                        onClick={() =>
+                                            window.location.assign(
+                                                githubSettingsRedirect().url,
+                                            )
+                                        }
                                     >
                                         Link GitHub
                                     </Button>
@@ -722,8 +900,10 @@ export default function Profile({
                         </div>
 
                         {oauthState.githubLinked && !canUnlinkGithub ? (
-                            <p className="-mt-1 text-xs text-muted-foreground">
-                                Set a password before disconnecting GitHub. It is your only sign-in method.
+                            <p className="-mt-1 inline-block w-fit rounded-md border border-yellow-300/40 bg-yellow-100/40 px-2.5 py-2 text-xs text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/6 dark:text-yellow-300">
+                                Password not set. Set a password before
+                                disconnecting GitHub. It is currently your only
+                                sign-in method.
                             </p>
                         ) : null}
                     </div>
@@ -738,9 +918,16 @@ export default function Profile({
 
                     {twoFactor.enabled ? (
                         <div className="flex flex-col items-start justify-start space-y-4">
-                            <Badge variant="default" className="bg-brand text-brand-foreground">Enabled</Badge>
+                            <Badge
+                                variant="default"
+                                className="bg-brand text-brand-foreground"
+                            >
+                                Enabled
+                            </Badge>
                             <p className="text-muted-foreground">
-                                With two-factor authentication enabled, you will be prompted for a secure pin during login from your authenticator app.
+                                With two-factor authentication enabled, you will
+                                be prompted for a secure pin during login from
+                                your authenticator app.
                             </p>
 
                             <TwoFactorRecoveryCodes
@@ -763,9 +950,15 @@ export default function Profile({
                         </div>
                     ) : (
                         <div className="flex flex-col items-start justify-start space-y-4">
-                            <Badge variant="outline" className="border-brand/40 bg-brand/10 text-foreground">Disabled</Badge>
+                            <Badge
+                                variant="outline"
+                                className="border-brand/40 bg-brand/10 text-foreground"
+                            >
+                                Disabled
+                            </Badge>
                             <p className="text-muted-foreground">
-                                When you enable two-factor authentication, you will be prompted for a secure pin during login.
+                                When you enable two-factor authentication, you
+                                will be prompted for a secure pin during login.
                             </p>
 
                             {canEnableTwoFactor ? (
@@ -781,17 +974,30 @@ export default function Profile({
                                     Enable 2FA
                                 </Button>
                             ) : (
-                                <Button type="button" variant="outline" disabled>
-                                    <ShieldCheck />
-                                    Enable 2FA
-                                </Button>
-                            )}
+                                <>
+                                    <div className="group relative inline-flex">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled
+                                        >
+                                            <ShieldCheck />
+                                            Enable 2FA
+                                        </Button>
 
-                            {!canEnableTwoFactor ? (
-                                <p className="-mt-1 rounded-md border border-yellow-300/40 bg-yellow-100/40 px-2.5 py-2 text-xs text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/6 dark:text-yellow-300">
-                                    Password not set. Set a password before enabling two-factor authentication.
-                                </p>
-                            ) : null}
+                                        <Hint className="pointer-events-none absolute top-1/2 left-full z-10 ml-2 hidden w-max -translate-y-1/2 md:group-hover:inline-block">
+                                            Password not set. Set a password
+                                            before enabling two-factor
+                                            authentication.
+                                        </Hint>
+                                    </div>
+
+                                    <Hint className="mt-2 md:hidden">
+                                        Password not set. Set a password before
+                                        enabling two-factor authentication.
+                                    </Hint>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -799,19 +1005,31 @@ export default function Profile({
                         isOpen={showSetupModal}
                         onClose={() => setShowSetupModal(false)}
                         requirePasswordStep={requireTwoFactorPasswordStep}
-                        onPasswordConfirmed={() => new Promise<void>((resolve, reject) => {
-                            router.post(enable.url(), {}, {
-                                preserveScroll: true,
-                                preserveState: true,
-                                onSuccess: () => {
-                                    setRequireTwoFactorPasswordStep(false);
-                                    resolve();
-                                },
-                                onError: () => {
-                                    reject(new Error('Failed to enable two-factor authentication.'));
-                                },
-                            });
-                        })}
+                        onPasswordConfirmed={() =>
+                            new Promise<void>((resolve, reject) => {
+                                router.post(
+                                    enable.url(),
+                                    {},
+                                    {
+                                        preserveScroll: true,
+                                        preserveState: true,
+                                        onSuccess: () => {
+                                            setRequireTwoFactorPasswordStep(
+                                                false,
+                                            );
+                                            resolve();
+                                        },
+                                        onError: () => {
+                                            reject(
+                                                new Error(
+                                                    'Failed to enable two-factor authentication.',
+                                                ),
+                                            );
+                                        },
+                                    },
+                                );
+                            })
+                        }
                         requiresConfirmation={twoFactor.requiresConfirmation}
                         twoFactorEnabled={twoFactor.enabled}
                         qrCodeSvg={qrCodeSvg}
@@ -861,18 +1079,23 @@ export default function Profile({
                                 processing={isDisablingTwoFactor}
                                 submitLabel="Disable 2FA"
                                 submitVariant="destructive"
-                                submitDisabled={isDisablingTwoFactor || disableTwoFactorPassword.trim() === ''}
+                                submitDisabled={
+                                    isDisablingTwoFactor ||
+                                    disableTwoFactorPassword.trim() === ''
+                                }
                                 description={DISABLE_2FA_PASSWORD_DESCRIPTION}
                                 passwordId="disable_two_factor_password"
                                 autoFocus
                                 cancelLabel="Cancel"
-                                onCancel={() => setIsDisableTwoFactorModalOpen(false)}
+                                onCancel={() =>
+                                    setIsDisableTwoFactorModalOpen(false)
+                                }
                             />
                         </DialogContent>
                     </Dialog>
                 </div>
 
-                <DeleteUser />
+                <DeleteUser hasPasswordSet={password.hasPasswordSet} />
             </SettingsLayout>
         </AppLayout>
     );

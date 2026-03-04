@@ -1,13 +1,10 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Eye, EyeOff, Github } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -68,7 +65,7 @@ export default function Register() {
                                 className="w-full"
                                 asChild
                             >
-                                <Link href={googleRedirect()} tabIndex={1}>
+                                <a href={googleRedirect().url} tabIndex={1}>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 24 24"
@@ -81,7 +78,7 @@ export default function Register() {
                                         />
                                     </svg>
                                     Continue with Google
-                                </Link>
+                                </a>
                             </Button>
 
                             <Button
@@ -90,15 +87,26 @@ export default function Register() {
                                 className="w-full"
                                 asChild
                             >
-                                <Link href={githubRedirect()} tabIndex={2}>
-                                    <Github className="mr-2 size-4" aria-hidden="true" />
+                                <a href={githubRedirect().url} tabIndex={2}>
+                                    <Github
+                                        className="mr-2 size-4"
+                                        aria-hidden="true"
+                                    />
                                     Continue with GitHub
-                                </Link>
+                                </a>
                             </Button>
+
+                            <p className="rounded-md border border-yellow-300/40 bg-yellow-100/40 px-2.5 py-2 text-xs text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/6 dark:text-yellow-300">
+                                OAuth sign-in is for existing accounts. Create
+                                your account below, then link Google or GitHub
+                                from Profile settings.
+                            </p>
                         </div>
 
-                        <div className="relative text-center text-xs uppercase text-muted-foreground">
-                            <span className="bg-card px-2">or continue with manual registration</span>
+                        <div className="relative text-center text-xs text-muted-foreground uppercase">
+                            <span className="bg-card px-2">
+                                or continue with manual registration
+                            </span>
                             <div className="absolute top-1/2 -z-10 w-full border-t" />
                         </div>
 
