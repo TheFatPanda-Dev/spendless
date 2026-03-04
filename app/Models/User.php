@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -21,13 +22,24 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'nickname',
+        'preferred_name',
         'email',
         'google_id',
         'google_avatar',
         'github_id',
         'github_avatar',
+        'avatar_path',
         'password',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var list<string>
+     */
+    protected $appends = [
+        'avatar',
+        'display_name',
     ];
 
     /**
@@ -58,6 +70,28 @@ class User extends Authenticatable
 
     public function bankConnections(): HasMany
     {
-        return $this->hasMany(BankConnection::class);
+        return $this->hasMany(\App\Models\BankConnection::class);
+    }
+
+    public function getAvatarAttribute(): ?string
+    {
+        if ($this->avatar_path) {
+            return Storage::url($this->avatar_path);
+        }
+
+        if ($this->google_avatar) {
+            return $this->google_avatar;
+        }
+
+        if ($this->github_avatar) {
+            return $this->github_avatar;
+        }
+
+        return null;
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->preferred_name ?: $this->name;
     }
 }

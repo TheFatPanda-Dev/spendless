@@ -21,7 +21,7 @@ export default function Appearance() {
             <h1 className="sr-only">Appearance settings</h1>
 
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
                     <Heading
                         variant="small"
                         title="Appearance settings"

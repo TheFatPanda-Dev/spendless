@@ -64,12 +64,6 @@ class FortifyServiceProvider extends ServiceProvider
                 ->whereRaw('LOWER(email) = ?', [$identifier])
                 ->first();
 
-            if ($user === null) {
-                $user = User::query()
-                    ->whereRaw('LOWER(nickname) = ?', [$identifier])
-                    ->first();
-            }
-
             if ($user && Hash::check($request->string('password')->toString(), $user->password)) {
                 return $user;
             }
@@ -119,7 +113,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });

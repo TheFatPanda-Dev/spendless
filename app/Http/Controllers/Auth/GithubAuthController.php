@@ -77,7 +77,6 @@ class GithubAuthController extends Controller
         } else {
             $user = User::create([
                 'name' => $githubUser->getName() ?: 'GitHub User',
-                'nickname' => $this->generateUniqueNickname($githubEmail),
                 'email' => $githubEmail,
                 'github_id' => (string) $githubUser->getId(),
                 'github_avatar' => $githubUser->getAvatar(),
@@ -135,28 +134,5 @@ class GithubAuthController extends Controller
         }
 
         return null;
-    }
-
-    /**
-     * Generate a unique nickname for social registrations.
-     */
-    private function generateUniqueNickname(string $email): string
-    {
-        $emailLocalPart = Str::before($email, '@');
-        $base = Str::lower((string) Str::of($emailLocalPart)->replaceMatches('/[^A-Za-z0-9_]/', ''));
-
-        if ($base === '') {
-            $base = 'user';
-        }
-
-        $nickname = $base;
-        $suffix = 1;
-
-        while (User::query()->where('nickname', $nickname)->exists()) {
-            $nickname = $base.$suffix;
-            $suffix++;
-        }
-
-        return $nickname;
     }
 }

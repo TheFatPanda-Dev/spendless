@@ -49,10 +49,10 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                 description="Manage your profile and account settings"
             />
 
-            <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
+            <div className="mt-6 flex flex-col gap-6 rounded-2xl border border-brand/25 bg-brand/5 p-4 sm:p-6 lg:flex-row lg:gap-10">
+                <aside className="w-full lg:w-56">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0"
+                        className="flex flex-col space-y-1 space-x-0 rounded-xl border border-brand/20 bg-background/70 p-2"
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => (
@@ -61,8 +61,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentOrParentUrl(item.href),
+                                className={cn('w-full justify-start rounded-lg text-foreground/90 hover:bg-brand/10 hover:text-foreground', {
+                                    'bg-brand/15 text-foreground': isCurrentOrParentUrl(item.href),
                                 })}
                             >
                                 <Link href={item.href}>
@@ -76,10 +76,10 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     </nav>
                 </aside>
 
-                <Separator className="my-6 lg:hidden" />
+                <Separator className="my-1 border-brand/25 lg:hidden" />
 
-                <div className="flex-1 md:max-w-2xl">
-                    <section className="max-w-xl space-y-12">
+                <div className="flex-1 md:max-w-3xl">
+                    <section className="space-y-6 rounded-xl border border-brand/20 bg-background/80 p-4 sm:p-6">
                         {children}
                     </section>
                 </div>

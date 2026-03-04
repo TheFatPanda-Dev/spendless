@@ -47,7 +47,7 @@ export default function TwoFactor({
             <h1 className="sr-only">Two-factor authentication settings</h1>
 
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
                     <Heading
                         variant="small"
                         title="Two-factor authentication"
@@ -55,7 +55,7 @@ export default function TwoFactor({
                     />
                     {twoFactorEnabled ? (
                         <div className="flex flex-col items-start justify-start space-y-4">
-                            <Badge variant="default">Enabled</Badge>
+                            <Badge variant="default" className="bg-brand text-brand-foreground">Enabled</Badge>
                             <p className="text-muted-foreground">
                                 With two-factor authentication enabled, you will
                                 be prompted for a secure, random pin during
@@ -85,7 +85,7 @@ export default function TwoFactor({
                         </div>
                     ) : (
                         <div className="flex flex-col items-start justify-start space-y-4">
-                            <Badge variant="destructive">Disabled</Badge>
+                            <Badge variant="outline" className="border-brand/40 bg-brand/10 text-foreground">Disabled</Badge>
                             <p className="text-muted-foreground">
                                 When you enable two-factor authentication, you
                                 will be prompted for a secure pin during login.

@@ -25,8 +25,8 @@ import { confirm } from '@/routes/two-factor';
 
 function GridScanIcon() {
     return (
-        <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-            <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
+        <div className="mb-3 rounded-full border border-brand/25 bg-brand/5 p-0.5 shadow-sm">
+            <div className="relative overflow-hidden rounded-full border border-brand/25 bg-background p-2.5">
                 <div className="absolute inset-0 grid grid-cols-5 opacity-50">
                     {Array.from({ length: 5 }, (_, i) => (
                         <div
@@ -316,7 +316,7 @@ export default function TwoFactorSetupModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="border-brand/25 bg-background sm:max-w-md">
                 <DialogHeader className="flex items-center justify-center">
                     <GridScanIcon />
                     <DialogTitle>{modalConfig.title}</DialogTitle>

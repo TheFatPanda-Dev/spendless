@@ -4,9 +4,11 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useInitials } from '@/hooks/use-initials';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
@@ -22,12 +24,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile({
     mustVerifyEmail,
+    preferredName,
     status,
 }: {
     mustVerifyEmail: boolean;
+    preferredName?: string | null;
     status?: string;
 }) {
     const { auth } = usePage().props;
+    const getInitials = useInitials();
+    const displayName = auth.user.display_name ?? auth.user.name;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -36,7 +42,7 @@ export default function Profile({
             <h1 className="sr-only">Profile settings</h1>
 
             <SettingsLayout>
-                <div className="space-y-6">
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
                     <Heading
                         variant="small"
                         title="Profile information"
@@ -72,6 +78,28 @@ export default function Profile({
                                 </div>
 
                                 <div className="grid gap-2">
+                                    <Label htmlFor="preferred_name">What should we call you?</Label>
+
+                                    <Input
+                                        id="preferred_name"
+                                        className="mt-1 block w-full"
+                                        defaultValue={preferredName ?? ''}
+                                        name="preferred_name"
+                                        autoComplete="given-name"
+                                        placeholder="Optional display name"
+                                    />
+
+                                    <p className="text-xs text-muted-foreground">
+                                        If set, this name is shown in the app. Otherwise, we use your full name.
+                                    </p>
+
+                                    <InputError
+                                        className="mt-1"
+                                        message={errors.preferred_name}
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
                                     <Label htmlFor="email">Email address</Label>
 
                                     <Input
@@ -81,13 +109,43 @@ export default function Profile({
                                         defaultValue={auth.user.email}
                                         name="email"
                                         required
-                                        autoComplete="username"
+                                        autoComplete="email"
                                         placeholder="Email address"
                                     />
 
                                     <InputError
                                         className="mt-2"
                                         message={errors.email}
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="avatar">Avatar</Label>
+
+                                    <div className="flex items-center gap-4">
+                                        <Avatar className="size-12 border border-brand/30">
+                                            <AvatarImage src={auth.user.avatar} alt={displayName} />
+                                            <AvatarFallback className="bg-brand/10 text-foreground">
+                                                {getInitials(displayName)}
+                                            </AvatarFallback>
+                                        </Avatar>
+
+                                        <Input
+                                            id="avatar"
+                                            type="file"
+                                            name="avatar"
+                                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                                            className="block w-full"
+                                        />
+                                    </div>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Upload JPG, PNG, or WEBP up to 2MB.
+                                    </p>
+
+                                    <InputError
+                                        className="mt-1"
+                                        message={errors.avatar}
                                     />
                                 </div>
 

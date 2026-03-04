@@ -74,7 +74,6 @@ class SocialAuthenticationTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email' => 'panda@example.com',
             'google_id' => 'google-123',
-            'nickname' => 'panda',
         ]);
         $response->assertRedirect(route('dashboard', absolute: false));
         $response->assertSessionHas('success', 'Registration successful');
@@ -84,7 +83,6 @@ class SocialAuthenticationTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'panda@example.com',
-            'nickname' => 'panda',
             'google_id' => null,
         ]);
 

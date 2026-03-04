@@ -4,6 +4,8 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -29,6 +31,7 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
+                'preferred_name' => 'Panda',
                 'email' => 'test@example.com',
             ]);
 
@@ -39,6 +42,7 @@ class ProfileUpdateTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Test User', $user->name);
+        $this->assertSame('Panda', $user->preferred_name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
     }
@@ -59,6 +63,60 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('profile.edit'));
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_profile_avatar_can_be_uploaded(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => UploadedFile::fake()->image('avatar.png', 128, 128),
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertNotNull($user->avatar_path);
+        Storage::disk('public')->assertExists($user->avatar_path);
+    }
+
+    public function test_replacing_profile_avatar_deletes_previous_file(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create([
+            'avatar_path' => 'avatars/old-avatar.png',
+        ]);
+
+        Storage::disk('public')->put('avatars/old-avatar.png', 'old-image');
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => UploadedFile::fake()->image('new-avatar.png', 128, 128),
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertNotNull($user->avatar_path);
+        $this->assertNotSame('avatars/old-avatar.png', $user->avatar_path);
+        Storage::disk('public')->assertMissing('avatars/old-avatar.png');
+        Storage::disk('public')->assertExists($user->avatar_path);
     }
 
     public function test_user_can_delete_their_account()

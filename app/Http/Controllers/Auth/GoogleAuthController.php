@@ -80,7 +80,6 @@ class GoogleAuthController extends Controller
         } else {
             $user = User::create([
                 'name' => $googleUser->getName() ?: 'Google User',
-                'nickname' => $this->generateUniqueNickname($googleEmail),
                 'email' => $googleEmail,
                 'google_id' => $googleUser->getId(),
                 'google_avatar' => $googleUser->getAvatar(),
@@ -95,28 +94,5 @@ class GoogleAuthController extends Controller
         $successMessage = $created ? 'Registration successful' : 'Login successful';
 
         return to_route('dashboard')->with('success', $successMessage);
-    }
-
-    /**
-     * Generate a unique nickname for social registrations.
-     */
-    private function generateUniqueNickname(string $email): string
-    {
-        $emailLocalPart = Str::before($email, '@');
-        $base = Str::lower((string) Str::of($emailLocalPart)->replaceMatches('/[^A-Za-z0-9_]/', ''));
-
-        if ($base === '') {
-            $base = 'user';
-        }
-
-        $nickname = $base;
-        $suffix = 1;
-
-        while (User::query()->where('nickname', $nickname)->exists()) {
-            $nickname = $base.$suffix;
-            $suffix++;
-        }
-
-        return $nickname;
     }
 }
