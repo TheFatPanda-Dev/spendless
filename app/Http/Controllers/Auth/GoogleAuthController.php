@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -19,10 +20,13 @@ class GoogleAuthController extends Controller
     {
         $callbackUrl = url('/auth/google/callback');
 
-        return app('Laravel\\Socialite\\Contracts\\Factory')
-            ->driver('google')
-            ->redirectUrl($callbackUrl)
-            ->redirect();
+        $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
+
+        if (method_exists($driver, 'redirectUrl')) {
+            $driver = $driver->redirectUrl($callbackUrl);
+        }
+
+        return $driver->redirect();
     }
 
     /**
@@ -33,10 +37,13 @@ class GoogleAuthController extends Controller
         $callbackUrl = url('/auth/google/callback');
 
         try {
-            $googleUser = app('Laravel\\Socialite\\Contracts\\Factory')
-                ->driver('google')
-                ->redirectUrl($callbackUrl)
-                ->user();
+            $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
+
+            if (method_exists($driver, 'redirectUrl')) {
+                $driver = $driver->redirectUrl($callbackUrl);
+            }
+
+            $googleUser = $driver->user();
         } catch (InvalidStateException) {
             return to_route('login')->withErrors([
                 'email' => 'Google sign-in expired or host changed. Please try again from the same browser tab.',
@@ -44,7 +51,11 @@ class GoogleAuthController extends Controller
         }
 
         $googleEmail = (string) $googleUser->getEmail();
-        $googleEmailVerified = (bool) data_get($googleUser->user, 'email_verified', false);
+        $googleEmailVerified = true;
+
+        if (property_exists($googleUser, 'user')) {
+            $googleEmailVerified = (bool) Arr::get($googleUser->user, 'email_verified', false);
+        }
 
         if ($googleEmail === '' || ! $googleEmailVerified) {
             return to_route('login')->withErrors([

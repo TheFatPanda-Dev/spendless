@@ -20,11 +20,15 @@ class GithubAuthController extends Controller
     {
         $callbackUrl = url('/auth/github/callback');
 
-        return app('Laravel\\Socialite\\Contracts\\Factory')
+        $driver = app('Laravel\\Socialite\\Contracts\\Factory')
             ->driver('github')
-            ->scopes(['read:user', 'user:email'])
-            ->redirectUrl($callbackUrl)
-            ->redirect();
+            ->scopes(['read:user', 'user:email']);
+
+        if (method_exists($driver, 'redirectUrl')) {
+            $driver = $driver->redirectUrl($callbackUrl);
+        }
+
+        return $driver->redirect();
     }
 
     /**
@@ -35,10 +39,13 @@ class GithubAuthController extends Controller
         $callbackUrl = url('/auth/github/callback');
 
         try {
-            $githubUser = app('Laravel\\Socialite\\Contracts\\Factory')
-                ->driver('github')
-                ->redirectUrl($callbackUrl)
-                ->user();
+            $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('github');
+
+            if (method_exists($driver, 'redirectUrl')) {
+                $driver = $driver->redirectUrl($callbackUrl);
+            }
+
+            $githubUser = $driver->user();
         } catch (InvalidStateException) {
             return to_route('login')->withErrors([
                 'email' => 'GitHub sign-in expired or host changed. Please try again from the same browser tab.',

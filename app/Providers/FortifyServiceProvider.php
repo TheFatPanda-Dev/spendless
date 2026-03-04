@@ -61,12 +61,12 @@ class FortifyServiceProvider extends ServiceProvider
             $identifier = Str::lower($request->string('email')->toString());
 
             $user = User::query()
-                ->where('email', $identifier)
+                ->whereRaw('LOWER(email) = ?', [$identifier])
                 ->first();
 
             if ($user === null) {
                 $user = User::query()
-                    ->where('nickname', $identifier)
+                    ->whereRaw('LOWER(nickname) = ?', [$identifier])
                     ->first();
             }
 
