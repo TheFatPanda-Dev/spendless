@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\GithubAuthController;
+use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -11,6 +12,13 @@ Route::inertia('/', 'welcome', [
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::get('banking/institutions', [EnableBankingConnectionController::class, 'institutions'])
+        ->name('banking.institutions');
+    Route::post('banking/connect', [EnableBankingConnectionController::class, 'start'])
+        ->name('banking.start');
+    Route::get('banking/callback', [EnableBankingConnectionController::class, 'callback'])
+        ->name('banking.callback');
 });
 
 Route::middleware('guest')->group(function () {

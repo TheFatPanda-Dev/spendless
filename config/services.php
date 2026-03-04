@@ -47,4 +47,15 @@ return [
         'redirect' => env('GITHUB_REDIRECT_URI'),
     ],
 
+    'enable_banking' => [
+        'base_url' => env('ENABLE_BANKING_BASE_URL', 'https://api.enablebanking.com'),
+        'app_id' => env('ENABLE_BANKING_APP_ID'),
+        'private_key_path' => env('ENABLE_BANKING_PRIVATE_KEY_PATH'),
+        'country' => env('ENABLE_BANKING_COUNTRY', 'SI'),
+        'consent_days' => (int) env('ENABLE_BANKING_CONSENT_DAYS', 10),
+        'sync_interval_minutes' => (int) env('ENABLE_BANKING_SYNC_INTERVAL_MINUTES', 60),
+        'jwt_issuer' => env('ENABLE_BANKING_JWT_ISS', 'enablebanking.com'),
+        'jwt_audience' => env('ENABLE_BANKING_JWT_AUD', 'api.enablebanking.com'),
+    ],
+
 ];
