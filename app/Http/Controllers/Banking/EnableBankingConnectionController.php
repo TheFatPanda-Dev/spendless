@@ -13,10 +13,21 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class EnableBankingConnectionController extends Controller
 {
+    public function destroy(Request $request, BankConnection $bankConnection): RedirectResponse
+    {
+        abort_if($bankConnection->user_id !== $request->user()->id, 403);
+
+        $bankConnection->delete();
+
+        return to_route('bank-connections')->with('success', 'Bank connection deleted.');
+    }
+
     public function institutions(EnableBankingClient $client): JsonResponse
     {
         $country = (string) config('services.enable_banking.country', 'SI');
@@ -41,13 +52,23 @@ class EnableBankingConnectionController extends Controller
         ]);
     }
 
-    public function start(StartEnableBankingConnectionRequest $request, EnableBankingClient $client): RedirectResponse
+    public function start(StartEnableBankingConnectionRequest $request, EnableBankingClient $client): Response
     {
         $validated = $request->validated();
 
+        $resolvedAspspName = $this->resolveAspspName(
+            client: $client,
+            country: $validated['aspsp_country'],
+            requestedName: $validated['aspsp_name'],
+        );
+
+        if ($resolvedAspspName === null) {
+            return to_route('bank-connections')->with('error', 'Selected bank is not available in Enable Banking sandbox.');
+        }
+
         $connection = BankConnection::create([
             'user_id' => $request->user()->id,
-            'aspsp_name' => $validated['aspsp_name'],
+            'aspsp_name' => $resolvedAspspName,
             'aspsp_country' => $validated['aspsp_country'],
             'state' => (string) Str::uuid(),
             'status' => 'pending',
@@ -68,26 +89,57 @@ class EnableBankingConnectionController extends Controller
                 'psu_type' => $validated['psu_type'],
             ]);
         } catch (Throwable $exception) {
-            $connection->update([
-                'status' => 'failed',
-                'last_sync_error' => $exception->getMessage(),
-            ]);
+            $connection->delete();
 
-            return to_route('dashboard')->with('error', 'Could not start bank authorization.');
+            return to_route('bank-connections')->with('error', 'Could not start bank authorization.');
         }
 
         $authorizationUrl = (string) Arr::get($response, 'url', '');
 
         if ($authorizationUrl === '') {
-            $connection->update([
-                'status' => 'failed',
-                'last_sync_error' => 'Enable Banking did not return an authorization URL.',
-            ]);
+            $connection->delete();
 
-            return to_route('dashboard')->with('error', 'Could not start bank authorization.');
+            return to_route('bank-connections')->with('error', 'Could not start bank authorization.');
+        }
+
+        if ($request->header('X-Inertia')) {
+            return Inertia::location($authorizationUrl);
         }
 
         return redirect()->away($authorizationUrl);
+    }
+
+    private function resolveAspspName(EnableBankingClient $client, string $country, string $requestedName): ?string
+    {
+        $requestedNormalized = Str::of($requestedName)->lower()->trim()->toString();
+
+        if ($requestedNormalized === '') {
+            return null;
+        }
+
+        $aspsps = $client->getAspsps($country);
+
+        $exactMatch = collect($aspsps)->first(function (array $aspsp) use ($requestedNormalized): bool {
+            $name = Str::of((string) Arr::get($aspsp, 'name'))->lower()->trim()->toString();
+
+            return $name === $requestedNormalized;
+        });
+
+        if ($exactMatch) {
+            return (string) Arr::get($exactMatch, 'name');
+        }
+
+        $containsMatch = collect($aspsps)->first(function (array $aspsp) use ($requestedNormalized): bool {
+            $name = Str::of((string) Arr::get($aspsp, 'name'))->lower()->trim()->toString();
+
+            return Str::contains($name, $requestedNormalized) || Str::contains($requestedNormalized, $name);
+        });
+
+        if ($containsMatch) {
+            return (string) Arr::get($containsMatch, 'name');
+        }
+
+        return null;
     }
 
     public function callback(Request $request, EnableBankingClient $client): RedirectResponse
@@ -103,7 +155,7 @@ class EnableBankingConnectionController extends Controller
             ->first();
 
         if (! $connection) {
-            return to_route('dashboard')->with('error', 'Bank authorization state is invalid.');
+            return to_route('bank-connections')->with('error', 'Bank authorization state is invalid.');
         }
 
         try {
@@ -139,16 +191,13 @@ class EnableBankingConnectionController extends Controller
                     );
                 });
         } catch (Throwable $exception) {
-            $connection->update([
-                'status' => 'failed',
-                'last_sync_error' => $exception->getMessage(),
-            ]);
+            $connection->delete();
 
-            return to_route('dashboard')->with('error', 'Could not finish bank authorization.');
+            return to_route('bank-connections')->with('error', 'Could not finish bank authorization.');
         }
 
         SyncEnableBankingConnectionJob::dispatch($connection->id);
 
-        return to_route('dashboard')->with('success', 'Bank account connected. Transactions will sync continuously.');
+        return to_route('bank-connections')->with('success', 'Bank account connected. Transactions will sync continuously.');
     }
 }

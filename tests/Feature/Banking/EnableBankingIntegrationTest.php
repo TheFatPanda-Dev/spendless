@@ -22,6 +22,12 @@ class EnableBankingIntegrationTest extends TestCase
         $this->fakeJwtFactory();
 
         Http::fake([
+            'https://api.enablebanking.com/aspsps*' => Http::response([
+                'aspsps' => [
+                    ['name' => 'Delavska hranilnica d.d.', 'country' => 'SI'],
+                    ['name' => 'Revolut Bank UAB', 'country' => 'SI'],
+                ],
+            ]),
             'https://api.enablebanking.com/auth' => Http::response([
                 'url' => 'https://bank.example/authorize?flow=123',
             ]),
@@ -43,6 +49,36 @@ class EnableBankingIntegrationTest extends TestCase
             'aspsp_country' => 'SI',
             'status' => 'pending',
         ]);
+    }
+
+    public function test_inertia_request_redirects_with_inertia_location_header(): void
+    {
+        $this->fakeJwtFactory();
+
+        Http::fake([
+            'https://api.enablebanking.com/aspsps*' => Http::response([
+                'aspsps' => [
+                    ['name' => 'Delavska hranilnica d.d.', 'country' => 'SI'],
+                    ['name' => 'Revolut Bank UAB', 'country' => 'SI'],
+                ],
+            ]),
+            'https://api.enablebanking.com/auth' => Http::response([
+                'url' => 'https://bank.example/authorize?flow=456',
+            ]),
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withHeader('X-Inertia', 'true')
+            ->post(route('banking.start'), [
+                'aspsp_name' => 'Revolut',
+                'aspsp_country' => 'SI',
+                'psu_type' => 'personal',
+            ]);
+
+        $response->assertStatus(409);
+        $response->assertHeader('X-Inertia-Location', 'https://bank.example/authorize?flow=456');
     }
 
     public function test_callback_stores_session_accounts_and_dispatches_sync_job(): void
@@ -80,7 +116,7 @@ class EnableBankingIntegrationTest extends TestCase
             'state' => 'state-123',
         ]));
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('bank-connections', absolute: false));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('bank_connections', [
