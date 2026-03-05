@@ -51,16 +51,29 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# npm install is allowed by default. Build is optional because it can use more memory.
+# npm steps are opt-in to avoid OOM on low-memory servers.
+# RUN_NPM_INSTALL=1 will install Node dependencies.
+# RUN_NPM_BUILD=1 will run npm run build (and implies install).
+# RUN_NPM_LOW_MEM=1 switches install to a lighter command for constrained servers.
 if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
-  echo "==> Installing Node dependencies"
-  npm ci
+  if [ "${RUN_NPM_INSTALL:-0}" = "1" ] || [ "${RUN_NPM_BUILD:-0}" = "1" ]; then
+    echo "==> Installing Node dependencies"
 
-  if [ "${RUN_NPM_BUILD:-0}" = "1" ]; then
-    echo "==> Building frontend assets"
-    npm run build
+    if [ "${RUN_NPM_LOW_MEM:-0}" = "1" ]; then
+      echo "==> Low-memory npm install mode enabled"
+      npm install --omit=dev --no-audit --no-fund
+    else
+      npm ci
+    fi
+
+    if [ "${RUN_NPM_BUILD:-0}" = "1" ]; then
+      echo "==> Building frontend assets"
+      npm run build
+    else
+      echo "==> Skipping npm build (set RUN_NPM_BUILD=1 to enable)"
+    fi
   else
-    echo "==> Skipping npm build (set RUN_NPM_BUILD=1 to enable)"
+    echo "==> Skipping npm install/build (set RUN_NPM_INSTALL=1 or RUN_NPM_BUILD=1 to enable)"
   fi
 else
   echo "==> Skipping npm steps (no package.json or npm missing)"
