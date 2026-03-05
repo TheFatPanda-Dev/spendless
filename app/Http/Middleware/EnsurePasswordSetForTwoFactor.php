@@ -29,7 +29,7 @@ class EnsurePasswordSetForTwoFactor
                     return response()->json(['message' => $message], 422);
                 }
 
-                return to_route('profile.edit')->with('error', $message);
+                return to_route('security.edit')->with('error', $message);
             }
         }
 

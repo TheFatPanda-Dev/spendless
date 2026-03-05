@@ -320,7 +320,7 @@ class ProfileUpdateTest extends TestCase
             ]);
 
         $response
-            ->assertRedirect(route('profile.edit'))
+            ->assertRedirect(route('security.edit'))
             ->assertSessionHas('error', 'Password not set. Set a password before deleting your account.');
 
         $this->assertNotNull($user->fresh());
@@ -340,7 +340,7 @@ class ProfileUpdateTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('security.edit'));
 
         $user->refresh();
 
@@ -360,7 +360,7 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->delete(route('settings.google.unlink'));
 
-        $response->assertRedirect(route('profile.edit'));
+        $response->assertRedirect(route('security.edit'));
         $response->assertSessionHas('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
 
         $this->assertSame('google-1', $user->refresh()->google_id);
@@ -381,7 +381,7 @@ class ProfileUpdateTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('security.edit'));
 
         $user->refresh();
 

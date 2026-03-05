@@ -83,19 +83,38 @@ class User extends Authenticatable
     {
         if ($this->avatar_path) {
             if (Storage::disk('public')->exists($this->avatar_path)) {
-                return Storage::url($this->avatar_path);
+                return $this->normalizeAvatarUrl(Storage::url($this->avatar_path));
             }
         }
 
         if ($this->google_avatar) {
-            return $this->google_avatar;
+            return $this->normalizeAvatarUrl($this->google_avatar);
         }
 
         if ($this->github_avatar) {
-            return $this->github_avatar;
+            return $this->normalizeAvatarUrl($this->github_avatar);
         }
 
         return null;
+    }
+
+    private function normalizeAvatarUrl(?string $url): ?string
+    {
+        if (! is_string($url)) {
+            return null;
+        }
+
+        $trimmedUrl = trim($url);
+
+        if ($trimmedUrl === '') {
+            return null;
+        }
+
+        if (str_starts_with($trimmedUrl, '//')) {
+            return 'https:'.$trimmedUrl;
+        }
+
+        return $trimmedUrl;
     }
 
     public function getDisplayNameAttribute(): string

@@ -85,7 +85,7 @@ class GithubAuthController extends Controller
             $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
 
             if ($githubEmail === null) {
-                return redirect()->to(route('profile.edit').'#oauth')
+                return redirect()->to(route('security.edit').'#oauth')
                     ->with('error', 'Your GitHub account needs a primary verified email to be linked.');
             }
 
@@ -97,7 +97,7 @@ class GithubAuthController extends Controller
                 ->exists();
 
             if ($alreadyLinkedToAnotherUser) {
-                return redirect()->to(route('profile.edit').'#oauth')
+                return redirect()->to(route('security.edit').'#oauth')
                     ->with('error', 'This GitHub account is already linked to another SpendLess profile.');
             }
 
@@ -105,7 +105,7 @@ class GithubAuthController extends Controller
             $authenticatedUser->github_avatar = $githubUser->getAvatar();
             $authenticatedUser->save();
 
-            return redirect()->to(route('profile.edit').'#oauth')
+            return redirect()->to(route('security.edit').'#oauth')
                 ->with('success', 'GitHub account linked successfully.');
         }
 
@@ -150,8 +150,8 @@ class GithubAuthController extends Controller
 
                 Auth::login($registeredUser, remember: true);
 
-                return redirect()->to(route('profile.edit').'#oauth')
-                    ->with('success', 'Account created with GitHub. Please review your profile settings.');
+                return redirect()->to(route('security.edit').'#oauth')
+                    ->with('success', 'Account created with GitHub. Please review your security settings.');
             }
 
             $message = 'No SpendLess account was found for this GitHub email.';
@@ -231,7 +231,7 @@ class GithubAuthController extends Controller
 
             $githubUser = $driver->user();
         } catch (InvalidStateException) {
-            return to_route('profile.edit')->with('error', 'GitHub link expired or host changed. Please try again from the same browser tab.');
+            return to_route('security.edit')->with('error', 'GitHub link expired or host changed. Please try again from the same browser tab.');
         }
 
         $authenticatedUser = Auth::user();
@@ -243,7 +243,7 @@ class GithubAuthController extends Controller
         $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
 
         if ($githubEmail === null) {
-            return to_route('profile.edit')->with('error', 'Your GitHub account needs a primary verified email to be linked.');
+            return to_route('security.edit')->with('error', 'Your GitHub account needs a primary verified email to be linked.');
         }
 
         $githubId = (string) $githubUser->getId();
@@ -254,14 +254,14 @@ class GithubAuthController extends Controller
             ->exists();
 
         if ($alreadyLinkedToAnotherUser) {
-            return redirect()->to(route('profile.edit').'#oauth')->with('error', 'This GitHub account is already linked to another SpendLess profile.');
+            return redirect()->to(route('security.edit').'#oauth')->with('error', 'This GitHub account is already linked to another SpendLess profile.');
         }
 
         $authenticatedUser->github_id = $githubId;
         $authenticatedUser->github_avatar = $githubUser->getAvatar();
         $authenticatedUser->save();
 
-        return redirect()->to(route('profile.edit').'#oauth')->with('success', 'GitHub account linked successfully.');
+        return redirect()->to(route('security.edit').'#oauth')->with('success', 'GitHub account linked successfully.');
     }
 
     /**

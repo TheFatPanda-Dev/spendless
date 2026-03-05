@@ -11,7 +11,7 @@ class TwoFactorAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_two_factor_settings_route_redirects_to_profile_page()
+    public function test_two_factor_settings_route_redirects_to_security_page()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -21,10 +21,10 @@ class TwoFactorAuthenticationTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('two-factor.show'))
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('security.edit'));
     }
 
-    public function test_two_factor_settings_route_redirects_to_profile_without_password_confirmation_when_enabled()
+    public function test_two_factor_settings_route_redirects_to_security_without_password_confirmation_when_enabled()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -40,10 +40,10 @@ class TwoFactorAuthenticationTest extends TestCase
         $response = $this->actingAs($user)
             ->get(route('two-factor.show'));
 
-        $response->assertRedirect(route('profile.edit'));
+        $response->assertRedirect(route('security.edit'));
     }
 
-    public function test_two_factor_settings_route_redirects_to_profile_without_password_confirmation_when_disabled()
+    public function test_two_factor_settings_route_redirects_to_security_without_password_confirmation_when_disabled()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -58,10 +58,10 @@ class TwoFactorAuthenticationTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('two-factor.show'))
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('security.edit'));
     }
 
-    public function test_two_factor_settings_route_redirects_to_profile_when_two_factor_is_disabled()
+    public function test_two_factor_settings_route_redirects_to_security_when_two_factor_is_disabled()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -73,7 +73,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('two-factor.show'))
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('security.edit'));
     }
 
     public function test_user_without_password_cannot_enable_two_factor_authentication(): void
@@ -88,7 +88,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
         $this->actingAs($user)
             ->post('/user/two-factor-authentication')
-            ->assertRedirect(route('profile.edit'))
+            ->assertRedirect(route('security.edit'))
             ->assertSessionHas('error', 'Set a password before enabling two-factor authentication.');
     }
 

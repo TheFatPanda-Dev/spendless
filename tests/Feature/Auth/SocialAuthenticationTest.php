@@ -403,7 +403,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->post(route('oauth.register'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $response->assertRedirect(route('security.edit', absolute: false).'#oauth');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'prompt-google@example.com',
@@ -465,7 +465,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->post(route('oauth.register'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $response->assertRedirect(route('security.edit', absolute: false).'#oauth');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'prompt-github@example.com',
@@ -513,7 +513,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('settings.google.callback'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $response->assertRedirect(route('security.edit', absolute: false).'#oauth');
 
         $user->refresh();
 
@@ -577,7 +577,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('settings.github.callback'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $response->assertRedirect(route('security.edit', absolute: false).'#oauth');
 
         $user->refresh();
 
@@ -626,7 +626,7 @@ class SocialAuthenticationTest extends TestCase
             'oauth_register_intent_google' => true,
         ])->get(route('google.callback'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $response->assertRedirect(route('security.edit', absolute: false).'#oauth');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'register-intent-google@example.com',
@@ -688,7 +688,7 @@ class SocialAuthenticationTest extends TestCase
             'oauth_register_intent_github' => true,
         ])->get(route('github.callback'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $response->assertRedirect(route('security.edit', absolute: false).'#oauth');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'register-intent-github@example.com',

@@ -88,7 +88,7 @@ class GoogleAuthController extends Controller
                 ->exists();
 
             if ($alreadyLinkedToAnotherUser) {
-                return redirect()->to(route('profile.edit').'#oauth')
+                return redirect()->to(route('security.edit').'#oauth')
                     ->with('error', 'This Google account is already linked to another SpendLess profile.');
             }
 
@@ -101,7 +101,7 @@ class GoogleAuthController extends Controller
 
             $authenticatedUser->save();
 
-            return redirect()->to(route('profile.edit').'#oauth')
+            return redirect()->to(route('security.edit').'#oauth')
                 ->with('success', 'Google account linked successfully.');
         }
 
@@ -152,8 +152,8 @@ class GoogleAuthController extends Controller
 
                 Auth::login($registeredUser, remember: true);
 
-                return redirect()->to(route('profile.edit').'#oauth')
-                    ->with('success', 'Account created with Google. Please review your profile settings.');
+                return redirect()->to(route('security.edit').'#oauth')
+                    ->with('success', 'Account created with Google. Please review your security settings.');
             }
 
             $message = 'No SpendLess account was found for this Google email.';
@@ -234,7 +234,7 @@ class GoogleAuthController extends Controller
 
             $googleUser = $driver->user();
         } catch (InvalidStateException) {
-            return to_route('profile.edit')->with('error', 'Google link expired or host changed. Please try again from the same browser tab.');
+            return to_route('security.edit')->with('error', 'Google link expired or host changed. Please try again from the same browser tab.');
         }
 
         $authenticatedUser = Auth::user();
@@ -251,7 +251,7 @@ class GoogleAuthController extends Controller
             ->exists();
 
         if ($alreadyLinkedToAnotherUser) {
-            return redirect()->to(route('profile.edit').'#oauth')->with('error', 'This Google account is already linked to another SpendLess profile.');
+            return redirect()->to(route('security.edit').'#oauth')->with('error', 'This Google account is already linked to another SpendLess profile.');
         }
 
         $authenticatedUser->google_id = $googleId;
@@ -263,7 +263,7 @@ class GoogleAuthController extends Controller
 
         $authenticatedUser->save();
 
-        return redirect()->to(route('profile.edit').'#oauth')->with('success', 'Google account linked successfully.');
+        return redirect()->to(route('security.edit').'#oauth')->with('success', 'Google account linked successfully.');
     }
 
     /**

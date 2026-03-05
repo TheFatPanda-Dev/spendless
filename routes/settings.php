@@ -10,6 +10,7 @@ Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', '/settings/profile');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('settings/security', [ProfileController::class, 'security'])->name('security.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('settings/oauth/google/redirect', [GoogleAuthController::class, 'linkRedirect'])
@@ -42,6 +43,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 
-    Route::redirect('settings/two-factor', '/settings/profile')
+    Route::redirect('settings/two-factor', '/settings/security')
         ->name('two-factor.show');
 });

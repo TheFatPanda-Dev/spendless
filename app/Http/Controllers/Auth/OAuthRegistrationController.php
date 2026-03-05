@@ -31,8 +31,8 @@ class OAuthRegistrationController extends Controller
 
         Auth::login($user, remember: true);
 
-        return redirect()->to(route('profile.edit').'#oauth')
-            ->with('success', 'Account created with '.$providerLabel.'. Please review your profile settings.');
+        return redirect()->to(route('security.edit').'#oauth')
+            ->with('success', 'Account created with '.$providerLabel.'. Please review your security settings.');
     }
 
     public function cancel(Request $request): RedirectResponse

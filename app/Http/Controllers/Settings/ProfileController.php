@@ -27,9 +27,27 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        return Inertia::render('settings/profile', $this->settingsPageProps($request));
+    }
+
+    /**
+     * Show the user's security settings page.
+     */
+    public function security(Request $request): Response
+    {
+        return Inertia::render('settings/security', $this->settingsPageProps($request));
+    }
+
+    /**
+     * Build shared props for settings profile/security pages.
+     *
+     * @return array<string, mixed>
+     */
+    private function settingsPageProps(Request $request): array
+    {
         $user = $request->user();
 
-        return Inertia::render('settings/profile', [
+        return [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'preferredName' => $user?->preferred_name,
             'pendingEmail' => $user?->pending_email,
@@ -45,7 +63,7 @@ class ProfileController extends Controller
                 'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
             ],
             'status' => $request->session()->get('status'),
-        ]);
+        ];
     }
 
     /**
@@ -119,21 +137,21 @@ class ProfileController extends Controller
         }
 
         if (! $user->google_id) {
-            return to_route('profile.edit')->with('error', 'Google account is not linked.');
+            return to_route('security.edit')->with('error', 'Google account is not linked.');
         }
 
         $hasPassword = (bool) $user->has_password_set;
         $hasAlternativeOauth = (bool) $user->github_id;
 
         if (! $hasPassword && ! $hasAlternativeOauth) {
-            return to_route('profile.edit')->with('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
+            return to_route('security.edit')->with('error', 'Set a password before disconnecting Google. It is currently your only sign-in method.');
         }
 
         $user->google_id = null;
         $user->google_avatar = null;
         $user->save();
 
-        return to_route('profile.edit')->with('success', 'Google account disconnected.');
+        return to_route('security.edit')->with('success', 'Google account disconnected.');
     }
 
     public function unlinkGithub(Request $request): RedirectResponse
@@ -145,21 +163,21 @@ class ProfileController extends Controller
         }
 
         if (! $user->github_id) {
-            return to_route('profile.edit')->with('error', 'GitHub account is not linked.');
+            return to_route('security.edit')->with('error', 'GitHub account is not linked.');
         }
 
         $hasPassword = (bool) $user->has_password_set;
         $hasAlternativeOauth = (bool) $user->google_id;
 
         if (! $hasPassword && ! $hasAlternativeOauth) {
-            return to_route('profile.edit')->with('error', 'Set a password before disconnecting GitHub. It is currently your only sign-in method.');
+            return to_route('security.edit')->with('error', 'Set a password before disconnecting GitHub. It is currently your only sign-in method.');
         }
 
         $user->github_id = null;
         $user->github_avatar = null;
         $user->save();
 
-        return to_route('profile.edit')->with('success', 'GitHub account disconnected.');
+        return to_route('security.edit')->with('success', 'GitHub account disconnected.');
     }
 
     /**
@@ -170,7 +188,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if (! $user->has_password_set) {
-            return to_route('profile.edit')
+            return to_route('security.edit')
                 ->with('error', 'Password not set. Set a password before deleting your account.');
         }
 
