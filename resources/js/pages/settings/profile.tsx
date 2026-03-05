@@ -277,8 +277,9 @@ export default function Profile({
             <h1 className="sr-only">Profile settings</h1>
 
             <SettingsLayout>
+                <div id="oauth-authentication" className="sr-only" />
                 <div
-                    id="oauth-authentication"
+                    id="oauth"
                     className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5"
                 >
                     <Heading

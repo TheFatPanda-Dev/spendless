@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Fortify\CreateUserFromOAuthCandidate;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -9,10 +10,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use InvalidArgumentException;
 use Laravel\Socialite\Two\InvalidStateException;
 
 class GoogleAuthController extends Controller
 {
+    public function __construct(private CreateUserFromOAuthCandidate $createUserFromOAuthCandidate) {}
+
     /**
      * Redirect the user to Google's OAuth page.
      */
@@ -20,6 +24,10 @@ class GoogleAuthController extends Controller
     {
         if ($request->boolean('popup')) {
             session()->put('oauth_popup_google', true);
+        }
+
+        if ($request->boolean('register')) {
+            session()->put('oauth_register_intent_google', true);
         }
 
         $callbackUrl = url('/auth/google/callback');
@@ -39,6 +47,7 @@ class GoogleAuthController extends Controller
     public function callback(Request $request): RedirectResponse|View
     {
         $usePopup = $request->boolean('popup') || (bool) $request->session()->pull('oauth_popup_google', false);
+        $registerIntent = (bool) $request->session()->pull('oauth_register_intent_google', false);
         $callbackUrl = url('/auth/google/callback');
 
         try {
@@ -79,7 +88,7 @@ class GoogleAuthController extends Controller
                 ->exists();
 
             if ($alreadyLinkedToAnotherUser) {
-                return redirect()->to(route('profile.edit').'#oauth-authentication')
+                return redirect()->to(route('profile.edit').'#oauth')
                     ->with('error', 'This Google account is already linked to another SpendLess profile.');
             }
 
@@ -92,7 +101,7 @@ class GoogleAuthController extends Controller
 
             $authenticatedUser->save();
 
-            return redirect()->to(route('profile.edit').'#oauth-authentication')
+            return redirect()->to(route('profile.edit').'#oauth')
                 ->with('success', 'Google account linked successfully.');
         }
 
@@ -123,14 +132,29 @@ class GoogleAuthController extends Controller
             ->first();
 
         if (! $user) {
-            session()->put('oauth_registration_candidate', [
+            $candidate = [
                 'provider' => 'google',
                 'provider_label' => 'Google',
                 'provider_id' => (string) $googleUser->getId(),
                 'email' => $googleEmail,
                 'name' => (string) ($googleUser->getName() ?: 'Google User'),
                 'avatar' => $googleAvatar,
-            ]);
+            ];
+
+            session()->put('oauth_registration_candidate', $candidate);
+
+            if ($registerIntent && ! $usePopup) {
+                try {
+                    $registeredUser = $this->createUserFromOAuthCandidate->create($candidate);
+                } catch (InvalidArgumentException $exception) {
+                    return to_route('login')->with('error', $exception->getMessage());
+                }
+
+                Auth::login($registeredUser, remember: true);
+
+                return redirect()->to(route('profile.edit').'#oauth')
+                    ->with('success', 'Account created with Google. Please review your profile settings.');
+            }
 
             $message = 'No SpendLess account was found for this Google email.';
 
@@ -227,7 +251,7 @@ class GoogleAuthController extends Controller
             ->exists();
 
         if ($alreadyLinkedToAnotherUser) {
-            return to_route('profile.edit')->with('error', 'This Google account is already linked to another SpendLess profile.');
+            return redirect()->to(route('profile.edit').'#oauth')->with('error', 'This Google account is already linked to another SpendLess profile.');
         }
 
         $authenticatedUser->google_id = $googleId;
@@ -239,7 +263,7 @@ class GoogleAuthController extends Controller
 
         $authenticatedUser->save();
 
-        return to_route('profile.edit')->with('success', 'Google account linked successfully.');
+        return redirect()->to(route('profile.edit').'#oauth')->with('success', 'Google account linked successfully.');
     }
 
     /**

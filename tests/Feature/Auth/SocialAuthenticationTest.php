@@ -403,7 +403,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->post(route('oauth.register'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false));
+        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'prompt-google@example.com',
@@ -465,7 +465,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->post(route('oauth.register'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false));
+        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'prompt-github@example.com',
@@ -513,7 +513,7 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('settings.google.callback'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false));
+        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
 
         $user->refresh();
 
@@ -577,11 +577,123 @@ class SocialAuthenticationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('settings.github.callback'));
 
-        $response->assertRedirect(route('profile.edit', absolute: false));
+        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
 
         $user->refresh();
 
         $this->assertSame('github-link-1', $user->github_id);
         $this->assertSame('https://example.com/github-link-avatar.png', $user->github_avatar);
+    }
+
+    public function test_user_can_register_with_google_from_register_page_intent(): void
+    {
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public function getId(): string
+                            {
+                                return 'google-register-intent-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Register Intent Panda';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'register-intent-google@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/register-intent-google-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->withSession([
+            'oauth_register_intent_google' => true,
+        ])->get(route('google.callback'));
+
+        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', [
+            'email' => 'register-intent-google@example.com',
+            'google_id' => 'google-register-intent-1',
+            'google_avatar' => 'https://example.com/register-intent-google-avatar.png',
+        ]);
+    }
+
+    public function test_user_can_register_with_github_from_register_page_intent(): void
+    {
+        Http::fake([
+            'https://api.github.com/user/emails' => Http::response([
+                [
+                    'email' => 'register-intent-github@example.com',
+                    'primary' => true,
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        app()->instance('Laravel\\Socialite\\Contracts\\Factory', new class
+        {
+            public function driver(string $driver): object
+            {
+                return new class
+                {
+                    public function user(): object
+                    {
+                        return new class
+                        {
+                            public string $token = 'fake-register-intent-github-token';
+
+                            public function getId(): string
+                            {
+                                return 'github-register-intent-1';
+                            }
+
+                            public function getName(): string
+                            {
+                                return 'Register Intent GitHub User';
+                            }
+
+                            public function getEmail(): string
+                            {
+                                return 'register-intent-github@example.com';
+                            }
+
+                            public function getAvatar(): string
+                            {
+                                return 'https://example.com/register-intent-github-avatar.png';
+                            }
+                        };
+                    }
+                };
+            }
+        });
+
+        $response = $this->withSession([
+            'oauth_register_intent_github' => true,
+        ])->get(route('github.callback'));
+
+        $response->assertRedirect(route('profile.edit', absolute: false).'#oauth');
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', [
+            'email' => 'register-intent-github@example.com',
+            'github_id' => 'github-register-intent-1',
+            'github_avatar' => 'https://example.com/register-intent-github-avatar.png',
+        ]);
     }
 }

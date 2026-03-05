@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Fortify\CreateUserFromOAuthCandidate;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -9,10 +10,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 use Laravel\Socialite\Two\InvalidStateException;
 
 class GithubAuthController extends Controller
 {
+    public function __construct(private CreateUserFromOAuthCandidate $createUserFromOAuthCandidate) {}
+
     /**
      * Redirect the user to GitHub's OAuth page.
      */
@@ -20,6 +24,10 @@ class GithubAuthController extends Controller
     {
         if ($request->boolean('popup')) {
             session()->put('oauth_popup_github', true);
+        }
+
+        if ($request->boolean('register')) {
+            session()->put('oauth_register_intent_github', true);
         }
 
         $callbackUrl = url('/auth/github/callback');
@@ -41,6 +49,7 @@ class GithubAuthController extends Controller
     public function callback(Request $request): RedirectResponse|View
     {
         $usePopup = $request->boolean('popup') || (bool) $request->session()->pull('oauth_popup_github', false);
+        $registerIntent = (bool) $request->session()->pull('oauth_register_intent_github', false);
         $callbackUrl = url('/auth/github/callback');
 
         try {
@@ -76,7 +85,7 @@ class GithubAuthController extends Controller
             $githubEmail = $this->resolveVerifiedGithubEmail($githubUser->token, (string) $githubUser->getEmail());
 
             if ($githubEmail === null) {
-                return redirect()->to(route('profile.edit').'#oauth-authentication')
+                return redirect()->to(route('profile.edit').'#oauth')
                     ->with('error', 'Your GitHub account needs a primary verified email to be linked.');
             }
 
@@ -88,7 +97,7 @@ class GithubAuthController extends Controller
                 ->exists();
 
             if ($alreadyLinkedToAnotherUser) {
-                return redirect()->to(route('profile.edit').'#oauth-authentication')
+                return redirect()->to(route('profile.edit').'#oauth')
                     ->with('error', 'This GitHub account is already linked to another SpendLess profile.');
             }
 
@@ -96,7 +105,7 @@ class GithubAuthController extends Controller
             $authenticatedUser->github_avatar = $githubUser->getAvatar();
             $authenticatedUser->save();
 
-            return redirect()->to(route('profile.edit').'#oauth-authentication')
+            return redirect()->to(route('profile.edit').'#oauth')
                 ->with('success', 'GitHub account linked successfully.');
         }
 
@@ -121,14 +130,29 @@ class GithubAuthController extends Controller
             ->first();
 
         if (! $user) {
-            session()->put('oauth_registration_candidate', [
+            $candidate = [
                 'provider' => 'github',
                 'provider_label' => 'GitHub',
                 'provider_id' => (string) $githubUser->getId(),
                 'email' => $githubEmail,
                 'name' => (string) ($githubUser->getName() ?: 'GitHub User'),
                 'avatar' => (string) $githubUser->getAvatar(),
-            ]);
+            ];
+
+            session()->put('oauth_registration_candidate', $candidate);
+
+            if ($registerIntent && ! $usePopup) {
+                try {
+                    $registeredUser = $this->createUserFromOAuthCandidate->create($candidate);
+                } catch (InvalidArgumentException $exception) {
+                    return to_route('login')->with('error', $exception->getMessage());
+                }
+
+                Auth::login($registeredUser, remember: true);
+
+                return redirect()->to(route('profile.edit').'#oauth')
+                    ->with('success', 'Account created with GitHub. Please review your profile settings.');
+            }
 
             $message = 'No SpendLess account was found for this GitHub email.';
 
@@ -230,14 +254,14 @@ class GithubAuthController extends Controller
             ->exists();
 
         if ($alreadyLinkedToAnotherUser) {
-            return to_route('profile.edit')->with('error', 'This GitHub account is already linked to another SpendLess profile.');
+            return redirect()->to(route('profile.edit').'#oauth')->with('error', 'This GitHub account is already linked to another SpendLess profile.');
         }
 
         $authenticatedUser->github_id = $githubId;
         $authenticatedUser->github_avatar = $githubUser->getAvatar();
         $authenticatedUser->save();
 
-        return to_route('profile.edit')->with('success', 'GitHub account linked successfully.');
+        return redirect()->to(route('profile.edit').'#oauth')->with('success', 'GitHub account linked successfully.');
     }
 
     /**
