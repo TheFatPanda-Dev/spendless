@@ -4,6 +4,7 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use App\Notifications\PasswordChangedNotification;
+use App\Notifications\PasswordSetNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -51,6 +52,7 @@ class PasswordUpdateTest extends TestCase
             return in_array('mail', $channels, true)
                 && $mailMessage->view === 'emails.password-changed';
         });
+        Notification::assertNotSentTo($user, PasswordSetNotification::class);
     }
 
     public function test_new_password_must_not_match_current_password(): void
@@ -121,6 +123,12 @@ class PasswordUpdateTest extends TestCase
 
         $this->assertTrue(Hash::check('NewPassword1!', $user->password));
         $this->assertNotNull($user->password_set_at);
-        Notification::assertSentTo($user, PasswordChangedNotification::class);
+        Notification::assertSentTo($user, PasswordSetNotification::class, function (PasswordSetNotification $notification, array $channels) use ($user): bool {
+            $mailMessage = $notification->toMail($user);
+
+            return in_array('mail', $channels, true)
+                && $mailMessage->view === 'emails.password-set';
+        });
+        Notification::assertNotSentTo($user, PasswordChangedNotification::class);
     }
 }
