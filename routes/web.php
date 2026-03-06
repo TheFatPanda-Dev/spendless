@@ -3,9 +3,14 @@
 use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OAuthRegistrationController;
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankConnectionsController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PlaidWebhookController;
+use App\Http\Controllers\WalletBankConnectionController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\WalletSyncStatusController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -19,6 +24,28 @@ Route::inertia('/terms', 'terms')->name('terms');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('bank-connections', BankConnectionsController::class)->name('bank-connections');
+    Route::get('wallets/sync-status', WalletSyncStatusController::class)
+        ->middleware('throttle:banking-sensitive')
+        ->name('wallets.sync-status');
+    Route::get('wallets/add-account', [WalletController::class, 'addAccount'])
+        ->name('wallets.add-account');
+    Route::resource('wallets', WalletController::class)
+        ->only(['index', 'store', 'show']);
+    Route::get('accounts/{bankAccount}', [BankAccountController::class, 'show'])
+        ->name('accounts.show');
+
+    Route::middleware('throttle:banking-sensitive')->group(function (): void {
+        Route::post('wallets/quick-connect', [WalletController::class, 'quickConnect'])
+            ->name('wallets.quick-connect');
+        Route::post('wallets/{wallet}/bank-connections/plaid/link-token', [WalletBankConnectionController::class, 'createLinkToken'])
+            ->name('wallets.bank-connections.plaid.link-token');
+        Route::post('wallets/{wallet}/bank-connections/plaid/exchange', [WalletBankConnectionController::class, 'exchangePublicToken'])
+            ->name('wallets.bank-connections.plaid.exchange');
+        Route::post('wallets/refresh-all', [WalletBankConnectionController::class, 'refreshAll'])
+            ->name('wallets.refresh-all');
+        Route::post('bank-connections/{bankConnection}/refresh', [WalletBankConnectionController::class, 'refreshConnection'])
+            ->name('bank-connections.refresh');
+    });
 
     Route::get('banking/institutions', [EnableBankingConnectionController::class, 'institutions'])
         ->name('banking.institutions');
@@ -29,6 +56,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('banking/callback', [EnableBankingConnectionController::class, 'callback'])
         ->name('banking.callback');
 });
+
+Route::post('plaid/webhook', PlaidWebhookController::class)
+    ->middleware('throttle:plaid-webhooks')
+    ->name('plaid.webhook');
 
 Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
 Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');

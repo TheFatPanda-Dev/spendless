@@ -14,10 +14,20 @@ class BankAccount extends Model
     protected $fillable = [
         'bank_connection_id',
         'external_uid',
+        'plaid_account_id',
         'name',
+        'display_name',
+        'official_name',
+        'mask_encrypted',
+        'type',
+        'subtype',
         'iban',
         'currency',
+        'currency_code',
+        'is_active',
+        'balances_encrypted',
         'raw_payload',
+        'raw_encrypted',
         'last_synced_at',
     ];
 
@@ -25,6 +35,10 @@ class BankAccount extends Model
     {
         return [
             'raw_payload' => 'array',
+            'mask_encrypted' => 'encrypted',
+            'balances_encrypted' => 'encrypted:array',
+            'raw_encrypted' => 'encrypted:array',
+            'is_active' => 'boolean',
             'last_synced_at' => 'datetime',
         ];
     }

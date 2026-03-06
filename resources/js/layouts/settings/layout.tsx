@@ -21,6 +21,11 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'Wallets',
+        href: '/settings/wallets',
+        icon: null,
+    },
+    {
         title: 'Appearance',
         href: editAppearance(),
         icon: null,
@@ -36,16 +41,16 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     }
 
     return (
-        <div className="px-4 py-6">
+        <div className="space-y-6">
             <Heading
                 title="Settings"
                 description="Manage your profile and account settings"
             />
 
-            <div className="mt-6 flex flex-col gap-6 rounded-2xl border border-brand/25 bg-brand/5 p-4 sm:p-6 lg:flex-row lg:gap-10">
-                <aside className="w-full lg:w-56">
+            <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start">
+                <aside className="w-full">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0 rounded-xl border border-brand/20 bg-background/70 p-2"
+                        className="flex flex-col space-y-1 space-x-0 rounded-xl border border-brand/20 bg-linear-to-br from-brand/5 via-card to-card p-2 dark:from-brand/10"
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => (
@@ -57,7 +62,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 className={cn(
                                     'w-full justify-start rounded-lg text-foreground/90 hover:bg-brand/10 hover:text-foreground',
                                     {
-                                        'bg-brand/15 text-foreground':
+                                        'bg-brand/15 text-foreground ring-1 ring-brand/30':
                                             isCurrentOrParentUrl(item.href),
                                     },
                                 )}
@@ -73,10 +78,10 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     </nav>
                 </aside>
 
-                <Separator className="my-1 border-brand/25 lg:hidden" />
+                <Separator className="my-1 border-border lg:hidden" />
 
-                <div className="flex-1 md:max-w-3xl">
-                    <section className="space-y-6 rounded-xl border border-brand/20 bg-background/80 p-4 sm:p-6">
+                <div className="min-w-0">
+                    <section className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/5 via-card to-card p-4 sm:p-6 dark:from-brand/10">
                         {children}
                     </section>
                 </div>

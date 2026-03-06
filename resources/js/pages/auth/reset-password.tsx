@@ -45,7 +45,10 @@ export default function ResetPassword({ token, email }: Props) {
     );
 
     return (
-        <AuthLayout title="Reset password">
+        <AuthLayout
+            title="Reset password"
+            description="Set a new password for your account."
+        >
             <Head title="Reset password" />
 
             <Form

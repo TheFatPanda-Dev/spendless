@@ -1,9 +1,9 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+
 import { AppContent } from '@/components/app-content';
+import { AppHeader } from '@/components/app-header';
 import { AppShell } from '@/components/app-shell';
-import { AppSidebar } from '@/components/app-sidebar';
-import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import type { AppLayoutProps } from '@/types';
 
 function FlashBubble({
@@ -39,7 +39,7 @@ function FlashBubble({
     return <div className={classes}>{message}</div>;
 }
 
-export default function AppSidebarLayout({
+export default function AppHeaderLayout({
     children,
     breadcrumbs = [],
 }: AppLayoutProps) {
@@ -48,10 +48,9 @@ export default function AppSidebarLayout({
     }>().props;
 
     return (
-        <AppShell variant="sidebar">
-            <AppSidebar />
-            <AppContent variant="sidebar" className="overflow-x-hidden">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} />
+        <AppShell>
+            <AppHeader breadcrumbs={breadcrumbs} />
+            <AppContent className="flex-1 px-4 py-6 md:px-6 lg:py-8">
                 {children}
             </AppContent>
 

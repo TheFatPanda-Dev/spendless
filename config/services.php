@@ -58,4 +58,18 @@ return [
         'jwt_audience' => env('ENABLE_BANKING_JWT_AUD', 'api.enablebanking.com'),
     ],
 
+    'plaid' => [
+        'base_url' => env('PLAID_BASE_URL', 'https://sandbox.plaid.com'),
+        'client_id' => env('PLAID_CLIENT_ID'),
+        'secret' => env('PLAID_SECRET'),
+        'environment' => env('PLAID_ENV', 'sandbox'),
+        'version' => env('PLAID_VERSION', '2020-09-14'),
+        'country_codes' => array_filter(array_map('trim', explode(',', (string) env('PLAID_COUNTRY_CODES', 'US')))),
+        'language' => env('PLAID_LANGUAGE', 'en'),
+        'webhook_url' => env('PLAID_WEBHOOK_URL'),
+        'webhook_secret' => env('PLAID_WEBHOOK_SECRET'),
+        'redirect_uri' => env('PLAID_REDIRECT_URI'),
+        'initial_days_requested' => (int) env('PLAID_INITIAL_DAYS_REQUESTED', 730),
+    ],
+
 ];

@@ -115,8 +115,8 @@ export default function BankConnections({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Bank Connections" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
-                <Card className="border-brand/30 bg-brand/5">
+            <div className="flex h-full flex-1 flex-col gap-6">
+                <Card className="border-brand/20 bg-linear-to-br from-brand/6 via-card to-card dark:from-brand/10">
                     <CardHeader className="gap-2">
                         <CardTitle className="text-lg">
                             Bank Connections
@@ -158,7 +158,7 @@ export default function BankConnections({
                                                     event.target.value,
                                                 )
                                             }
-                                            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:ring-1 focus-visible:ring-brand"
                                             disabled={
                                                 institutions.length === 0 ||
                                                 processing
@@ -211,7 +211,7 @@ export default function BankConnections({
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-brand/20 bg-linear-to-br from-brand/6 via-card to-card dark:from-brand/10">
                     <CardHeader>
                         <CardTitle>Connected Accounts</CardTitle>
                         <CardDescription>
@@ -228,7 +228,7 @@ export default function BankConnections({
                                 {connections.map((connection) => (
                                     <div
                                         key={connection.id}
-                                        className="rounded-lg border border-border bg-card p-4"
+                                        className="rounded-lg border border-brand/15 bg-brand/5 p-4 dark:bg-brand/10"
                                     >
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="space-y-1">
@@ -237,7 +237,9 @@ export default function BankConnections({
                                                 </p>
                                                 <p className="text-xs tracking-wide text-muted-foreground uppercase">
                                                     {connection.aspsp_country} •{' '}
-                                                    {connection.status}
+                                                    <span className="text-brand">
+                                                        {connection.status}
+                                                    </span>
                                                 </p>
                                             </div>
 

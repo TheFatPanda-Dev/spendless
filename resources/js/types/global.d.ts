@@ -13,7 +13,6 @@ declare module '@inertiajs/core' {
                     email: string;
                 };
             };
-            sidebarOpen: boolean;
             [key: string]: unknown;
         };
     }

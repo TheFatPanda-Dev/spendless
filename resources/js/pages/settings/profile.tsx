@@ -45,7 +45,7 @@ export default function Profile({
             <h1 className="sr-only">Profile settings</h1>
 
             <SettingsLayout>
-                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">
                     <Heading
                         variant="small"
                         title="Profile information"
@@ -129,15 +129,17 @@ export default function Profile({
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            setIsChangingEmail((value) => !value)
+                                            setIsChangingEmail(
+                                                (value) => !value,
+                                            )
                                         }
-                                        className="w-fit text-sm font-medium text-foreground underline underline-offset-4"
+                                        className="w-fit text-sm font-medium text-brand underline decoration-brand/40 underline-offset-4 transition-colors hover:text-brand/80"
                                     >
                                         Change email address
                                     </button>
 
                                     {isChangingEmail ? (
-                                        <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                        <div className="grid gap-2 rounded-lg border border-brand/20 bg-brand/5 p-3 dark:bg-brand/10">
                                             <Label htmlFor="new_email">
                                                 New email address
                                             </Label>
@@ -176,12 +178,12 @@ export default function Profile({
                                     <Label htmlFor="avatar">Avatar</Label>
 
                                     <div className="flex items-center gap-4">
-                                        <Avatar className="size-12 border border-brand/30">
+                                        <Avatar className="size-12 border border-brand/25 bg-brand/5">
                                             <AvatarImage
                                                 src={auth.user.avatar}
                                                 alt={displayName}
                                             />
-                                            <AvatarFallback className="bg-brand/10 text-foreground">
+                                            <AvatarFallback className="bg-brand/15 text-foreground">
                                                 {getInitials(displayName)}
                                             </AvatarFallback>
                                         </Avatar>
@@ -214,7 +216,7 @@ export default function Profile({
                                                 <Link
                                                     href={send()}
                                                     as="button"
-                                                    className="text-foreground underline decoration-border underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
+                                                    className="text-brand underline decoration-brand/40 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-brand"
                                                 >
                                                     Click here to resend the
                                                     verification email.

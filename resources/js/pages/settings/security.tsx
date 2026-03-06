@@ -266,7 +266,10 @@ export default function Security({
 
             <SettingsLayout>
                 <div id="oauth-authentication" className="sr-only" />
-                <div id="oauth" className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                <div
+                    id="oauth"
+                    className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10"
+                >
                     <Heading
                         variant="small"
                         title="Password"
@@ -317,7 +320,7 @@ export default function Security({
                             {({ errors, processing, recentlySuccessful }) => (
                                 <>
                                     {password.hasPasswordSet ? (
-                                        <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                        <div className="grid gap-2 rounded-lg border border-brand/15 bg-brand/5 p-3 dark:bg-brand/10">
                                             <Label htmlFor="current_password">
                                                 Current password
                                             </Label>
@@ -336,7 +339,7 @@ export default function Security({
                                         </div>
                                     ) : null}
 
-                                    <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                    <div className="grid gap-2 rounded-lg border border-brand/15 bg-brand/5 p-3 dark:bg-brand/10">
                                         <Label htmlFor="password">
                                             New password
                                         </Label>
@@ -407,7 +410,7 @@ export default function Security({
                                         <InputError message={errors.password} />
                                     </div>
 
-                                    <div className="grid gap-2 rounded-lg border border-brand/20 bg-background/70 p-3">
+                                    <div className="grid gap-2 rounded-lg border border-brand/15 bg-brand/5 p-3 dark:bg-brand/10">
                                         <Label htmlFor="password_confirmation">
                                             Confirm password
                                         </Label>
@@ -497,7 +500,7 @@ export default function Security({
                     ) : null}
                 </div>
 
-                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">
                     <Heading
                         variant="small"
                         title="OAuth Authentication"
@@ -505,7 +508,7 @@ export default function Security({
                     />
 
                     <div className="space-y-3">
-                        <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 rounded-lg border border-brand/15 bg-brand/5 p-3 sm:flex-row sm:items-center sm:justify-between dark:bg-brand/10">
                             <div>
                                 <p className="text-sm font-medium text-foreground">
                                     Google
@@ -592,7 +595,7 @@ export default function Security({
                             </p>
                         ) : null}
 
-                        <div className="flex flex-col gap-3 rounded-lg border border-brand/20 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 rounded-lg border border-brand/15 bg-brand/5 p-3 sm:flex-row sm:items-center sm:justify-between dark:bg-brand/10">
                             <div>
                                 <p className="text-sm font-medium text-foreground">
                                     GitHub
@@ -681,7 +684,7 @@ export default function Security({
                     </div>
                 </div>
 
-                <div className="space-y-6 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:p-5">
+                <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">
                     <Heading
                         variant="small"
                         title="Two-factor authentication"
@@ -724,7 +727,7 @@ export default function Security({
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <Badge
                                 variant="outline"
-                                className="border-brand/40 bg-brand/10 text-foreground"
+                                className="border-brand/25 bg-brand/10 text-brand"
                             >
                                 Disabled
                             </Badge>
@@ -822,16 +825,16 @@ export default function Security({
                             setIsDisableTwoFactorModalOpen(open);
                         }}
                     >
-                        <DialogContent className="border-brand/25 bg-background outline-none focus:outline-none focus-visible:outline-none sm:max-w-md">
+                        <DialogContent className="border-brand/20 bg-background outline-none focus:outline-none focus-visible:outline-none sm:max-w-md">
                             <DialogHeader className="items-center text-center">
-                                <div className="mb-1 rounded-full border border-brand/25 bg-brand/5 p-1">
+                                <div className="mb-1 rounded-full border border-brand/25 bg-brand/10 p-1">
                                     <img
                                         src="/images/spendless_logo.png"
                                         alt="SpendLess logo"
                                         className="size-10 rounded-full border border-brand/20 bg-background object-contain p-1"
                                     />
                                 </div>
-                                <div className="mb-2 inline-flex items-center rounded-full border border-brand/20 bg-brand/5 px-3 py-1">
+                                <div className="mb-2 inline-flex items-center rounded-full border border-border bg-muted/50 px-3 py-1">
                                     <span className="text-sm font-semibold tracking-tight text-foreground">
                                         <span>Spend</span>
                                         <span className="text-brand">Less</span>

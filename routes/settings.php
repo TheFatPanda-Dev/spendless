@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\WalletAccountController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -11,6 +12,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('settings/security', [ProfileController::class, 'security'])->name('security.edit');
+    Route::get('settings/wallets', [WalletAccountController::class, 'edit'])->name('settings.wallets.edit');
+    Route::patch('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'update'])
+        ->name('settings.wallets.update');
+    Route::delete('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'destroy'])
+        ->name('settings.wallets.destroy');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('settings/oauth/google/redirect', [GoogleAuthController::class, 'linkRedirect'])

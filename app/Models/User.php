@@ -79,6 +79,16 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\BankConnection::class);
     }
 
+    public function wallets(): HasMany
+    {
+        return $this->hasMany(\App\Models\Wallet::class);
+    }
+
+    public function bankActivityLogs(): HasMany
+    {
+        return $this->hasMany(\App\Models\BankActivityLog::class);
+    }
+
     public function getAvatarAttribute(): ?string
     {
         if ($this->avatar_path) {

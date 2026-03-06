@@ -20,7 +20,7 @@ export default function AppearanceToggleTab({
     return (
         <div
             className={cn(
-                'inline-flex gap-1 rounded-lg border border-brand/25 bg-brand/10 p-1',
+                'inline-flex gap-1 rounded-lg border border-brand/20 bg-brand/5 p-1 dark:bg-brand/10',
                 className,
             )}
             {...props}
@@ -32,7 +32,7 @@ export default function AppearanceToggleTab({
                     className={cn(
                         'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
                         appearance === value
-                            ? 'bg-background text-foreground shadow-xs ring-1 ring-brand/30'
+                            ? 'bg-brand text-brand-foreground shadow-xs ring-1 ring-brand/45'
                             : 'text-muted-foreground hover:bg-brand/15 hover:text-foreground',
                     )}
                 >
