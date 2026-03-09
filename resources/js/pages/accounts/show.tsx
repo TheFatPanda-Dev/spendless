@@ -11,6 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import {
+    buildDashboardHref,
+    formatDisplayDate,
+    shiftMonthRange,
+} from '@/lib/date-filters';
+import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
 type Account = {
@@ -60,32 +66,6 @@ function formatCurrency(value: number, currency: string): string {
     })} ${currency}`;
 }
 
-function formatDisplayDate(dateValue: string): string {
-    const parsed = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return dateValue;
-    }
-
-    return parsed.toLocaleDateString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-    });
-}
-
-function shiftMonth(dateValue: string, direction: -1 | 1): string {
-    const parsed = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return dateValue;
-    }
-
-    parsed.setMonth(parsed.getMonth() + direction);
-
-    return parsed.toISOString().slice(0, 10);
-}
-
 function formatDayLabel(dateValue: string): string {
     const parsed = new Date(`${dateValue}T00:00:00`);
 
@@ -104,7 +84,7 @@ export default function AccountShow({ account, filters, transactions }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Dashboard',
-            href: '/dashboard',
+            href: buildDashboardHref(dashboard()),
         },
         {
             title: account.display_name ?? account.name ?? 'Account',
@@ -136,6 +116,8 @@ export default function AccountShow({ account, filters, transactions }: Props) {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [counterpartyFilter, setCounterpartyFilter] = useState('all');
     const [keywordFilter, setKeywordFilter] = useState('');
+    const previousMonthRange = shiftMonthRange(filters.start_date, -1);
+    const nextMonthRange = shiftMonthRange(filters.start_date, 1);
 
     const maxAbsAmount = useMemo(
         () => Math.max(...transactions.map((transaction) => Math.abs(transaction.amount)), 100),
@@ -319,8 +301,8 @@ export default function AccountShow({ account, filters, transactions }: Props) {
                                 router.get(
                                     `/accounts/${account.id}`,
                                     {
-                                        start_date: shiftMonth(filters.start_date, -1),
-                                        end_date: shiftMonth(filters.end_date, -1),
+                                        start_date: previousMonthRange.startDate,
+                                        end_date: previousMonthRange.endDate,
                                     },
                                     {
                                         preserveState: true,
@@ -347,8 +329,8 @@ export default function AccountShow({ account, filters, transactions }: Props) {
                                 router.get(
                                     `/accounts/${account.id}`,
                                     {
-                                        start_date: shiftMonth(filters.start_date, 1),
-                                        end_date: shiftMonth(filters.end_date, 1),
+                                        start_date: nextMonthRange.startDate,
+                                        end_date: nextMonthRange.endDate,
                                     },
                                     {
                                         preserveState: true,

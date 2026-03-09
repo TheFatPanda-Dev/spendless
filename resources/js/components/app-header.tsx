@@ -25,6 +25,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { buildDashboardHref } from '@/lib/date-filters';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -33,25 +34,25 @@ type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Bank Connections',
-        href: '/bank-connections',
-        icon: Landmark,
-    },
-];
-
 const activeItemStyles =
     'bg-brand/12 text-foreground ring-1 ring-brand/35 hover:bg-brand/15';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
+    const dashboardHref = buildDashboardHref(dashboard());
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboardHref,
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Bank Connections',
+            href: '/bank-connections',
+            icon: Landmark,
+        },
+    ];
     const getInitials = useInitials();
     const displayName = auth.user.display_name ?? auth.user.name;
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
@@ -112,7 +113,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <Link
-                        href={dashboard()}
+                        href={dashboardHref}
                         prefetch
                         className="flex items-center space-x-2"
                     >

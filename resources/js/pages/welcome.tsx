@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { buildDashboardHref } from '@/lib/date-filters';
 import { dashboard, login, register } from '@/routes';
 
 export default function Welcome({
@@ -9,6 +10,7 @@ export default function Welcome({
 }) {
     const { auth } = usePage().props;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const dashboardHref = buildDashboardHref(dashboard());
 
     return (
         <>
@@ -37,7 +39,7 @@ export default function Welcome({
                         <nav className="hidden items-center gap-3 md:flex">
                             {auth.user ? (
                                 <Link
-                                    href={dashboard()}
+                                    href={dashboardHref}
                                     className="rounded-full border border-border bg-card/70 px-5 py-2 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand"
                                 >
                                     Dashboard
@@ -99,7 +101,7 @@ export default function Welcome({
                             <div className="min-w-42.5 rounded-2xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
                                 {auth.user ? (
                                     <Link
-                                        href={dashboard()}
+                                        href={dashboardHref}
                                         className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)

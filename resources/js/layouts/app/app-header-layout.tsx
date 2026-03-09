@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppContent } from '@/components/app-content';
 import { AppHeader } from '@/components/app-header';
 import { AppShell } from '@/components/app-shell';
+import { useInactivityLogout } from '@/hooks/use-inactivity-logout';
 import type { AppLayoutProps } from '@/types';
 
 function FlashBubble({
@@ -43,6 +44,8 @@ export default function AppHeaderLayout({
     children,
     breadcrumbs = [],
 }: AppLayoutProps) {
+    useInactivityLogout();
+
     const { flash } = usePage<{
         flash?: { success?: string; error?: string };
     }>().props;

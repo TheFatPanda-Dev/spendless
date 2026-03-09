@@ -14,6 +14,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { usePlaidAccountLinkedRefresh } from '@/hooks/use-plaid-account-linked-refresh';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
+import {
+    buildDashboardHref,
+    formatDisplayDate,
+    shiftMonthRange,
+} from '@/lib/date-filters';
 import { openCenteredPopup } from '@/lib/popup';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
@@ -51,13 +56,6 @@ type Props = {
     filters: DashboardFilters;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-    },
-];
-
 function formatCurrency(value: number, currency: string): string {
     const sign = value > 0 ? '+' : '';
 
@@ -65,32 +63,6 @@ function formatCurrency(value: number, currency: string): string {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })} ${currency}`;
-}
-
-function formatDisplayDate(dateValue: string): string {
-    const parsed = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return dateValue;
-    }
-
-    return parsed.toLocaleDateString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-    });
-}
-
-function shiftMonth(dateValue: string, direction: -1 | 1): string {
-    const parsed = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return dateValue;
-    }
-
-    parsed.setMonth(parsed.getMonth() + direction);
-
-    return parsed.toISOString().slice(0, 10);
 }
 
 function applyDateFilter(startDate: string, endDate: string): void {
@@ -109,8 +81,17 @@ function applyDateFilter(startDate: string, endDate: string): void {
 }
 
 export default function Dashboard({ accounts, summary, filters }: Props) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Dashboard',
+            href: buildDashboardHref(dashboard()),
+        },
+    ];
+
     const [connectError, setConnectError] = useState<string | null>(null);
     const [showPendingNewAccount, setShowPendingNewAccount] = useState(false);
+    const previousMonthRange = shiftMonthRange(filters.start_date, -1);
+    const nextMonthRange = shiftMonthRange(filters.start_date, 1);
 
     const { isRefreshing } = usePlaidAccountLinkedRefresh({
         only: ['accounts', 'summary'],
@@ -328,8 +309,8 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                                 className="size-9 rounded-xl border-slate-200 bg-white text-slate-600 dark:border-border dark:bg-card dark:text-foreground"
                                 onClick={() => {
                                     applyDateFilter(
-                                        shiftMonth(filters.start_date, -1),
-                                        shiftMonth(filters.end_date, -1),
+                                        previousMonthRange.startDate,
+                                        previousMonthRange.endDate,
                                     );
                                 }}
                             >
@@ -350,8 +331,8 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                                 className="size-9 rounded-xl border-slate-200 bg-white text-slate-600 dark:border-border dark:bg-card dark:text-foreground"
                                 onClick={() => {
                                     applyDateFilter(
-                                        shiftMonth(filters.start_date, 1),
-                                        shiftMonth(filters.end_date, 1),
+                                        nextMonthRange.startDate,
+                                        nextMonthRange.endDate,
                                     );
                                 }}
                             >

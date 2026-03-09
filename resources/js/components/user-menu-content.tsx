@@ -6,6 +6,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { clearInactivityLogoutState } from '@/hooks/use-inactivity-logout';
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
@@ -21,6 +22,7 @@ export function UserMenuContent({ user }: Props) {
 
     const handleLogout = () => {
         cleanup();
+        clearInactivityLogoutState();
         router.flushAll();
     };
 
