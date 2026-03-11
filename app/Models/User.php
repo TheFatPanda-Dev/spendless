@@ -84,6 +84,11 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\Wallet::class);
     }
 
+    public function categories(): HasMany
+    {
+        return $this->hasMany(\App\Models\Category::class);
+    }
+
     public function bankActivityLogs(): HasMany
     {
         return $this->hasMany(\App\Models\BankActivityLog::class);

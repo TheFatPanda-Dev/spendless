@@ -2,7 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Landmark, LayoutGrid, Menu } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserInfo } from '@/components/user-info';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
-import { useInitials } from '@/hooks/use-initials';
 import { buildDashboardHref } from '@/lib/date-filters';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -53,8 +52,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             icon: Landmark,
         },
     ];
-    const getInitials = useInitials();
-    const displayName = auth.user.display_name ?? auth.user.name;
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     return (
         <>
@@ -159,20 +156,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="size-10 rounded-full p-1"
+                                    className="h-auto max-w-[240px] justify-start rounded-full px-2 py-1.5 text-left"
                                 >
-                                    <Avatar className="size-8 overflow-hidden rounded-full">
-                                        <AvatarImage
-                                            src={auth.user.avatar}
-                                            alt={displayName}
-                                        />
-                                        <AvatarFallback className="rounded-lg bg-muted text-foreground">
-                                            {getInitials(displayName)}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserInfo user={auth.user} showEmail={true} />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end">
+                            <DropdownMenuContent className="w-48" align="end">
                                 <UserMenuContent user={auth.user} />
                             </DropdownMenuContent>
                         </DropdownMenu>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Settings\AllCategoriesController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\WalletAccountController;
@@ -13,6 +14,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('settings/security', [ProfileController::class, 'security'])->name('security.edit');
     Route::get('settings/wallets', [WalletAccountController::class, 'edit'])->name('settings.wallets.edit');
+    Route::get('settings/all-categories', [AllCategoriesController::class, 'edit'])->name('settings.categories.edit');
+    Route::post('settings/all-categories', [AllCategoriesController::class, 'store'])->name('settings.categories.store');
     Route::patch('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'update'])
         ->name('settings.wallets.update');
     Route::delete('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'destroy'])

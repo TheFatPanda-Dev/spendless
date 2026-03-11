@@ -53,7 +53,7 @@ export default function AppHeaderLayout({
     return (
         <AppShell>
             <AppHeader breadcrumbs={breadcrumbs} />
-            <AppContent className="flex-1 px-4 py-6 md:px-6 lg:py-8">
+            <AppContent className="flex-1 px-4 py-6 lg:py-8">
                 {children}
             </AppContent>
 

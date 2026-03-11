@@ -1,4 +1,11 @@
 import { Link } from '@inertiajs/react';
+import {
+    Palette,
+    Shield,
+    Tags,
+    UserCircle2,
+    WalletCards,
+} from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -13,22 +20,27 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
         href: edit(),
-        icon: null,
+        icon: UserCircle2,
     },
     {
         title: 'Security',
         href: '/settings/security',
-        icon: null,
+        icon: Shield,
     },
     {
         title: 'Wallets',
         href: '/settings/wallets',
-        icon: null,
+        icon: WalletCards,
+    },
+    {
+        title: 'All Categories',
+        href: '/settings/all-categories',
+        icon: Tags,
     },
     {
         title: 'Appearance',
         href: editAppearance(),
-        icon: null,
+        icon: Palette,
     },
 ];
 
@@ -60,7 +72,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 variant="ghost"
                                 asChild
                                 className={cn(
-                                    'w-full justify-start rounded-lg text-foreground/90 hover:bg-brand/10 hover:text-foreground',
+                                    'w-full justify-start gap-2 rounded-lg text-foreground/90 hover:bg-brand/10 hover:text-foreground',
                                     {
                                         'bg-brand/15 text-foreground ring-1 ring-brand/30':
                                             isCurrentOrParentUrl(item.href),
@@ -69,7 +81,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             >
                                 <Link href={item.href}>
                                     {item.icon && (
-                                        <item.icon className="h-4 w-4" />
+                                        <item.icon className="size-[18px] shrink-0" />
                                     )}
                                     {item.title}
                                 </Link>
