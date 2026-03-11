@@ -9,7 +9,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.5.0
+- php - 8.3.30
 - inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
@@ -294,6 +294,24 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 - Always use existing Tailwind conventions; check project patterns before adding new ones.
 - IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
+
+=== Lucide React Icons/core rules ===
+
+- Use Lucide React Icons
+- General Implementation:
+Tree Shaking: Always use named imports from lucide-react (e.g., import { Camera } from 'lucide-react') rather than importing the entire library to ensure proper tree shaking.
+
+Naming Convention: Follow PascalCase for icon components as per standard React patterns.
+
+- Styling and Props:
+Default Props: When generating icons, use the standard Lucide props: size, color, and strokeWidth.
+
+Accessibility: Always ensure icons used as buttons or links have an aria-label or are wrapped in a component that provides context for screen readers.
+
+- Advanced Patterns:
+Dynamic Rendering: If icons need to be rendered dynamically from a string key, use the LucideIcon type for TypeScript and advise on a mapping object rather than using eval or heavy dynamic imports.
+
+Consistency: Default to a strokeWidth of 2 unless the existing UI uses a thinner, more modern aesthetic (like 1.5).
 
 === laravel/fortify rules ===
 
