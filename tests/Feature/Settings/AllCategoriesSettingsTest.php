@@ -151,13 +151,13 @@ class AllCategoriesSettingsTest extends TestCase
         ]);
     }
 
-    public function test_category_names_are_saved_with_an_uppercase_first_letter(): void
+    public function test_category_names_are_saved_in_title_case(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->post('/settings/all-categories', [
-                'name' => 'car',
+                'name' => 'dart veder',
                 'type' => 'expense',
                 'icon' => 'car',
                 'color' => 'sky',
@@ -168,9 +168,135 @@ class AllCategoriesSettingsTest extends TestCase
 
         $this->assertDatabaseHas('categories', [
             'user_id' => $user->id,
-            'name' => 'Car',
+            'name' => 'Dart Veder',
             'type' => 'expense',
             'parent_id' => null,
+        ]);
+    }
+
+    public function test_category_names_are_normalized_from_mixed_case_input(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/settings/all-categories', [
+                'name' => 'viHaClE',
+                'type' => 'expense',
+                'icon' => 'car',
+                'color' => 'sky',
+                'parent_id' => null,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('categories', [
+            'user_id' => $user->id,
+            'name' => 'Vihacle',
+            'type' => 'expense',
+            'parent_id' => null,
+        ]);
+    }
+
+    public function test_user_cannot_create_a_duplicate_top_level_category_name(): void
+    {
+        $user = User::factory()->create();
+
+        Category::factory()->expense()->create([
+            'user_id' => $user->id,
+            'name' => 'Car',
+            'icon' => 'car',
+            'color' => 'sky',
+            'parent_id' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->from('/settings/all-categories')
+            ->post('/settings/all-categories', [
+                'name' => 'car',
+                'type' => 'expense',
+                'icon' => 'fuel',
+                'color' => 'amber',
+                'parent_id' => null,
+            ])
+            ->assertSessionHasErrors([
+                'name' => 'A main category with this name already exists. This name can only be added as a subcategory.',
+            ])
+            ->assertRedirect('/settings/all-categories');
+    }
+
+    public function test_user_cannot_create_duplicate_subcategory_names_under_the_same_parent(): void
+    {
+        $user = User::factory()->create();
+
+        $parent = Category::factory()->expense()->create([
+            'user_id' => $user->id,
+            'name' => 'Car',
+            'icon' => 'car',
+            'color' => 'sky',
+        ]);
+
+        Category::factory()->expense()->childOf($parent)->create([
+            'user_id' => $user->id,
+            'name' => 'Petrol',
+            'icon' => 'fuel',
+            'color' => 'amber',
+        ]);
+
+        $this->actingAs($user)
+            ->from('/settings/all-categories')
+            ->post('/settings/all-categories', [
+                'name' => 'petrol',
+                'type' => 'expense',
+                'icon' => 'fuel',
+                'color' => 'amber',
+                'parent_id' => $parent->id,
+            ])
+            ->assertSessionHasErrors([
+                'name' => 'A subcategory with this name already exists under the selected parent.',
+            ])
+            ->assertRedirect('/settings/all-categories');
+    }
+
+    public function test_user_can_reuse_a_subcategory_name_under_a_different_parent(): void
+    {
+        $user = User::factory()->create();
+
+        $car = Category::factory()->expense()->create([
+            'user_id' => $user->id,
+            'name' => 'Car',
+            'icon' => 'car',
+            'color' => 'sky',
+        ]);
+
+        $home = Category::factory()->expense()->create([
+            'user_id' => $user->id,
+            'name' => 'Home',
+            'icon' => 'house',
+            'color' => 'emerald',
+        ]);
+
+        Category::factory()->expense()->childOf($car)->create([
+            'user_id' => $user->id,
+            'name' => 'Petrol',
+            'icon' => 'fuel',
+            'color' => 'amber',
+        ]);
+
+        $this->actingAs($user)
+            ->post('/settings/all-categories', [
+                'name' => 'Petrol',
+                'type' => 'expense',
+                'icon' => 'droplets',
+                'color' => 'teal',
+                'parent_id' => $home->id,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('categories', [
+            'user_id' => $user->id,
+            'name' => 'Petrol',
+            'parent_id' => $home->id,
         ]);
     }
 }

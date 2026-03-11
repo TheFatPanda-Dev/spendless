@@ -2,6 +2,11 @@ import { router } from '@inertiajs/react';
 import { Loader2, Link2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    clearPlaidLinkSession,
+    readPlaidLinkSession,
+    writePlaidLinkSession,
+} from '@/lib/plaid-link-session';
 
 type PlaidLinkButtonProps = {
     walletId: number;
@@ -76,6 +81,7 @@ export default function PlaidLinkButton({
     onConnected,
     autoStart = false,
 }: PlaidLinkButtonProps) {
+    const plaidSessionScope = `wallet-${walletId}`;
     const [isConnecting, setIsConnecting] = useState(false);
     const hasAutoStarted = useRef(false);
 
@@ -97,36 +103,50 @@ export default function PlaidLinkButton({
         try {
             await loadPlaidScript();
 
-            const linkTokenResponse = await fetch(
-                `/wallets/${walletId}/bank-connections/plaid/link-token`,
-                {
-                    method: 'POST',
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest',
+            const storedSession = redirectUri
+                ? readPlaidLinkSession(plaidSessionScope)
+                : null;
+
+            let linkToken = storedSession?.token ?? null;
+
+            if (linkToken === null) {
+                const linkTokenResponse = await fetch(
+                    `/wallets/${walletId}/bank-connections/plaid/link-token`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            redirect_uri: redirectUri,
+                        }),
                     },
-                    body: JSON.stringify({
-                        redirect_uri: redirectUri,
-                    }),
-                },
-            );
+                );
 
-            if (!linkTokenResponse.ok) {
-                throw new Error('Unable to initialize Plaid Link.');
+                if (!linkTokenResponse.ok) {
+                    throw new Error('Unable to initialize Plaid Link.');
+                }
+
+                const linkPayload = (await linkTokenResponse.json()) as {
+                    link_token: string;
+                };
+
+                linkToken = linkPayload.link_token;
+
+                writePlaidLinkSession(plaidSessionScope, {
+                    token: linkToken,
+                });
             }
-
-            const linkPayload = (await linkTokenResponse.json()) as {
-                link_token: string;
-            };
 
             if (!window.Plaid) {
                 throw new Error('Plaid Link is not available.');
             }
 
             const handler = window.Plaid.create({
-                token: linkPayload.link_token,
+                token: linkToken,
                 ...(redirectUri ? { receivedRedirectUri: redirectUri } : {}),
                 onSuccess: async (publicToken: string) => {
                     try {
@@ -152,6 +172,7 @@ export default function PlaidLinkButton({
                             );
                         }
 
+                        clearPlaidLinkSession(plaidSessionScope);
                         router.reload({ only: ['wallet'] });
                         onConnected?.();
                     } finally {
@@ -159,15 +180,17 @@ export default function PlaidLinkButton({
                     }
                 },
                 onExit: () => {
+                    clearPlaidLinkSession(plaidSessionScope);
                     setIsConnecting(false);
                 },
             });
 
             handler.open();
         } catch {
+            clearPlaidLinkSession(plaidSessionScope);
             setIsConnecting(false);
         }
-    }, [onConnected, redirectUri, walletId]);
+    }, [onConnected, plaidSessionScope, redirectUri, walletId]);
 
     useEffect(() => {
         if (!autoStart || hasAutoStarted.current) {

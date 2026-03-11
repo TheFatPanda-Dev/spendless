@@ -324,6 +324,32 @@ class PlaidIntegrationTest extends TestCase
         ]);
     }
 
+    public function test_refresh_all_job_dispatches_sync_jobs_for_connections_marked_syncing(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $wallet = Wallet::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Sync Wallet',
+            'type' => 'bank',
+            'currency' => 'EUR',
+        ]);
+
+        $connection = $this->createPlaidConnection($user, $wallet, 'refresh-all-syncing-item');
+        $connection->update(['status' => 'syncing']);
+
+        (new RefreshAllPlaidConnectionsJob($user->id))
+            ->handle(app(PlaidTransactionsService::class));
+
+        Queue::assertPushed(
+            SyncPlaidConnectionJob::class,
+            fn (SyncPlaidConnectionJob $job): bool => $job->bankConnectionId === $connection->id
+                && $job->reason === 'manual_all'
+                && $job->triggerRefresh === false,
+        );
+    }
+
     public function test_sync_status_endpoint_reports_when_connections_are_syncing(): void
     {
         $user = User::factory()->create();

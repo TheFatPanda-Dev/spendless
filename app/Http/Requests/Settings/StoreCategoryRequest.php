@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Models\Category;
 use App\Support\Categories\CategoryOptions;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -31,18 +32,6 @@ class StoreCategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:80',
-                Rule::unique('categories', 'name')->where(function ($query) {
-                    $query->where('user_id', $this->user()?->id)
-                        ->where('type', $this->input('type'));
-
-                    if ($this->filled('parent_id')) {
-                        $query->where('parent_id', $this->integer('parent_id'));
-                    } else {
-                        $query->whereNull('parent_id');
-                    }
-
-                    return $query;
-                }),
             ],
             'type' => [
                 'required',
@@ -86,6 +75,23 @@ class StoreCategoryRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $duplicateCategory = $this->findDuplicateSiblingCategory();
+
+            if ($duplicateCategory instanceof Category) {
+                $validator->errors()->add(
+                    'name',
+                    $this->filled('parent_id')
+                        ? 'A subcategory with this name already exists under the selected parent.'
+                        : 'A main category with this name already exists. This name can only be added as a subcategory.',
+                );
+
+                return;
+            }
+
             if (! $this->filled('parent_id')) {
                 return;
             }
@@ -114,7 +120,7 @@ class StoreCategoryRequest extends FormRequest
         $parentId = $this->input('parent_id');
 
         $this->merge([
-            'name' => is_string($name) ? Str::ucfirst(trim($name)) : $name,
+            'name' => is_string($name) ? $this->normalizeCategoryName($name) : $name,
             'type' => is_string($type) ? strtolower(trim($type)) : $type,
             'icon' => is_string($icon) ? trim($icon) : $icon,
             'color' => is_string($color) ? trim($color) : $color,
@@ -125,8 +131,35 @@ class StoreCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.unique' => 'A category with this name already exists at this level.',
             'icon.regex' => 'Choose a valid icon name.',
         ];
+    }
+
+    private function findDuplicateSiblingCategory(): ?Category
+    {
+        $name = $this->input('name');
+        $userId = $this->user()?->id;
+
+        if (! is_string($name) || $userId === null) {
+            return null;
+        }
+
+        return Category::query()
+            ->where('user_id', $userId)
+            ->when(
+                $this->filled('parent_id'),
+                fn (Builder $query): Builder => $query->where('parent_id', $this->integer('parent_id')),
+                fn (Builder $query): Builder => $query->whereNull('parent_id'),
+            )
+            ->whereRaw('LOWER(name) = ?', [Str::lower($name)])
+            ->first();
+    }
+
+    private function normalizeCategoryName(string $value): string
+    {
+        return (string) Str::of($value)
+            ->squish()
+            ->lower()
+            ->title();
     }
 }

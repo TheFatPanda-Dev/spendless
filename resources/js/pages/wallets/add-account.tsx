@@ -2,6 +2,11 @@ import { Head, router } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    clearPlaidLinkSession,
+    readPlaidLinkSession,
+    writePlaidLinkSession,
+} from '@/lib/plaid-link-session';
 
 type PlaidHandler = {
     open: () => void;
@@ -66,6 +71,7 @@ async function loadPlaidScript(): Promise<void> {
 }
 
 export default function AddAccountPopup() {
+    const plaidSessionScope = 'add-account-popup';
     const [isConnecting, setIsConnecting] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -113,30 +119,15 @@ export default function AddAccountPopup() {
         try {
             await loadPlaidScript();
 
-            const walletResponse = await fetch('/wallets', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({
-                    name: `Bank Wallet ${new Date().toLocaleDateString()}`,
-                    type: 'bank',
-                    currency: 'EUR',
-                }),
-            });
+            const storedSession = redirectUri
+                ? readPlaidLinkSession(plaidSessionScope)
+                : null;
 
-            if (!walletResponse.ok) {
-                throw new Error('Unable to create wallet before Plaid connect.');
-            }
+            let walletId = storedSession?.walletId ?? null;
+            let linkToken = storedSession?.token ?? null;
 
-            const walletPayload = (await walletResponse.json()) as { id: number };
-
-            const linkTokenResponse = await fetch(
-                `/wallets/${walletPayload.id}/bank-connections/plaid/link-token`,
-                {
+            if (walletId === null || linkToken === null) {
+                const walletResponse = await fetch('/wallets', {
                     method: 'POST',
                     headers: {
                         Accept: 'application/json',
@@ -145,30 +136,67 @@ export default function AddAccountPopup() {
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: JSON.stringify({
-                        redirect_uri: redirectUri,
+                        name: `Bank Wallet ${new Date().toLocaleDateString()}`,
+                        type: 'bank',
+                        currency: 'EUR',
                     }),
-                },
-            );
+                });
 
-            if (!linkTokenResponse.ok) {
-                throw new Error('Unable to initialize Plaid Link token.');
+                if (!walletResponse.ok) {
+                    throw new Error(
+                        'Unable to create wallet before Plaid connect.',
+                    );
+                }
+
+                const walletPayload = (await walletResponse.json()) as {
+                    id: number;
+                };
+
+                walletId = walletPayload.id;
+
+                const linkTokenResponse = await fetch(
+                    `/wallets/${walletId}/bank-connections/plaid/link-token`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            redirect_uri: redirectUri,
+                        }),
+                    },
+                );
+
+                if (!linkTokenResponse.ok) {
+                    throw new Error('Unable to initialize Plaid Link token.');
+                }
+
+                const linkPayload = (await linkTokenResponse.json()) as {
+                    link_token: string;
+                };
+
+                linkToken = linkPayload.link_token;
+
+                writePlaidLinkSession(plaidSessionScope, {
+                    walletId,
+                    token: linkToken,
+                });
             }
-
-            const linkPayload = (await linkTokenResponse.json()) as {
-                link_token: string;
-            };
 
             if (!window.Plaid) {
                 throw new Error('Plaid Link is not available in this browser.');
             }
 
             const handler = window.Plaid.create({
-                token: linkPayload.link_token,
+                token: linkToken,
                 ...(redirectUri ? { receivedRedirectUri: redirectUri } : {}),
                 onSuccess: async (publicToken: string) => {
                     try {
                         const exchangeResponse = await fetch(
-                            `/wallets/${walletPayload.id}/bank-connections/plaid/exchange`,
+                            `/wallets/${walletId}/bank-connections/plaid/exchange`,
                             {
                                 method: 'POST',
                                 headers: {
@@ -189,6 +217,7 @@ export default function AddAccountPopup() {
                             );
                         }
 
+                        clearPlaidLinkSession(plaidSessionScope);
                         setIsComplete(true);
                         isConnectingRef.current = false;
                         setIsConnecting(false);
@@ -202,6 +231,7 @@ export default function AddAccountPopup() {
                     }
                 },
                 onExit: () => {
+                    clearPlaidLinkSession(plaidSessionScope);
                     isConnectingRef.current = false;
                     setIsConnecting(false);
                 },
@@ -209,6 +239,7 @@ export default function AddAccountPopup() {
 
             handler.open();
         } catch {
+            clearPlaidLinkSession(plaidSessionScope);
             setErrorMessage(
                 'Could not start Plaid connection. Please verify Plaid credentials and try again.',
             );

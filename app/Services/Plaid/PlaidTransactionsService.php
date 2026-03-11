@@ -254,7 +254,7 @@ class PlaidTransactionsService
     {
         $connectionIds = $user->bankConnections()
             ->where('provider', 'plaid')
-            ->whereIn('status', ['connected', 'sync_failed'])
+            ->whereIn('status', ['connected', 'sync_failed', 'syncing'])
             ->pluck('id');
 
         foreach ($connectionIds as $connectionId) {

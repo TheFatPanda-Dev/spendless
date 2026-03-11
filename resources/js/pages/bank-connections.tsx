@@ -41,6 +41,7 @@ export default function BankConnections({
 }: {
     connections?: BankConnection[];
 }) {
+    const [institutionsError, setInstitutionsError] = useState<string | null>(null);
     const [institutions, setInstitutions] = useState<
         Array<{ name: string; country: string }>
     >([]);
@@ -59,6 +60,14 @@ export default function BankConnections({
                 });
 
                 if (!response.ok) {
+                    if (!isMounted) {
+                        return;
+                    }
+
+                    setInstitutionsError(
+                        'Enable Banking institutions are currently unavailable.',
+                    );
+                    setInstitutions([]);
                     return;
                 }
 
@@ -75,16 +84,22 @@ export default function BankConnections({
                     return;
                 }
 
+                setInstitutionsError(payload?.message ?? null);
                 setInstitutions(resolvedInstitutions);
 
                 if (resolvedInstitutions.length > 0) {
                     setSelectedInstitution(resolvedInstitutions[0].name);
+                } else {
+                    setSelectedInstitution('');
                 }
             } catch {
                 if (!isMounted) {
                     return;
                 }
 
+                setInstitutionsError(
+                    'Enable Banking institutions are currently unavailable.',
+                );
                 setInstitutions([]);
             }
         };
@@ -191,6 +206,12 @@ export default function BankConnections({
                                             </p>
                                         ) : null}
                                     </div>
+
+                                    {institutionsError ? (
+                                        <p className="text-sm text-muted-foreground md:col-span-2">
+                                            {institutionsError}
+                                        </p>
+                                    ) : null}
 
                                     <Button
                                         type="submit"

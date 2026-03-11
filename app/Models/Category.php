@@ -26,8 +26,12 @@ class Category extends Model
     protected function name(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value): ?string => is_string($value) ? Str::ucfirst(trim($value)) : $value,
-            set: fn (?string $value): ?string => is_string($value) ? Str::ucfirst(trim($value)) : $value,
+            get: fn (?string $value): ?string => is_string($value)
+                ? (string) Str::of($value)->squish()->lower()->title()
+                : $value,
+            set: fn (?string $value): ?string => is_string($value)
+                ? (string) Str::of($value)->squish()->lower()->title()
+                : $value,
         );
     }
 

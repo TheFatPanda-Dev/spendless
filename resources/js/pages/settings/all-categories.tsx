@@ -1,10 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
 import {
+    ArrowLeft,
     ArrowDownCircle,
     ArrowUpCircle,
     ChevronDown,
     ChevronRight,
     Layers3,
+    Palette,
+    Pipette,
     Search,
     Sparkles,
 } from 'lucide-react';
@@ -12,11 +15,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     CategoryIcon,
     CategoryColorSwatch,
+} from '@/components/category-icon';
+import {
     categoryIconNames,
     isHexColor,
     normalizeHexColor,
     resolveCategoryColorPresentation,
-} from '@/components/category-icon';
+} from '@/components/category-icon-utils';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -27,6 +32,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
@@ -54,6 +66,10 @@ type ParentOption = {
 type CategoryOption = {
     value: string;
     label: string;
+};
+
+type SearchableCategoryOption = CategoryOption & {
+    searchTerms: string[];
 };
 
 type CategorySearchResult = {
@@ -119,6 +135,22 @@ const allIconOptions: CategoryOption[] = Array.from(
         ]),
     ).values(),
 ).sort((left, right) => left.label.localeCompare(right.label));
+
+const iconSearchAliases: Record<string, string[]> = {
+    fuel: ['gas', 'gasoline', 'gas-station', 'gas station', 'petrol'],
+};
+
+const searchableIconOptions: SearchableCategoryOption[] = allIconOptions.map((option) => ({
+    ...option,
+    searchTerms: Array.from(
+        new Set([
+            option.value.toLowerCase(),
+            option.value.toLowerCase().replace(/-/g, ' '),
+            option.label.toLowerCase(),
+            ...((iconSearchAliases[option.value] ?? []).map((alias) => alias.toLowerCase())),
+        ]),
+    ),
+}));
 
 function collectBranchCategoryIds(categories: CategoryNode[]): number[] {
     return categories.flatMap((category) => {
@@ -264,6 +296,7 @@ function ParentCategoryTree({
     expandedIds,
     selectedParentId,
     onSelect,
+    onToggle,
     depth = 0,
 }: {
     categories: CategoryNode[];
@@ -271,6 +304,7 @@ function ParentCategoryTree({
     expandedIds: Set<number>;
     selectedParentId: string;
     onSelect: (category: CategoryNode) => void;
+    onToggle: (categoryId: number) => void;
     depth?: number;
 }) {
     if (categories.length === 0) {
@@ -287,50 +321,59 @@ function ParentCategoryTree({
 
                 return (
                     <div key={category.id} className="space-y-2">
-                        <button
-                            type="button"
-                            onClick={() => onSelect(category)}
-                            aria-expanded={hasChildren ? isExpanded : undefined}
-                            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                                isSelected
-                                    ? 'border-brand/40 bg-brand/15 text-foreground'
-                                    : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
-                            }`}
-                        >
-                            <div className={`flex size-9 shrink-0 items-center justify-center rounded-2xl border ${hasChildren ? 'border-brand/15 bg-black/15 text-muted-foreground' : 'border-dashed border-brand/10 bg-background/35 text-muted-foreground/60'}`}>
-                                {hasChildren ? (
+                        <div className="flex items-start gap-3">
+                            {hasChildren ? (
+                                <button
+                                    type="button"
+                                    onClick={() => onToggle(category.id)}
+                                    aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
+                                    aria-expanded={isExpanded}
+                                    className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-brand/15 bg-black/15 text-muted-foreground transition hover:border-brand/25 hover:text-foreground"
+                                >
                                     <ChevronRight className={`size-4 transition ${isExpanded ? 'rotate-90 text-brand' : ''}`} />
-                                ) : (
+                                </button>
+                            ) : (
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-dashed border-brand/10 bg-background/35 text-muted-foreground/60">
                                     <div className="size-1.5 rounded-full bg-current" />
-                                )}
-                            </div>
-
-                            <div
-                                className="flex min-w-0 flex-1 items-center gap-3"
-                                style={{ paddingLeft: `${depth * 0.65}rem` }}
-                            >
-                                <CategoryIcon
-                                    name={category.icon}
-                                    variant="badge"
-                                    presentation={color}
-                                    className="size-9 rounded-2xl"
-                                    iconSize={18}
-                                />
-
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-foreground">
-                                        {category.name}
-                                    </p>
-                                    <p className="truncate text-xs text-muted-foreground">
-                                        {hasChildren
-                                            ? `${category.children.length} subcategories`
-                                            : depth === 0
-                                                ? 'Main category'
-                                                : 'Subcategory'}
-                                    </p>
                                 </div>
-                            </div>
-                        </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => onSelect(category)}
+                                className={`flex min-w-0 flex-1 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                                    isSelected
+                                        ? 'border-brand/40 bg-brand/15 text-foreground'
+                                        : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
+                                }`}
+                            >
+                                <div
+                                    className="flex min-w-0 flex-1 items-center gap-3"
+                                    style={{ paddingLeft: `${depth * 0.65}rem` }}
+                                >
+                                    <CategoryIcon
+                                        name={category.icon}
+                                        variant="badge"
+                                        presentation={color}
+                                        className="size-9 rounded-2xl"
+                                        iconSize={18}
+                                    />
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-foreground">
+                                            {category.name}
+                                        </p>
+                                        <p className="truncate text-xs text-muted-foreground">
+                                            {hasChildren
+                                                ? `${category.children.length} subcategories`
+                                                : depth === 0
+                                                    ? 'Main category'
+                                                    : 'Subcategory'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
 
                         {hasChildren && isExpanded ? (
                             <div className="border-l border-brand/15 pl-3">
@@ -340,6 +383,7 @@ function ParentCategoryTree({
                                     expandedIds={expandedIds}
                                     selectedParentId={selectedParentId}
                                     onSelect={onSelect}
+                                    onToggle={onToggle}
                                     depth={depth + 1}
                                 />
                             </div>
@@ -359,13 +403,15 @@ export default function AllCategories({
     categoryColors,
 }: Props) {
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
-    const [colorPickerOpen, setColorPickerOpen] = useState(false);
+    const [colorDialogOpen, setColorDialogOpen] = useState(false);
     const [typePickerOpen, setTypePickerOpen] = useState(false);
     const [parentPickerOpen, setParentPickerOpen] = useState(false);
+    const [parentPickerView, setParentPickerView] = useState<'choice' | 'browse'>('choice');
     const [iconQuery, setIconQuery] = useState('');
     const [parentQuery, setParentQuery] = useState('');
     const iconPickerRef = useRef<HTMLDivElement | null>(null);
-    const colorPickerRef = useRef<HTMLDivElement | null>(null);
+    const iconSearchInputRef = useRef<HTMLInputElement | null>(null);
+    const nativeColorInputRef = useRef<HTMLInputElement | null>(null);
     const typePickerRef = useRef<HTMLDivElement | null>(null);
     const parentPickerRef = useRef<HTMLDivElement | null>(null);
 
@@ -400,8 +446,6 @@ export default function AllCategories({
     const [expandedParentIds, setExpandedParentIds] = useState<Set<number>>(
         () => new Set(),
     );
-    const totalRootCategories =
-        incomeCategories.length + expenseCategories.length;
     const selectedTypeOption =
         categoryTypes.find((option) => option.value === data.type)
         ?? categoryTypes[0];
@@ -409,6 +453,9 @@ export default function AllCategories({
         activeParentOptions.find(
             (option) => String(option.id) === data.parent_id,
         ) ?? null;
+    const parentTriggerLabel = selectedParentOption
+        ? `Subcategory of ${selectedParentOption.name}`
+        : 'Main category';
     const selectedColor = resolveCategoryColorPresentation(data.color, colorMap);
     const flattenedActiveCategories = useMemo(
         () => flattenCategoryTree(activeCategoryTree),
@@ -421,14 +468,13 @@ export default function AllCategories({
             return [];
         }
 
-        return allIconOptions
+        return searchableIconOptions
             .map((option) => {
                 const label = option.label.toLowerCase();
                 const value = option.value.toLowerCase();
                 const startsWithScore =
                     label.startsWith(query) || value.startsWith(query) ? 0 : 1;
-                const includesMatch =
-                    label.includes(query) || value.includes(query);
+                const includesMatch = option.searchTerms.some((term) => term.includes(query));
 
                 if (!includesMatch) {
                     return null;
@@ -439,7 +485,7 @@ export default function AllCategories({
                     score: startsWithScore,
                 };
             })
-            .filter((entry): entry is { option: CategoryOption; score: number } => entry !== null)
+            .filter((entry): entry is { option: SearchableCategoryOption; score: number } => entry !== null)
             .sort((left, right) => {
                 if (left.score !== right.score) {
                     return left.score - right.score;
@@ -447,7 +493,6 @@ export default function AllCategories({
 
                 return left.option.label.localeCompare(right.option.label);
             })
-            .slice(0, 50)
             .map((entry) => entry.option);
     }, [iconQuery]);
     const filteredParentResults = useMemo(() => {
@@ -509,6 +554,20 @@ export default function AllCategories({
     }, [activeCategoryTree]);
 
     useEffect(() => {
+        if (!iconPickerOpen) {
+            return;
+        }
+
+        const frame = window.requestAnimationFrame(() => {
+            iconSearchInputRef.current?.focus();
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frame);
+        };
+    }, [iconPickerOpen]);
+
+    useEffect(() => {
         const handlePointerDown = (event: MouseEvent): void => {
             const target = event.target;
 
@@ -524,13 +583,6 @@ export default function AllCategories({
             }
 
             if (
-                colorPickerRef.current !== null
-                && !colorPickerRef.current.contains(target)
-            ) {
-                setColorPickerOpen(false);
-            }
-
-            if (
                 typePickerRef.current !== null
                 && !typePickerRef.current.contains(target)
             ) {
@@ -542,6 +594,7 @@ export default function AllCategories({
                 && !parentPickerRef.current.contains(target)
             ) {
                 setParentPickerOpen(false);
+                setParentPickerView('choice');
                 setParentQuery('');
             }
         };
@@ -559,9 +612,10 @@ export default function AllCategories({
             onSuccess: () => {
                 reset('name', 'parent_id');
                 setIconPickerOpen(false);
-                setColorPickerOpen(false);
+                setColorDialogOpen(false);
                 setTypePickerOpen(false);
                 setParentPickerOpen(false);
+                setParentPickerView('choice');
                 setIconQuery('');
                 setParentQuery('');
             },
@@ -584,14 +638,8 @@ export default function AllCategories({
 
     const selectParentCategory = (category: CategoryNode): void => {
         setData('parent_id', String(category.id));
-
-        if (category.children.length > 0) {
-            toggleParentCategory(category.id);
-
-            return;
-        }
-
         setParentPickerOpen(false);
+        setParentPickerView('choice');
         setParentQuery('');
     };
 
@@ -632,8 +680,8 @@ export default function AllCategories({
                     <div className="relative overflow-hidden rounded-[28px] border border-brand/20 bg-linear-to-br from-brand/10 via-background to-background p-5 sm:p-6">
                         <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.22),transparent_65%)] lg:block" />
 
-                        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] lg:items-start">
-                            <div className="space-y-4">
+                        <div className="relative flex justify-center text-center">
+                            <div className="flex max-w-3xl flex-col items-center space-y-4">
                                 <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-brand">
                                     <Sparkles className="size-3.5" />
                                     Category Studio
@@ -644,62 +692,6 @@ export default function AllCategories({
                                     title="Shape your income and expense structure"
                                     description="Create main categories, nest subcategories, and build a cleaner budgeting system around your own naming and color language."
                                 />
-                            </div>
-
-                            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                                <Card className="border-brand/20 bg-black/20 py-4 shadow-none">
-                                    <CardContent className="px-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex size-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
-                                                <ArrowUpCircle className="size-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                                                    Income
-                                                </p>
-                                                <p className="text-2xl font-semibold text-foreground">
-                                                    {incomeCategories.length}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="border-brand/20 bg-black/20 py-4 shadow-none">
-                                    <CardContent className="px-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex size-10 items-center justify-center rounded-2xl border border-red-400/20 bg-red-500/18 text-red-300 shadow-[0_0_24px_rgba(239,68,68,0.28)]">
-                                                <ArrowDownCircle className="size-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                                                    Expense
-                                                </p>
-                                                <p className="text-2xl font-semibold text-foreground">
-                                                    {expenseCategories.length}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="border-brand/20 bg-black/20 py-4 shadow-none">
-                                    <CardContent className="px-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex size-10 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">
-                                                <Layers3 className="size-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                                                    Main categories
-                                                </p>
-                                                <p className="text-2xl font-semibold text-foreground">
-                                                    {totalRootCategories}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
                             </div>
                         </div>
                     </div>
@@ -739,7 +731,221 @@ export default function AllCategories({
                                             <InputError message={errors.name} />
                                         </div>
 
-                                        <div className="grid gap-3 md:grid-cols-[140px_minmax(0,1.3fr)] md:items-end">
+                                        <div className="grid min-w-0 gap-2">
+                                            <Label htmlFor="category-parent-trigger">Create main or subcategory</Label>
+                                            <div className="relative" ref={parentPickerRef}>
+                                                <button
+                                                    id="category-parent-trigger"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setParentPickerOpen((current) => {
+                                                            const next = !current;
+
+                                                            if (next) {
+                                                                setParentPickerView('choice');
+                                                            } else {
+                                                                setParentPickerView('choice');
+                                                                setParentQuery('');
+                                                            }
+
+                                                            return next;
+                                                        });
+                                                        setIconPickerOpen(false);
+                                                        setTypePickerOpen(false);
+                                                    }}
+                                                    aria-haspopup="listbox"
+                                                    aria-expanded={parentPickerOpen}
+                                                    className="flex h-11 w-full items-center justify-between rounded-2xl border border-border bg-background/60 px-3 text-left transition hover:border-brand/25"
+                                                >
+                                                    <div className="flex min-w-0 items-center gap-2.5">
+                                                        {selectedParentOption ? (
+                                                            <>
+                                                                <CategoryIcon
+                                                                    name={selectedParentOption.icon}
+                                                                    variant="badge"
+                                                                    presentation={resolveCategoryColorPresentation(selectedParentOption.color, colorMap)}
+                                                                    className="size-7 rounded-[14px]"
+                                                                    iconSize={16}
+                                                                />
+                                                                <span className="truncate text-sm font-medium text-foreground">
+                                                                    {parentTriggerLabel}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="truncate text-sm font-medium text-foreground">
+                                                                {parentTriggerLabel}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <ChevronDown className="size-4 text-muted-foreground" />
+                                                </button>
+
+                                                {parentPickerOpen ? (
+                                                    <div className="absolute left-0 z-30 mt-2 w-full min-w-56 rounded-3xl border border-brand/20 bg-background/95 p-2 shadow-2xl shadow-black/30 backdrop-blur">
+                                                        <div className="grid gap-2">
+                                                            {parentPickerView === 'choice' ? (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setData('parent_id', '');
+                                                                            setParentPickerOpen(false);
+                                                                            setParentPickerView('choice');
+                                                                            setParentQuery('');
+                                                                        }}
+                                                                        className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                                                                            data.parent_id === ''
+                                                                                ? 'border-brand/40 bg-brand/15 text-foreground'
+                                                                                : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-dashed border-brand/20 bg-black/15 text-brand/80">
+                                                                            <Layers3 className="size-4.5" />
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="truncate text-sm font-semibold">Main category</p>
+                                                                            <p className="truncate text-xs text-muted-foreground">Create this category at the top level.</p>
+                                                                        </div>
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setParentPickerView('browse')}
+                                                                        className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                                                                            selectedParentOption !== null
+                                                                                ? 'border-brand/40 bg-brand/15 text-foreground'
+                                                                                : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-brand/15 bg-black/15 text-brand">
+                                                                            {selectedParentOption ? (
+                                                                                <CategoryIcon
+                                                                                    name={selectedParentOption.icon}
+                                                                                    variant="badge"
+                                                                                    presentation={resolveCategoryColorPresentation(selectedParentOption.color, colorMap)}
+                                                                                    className="size-9 rounded-2xl"
+                                                                                    iconSize={18}
+                                                                                />
+                                                                            ) : (
+                                                                                <ChevronRight className="size-4" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="truncate text-sm font-semibold">
+                                                                                {selectedParentOption
+                                                                                    ? `Subcategory of ${selectedParentOption.name}`
+                                                                                    : 'Subcategory of...'}
+                                                                            </p>
+                                                                            <p className="truncate text-xs text-muted-foreground">
+                                                                                Choose where this subcategory should live.
+                                                                            </p>
+                                                                        </div>
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-black/15 p-3">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setParentPickerView('choice');
+                                                                                setParentQuery('');
+                                                                            }}
+                                                                            className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-brand/15 bg-background/50 text-muted-foreground transition hover:border-brand/25 hover:text-foreground"
+                                                                            aria-label="Back to category type selection"
+                                                                        >
+                                                                            <ArrowLeft className="size-4" />
+                                                                        </button>
+
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="text-sm font-semibold text-foreground">
+                                                                                Choose parent category
+                                                                            </p>
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                You are choosing where this new subcategory will be placed in the tree.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="relative">
+                                                                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                                                        <Input
+                                                                            value={parentQuery}
+                                                                            onChange={(event) =>
+                                                                                setParentQuery(event.target.value)
+                                                                            }
+                                                                            placeholder="Search categories..."
+                                                                            className="pl-9"
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
+                                                                        {parentQuery.trim() !== '' ? (
+                                                                            filteredParentResults.length === 0 ? (
+                                                                                <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                                                                                    No categories matched your search.
+                                                                                </div>
+                                                                            ) : (
+                                                                                filteredParentResults.map((category) => {
+                                                                                    const isActive = data.parent_id === String(category.id);
+                                                                                    const resultColor = resolveCategoryColorPresentation(category.color, colorMap);
+
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={category.id}
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                setData('parent_id', String(category.id));
+                                                                                                setParentPickerOpen(false);
+                                                                                                setParentPickerView('choice');
+                                                                                                setParentQuery('');
+                                                                                            }}
+                                                                                            className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                                                                                                isActive
+                                                                                                    ? 'border-brand/40 bg-brand/15 text-foreground'
+                                                                                                    : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
+                                                                                            }`}
+                                                                                        >
+                                                                                            <CategoryIcon
+                                                                                                name={category.icon}
+                                                                                                variant="badge"
+                                                                                                presentation={resultColor}
+                                                                                                className="size-9 rounded-2xl"
+                                                                                                iconSize={18}
+                                                                                            />
+                                                                                            <div className="min-w-0 flex-1">
+                                                                                                <p className="truncate text-sm font-semibold text-foreground">
+                                                                                                    {category.name}
+                                                                                                </p>
+                                                                                                <p className="truncate text-xs text-muted-foreground">
+                                                                                                    {category.path}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </button>
+                                                                                    );
+                                                                                })
+                                                                            )
+                                                                        ) : (
+                                                                            <ParentCategoryTree
+                                                                                categories={activeCategoryTree}
+                                                                                colorMap={colorMap}
+                                                                                expandedIds={expandedParentIds}
+                                                                                selectedParentId={data.parent_id}
+                                                                                onSelect={selectParentCategory}
+                                                                                onToggle={toggleParentCategory}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <InputError message={errors.parent_id} />
+                                        </div>
+
+                                        <div className="grid gap-3 md:grid-cols-3 md:items-end">
                                             <div className="grid min-w-0 gap-2">
                                                 <Label htmlFor="category-type-trigger">Type</Label>
                                                 <div className="relative" ref={typePickerRef}>
@@ -749,7 +955,6 @@ export default function AllCategories({
                                                         onClick={() => {
                                                             setTypePickerOpen((current) => !current);
                                                             setIconPickerOpen(false);
-                                                            setColorPickerOpen(false);
                                                             setParentPickerOpen(false);
                                                         }}
                                                         aria-haspopup="listbox"
@@ -772,7 +977,7 @@ export default function AllCategories({
                                                     </button>
 
                                                     {typePickerOpen ? (
-                                                        <div className="absolute left-0 z-30 mt-2 w-full min-w-44 rounded-3xl border border-brand/20 bg-background/95 p-2 shadow-2xl shadow-black/30 backdrop-blur">
+                                                        <div className="absolute inset-x-0 z-30 mt-2 w-full min-w-0 overflow-hidden rounded-3xl border border-brand/20 bg-background/95 p-2 shadow-2xl shadow-black/30 backdrop-blur">
                                                             <div className="grid gap-2">
                                                                 {categoryTypes.map((typeOption) => {
                                                                     const isActive = data.type === typeOption.value;
@@ -787,7 +992,7 @@ export default function AllCategories({
                                                                                 setData('parent_id', '');
                                                                                 setTypePickerOpen(false);
                                                                             }}
-                                                                            className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                                                                            className={`flex w-full min-w-0 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
                                                                                 isActive
                                                                                     ? 'border-brand/40 bg-brand/15 text-foreground'
                                                                                     : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
@@ -819,191 +1024,50 @@ export default function AllCategories({
                                             </div>
 
                                             <div className="grid min-w-0 gap-2">
-                                                <Label htmlFor="category-parent-trigger">Create as</Label>
-                                                <div className="relative" ref={parentPickerRef}>
-                                                    <button
-                                                        id="category-parent-trigger"
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setParentPickerOpen((current) => !current);
-                                                            setIconPickerOpen(false);
-                                                            setColorPickerOpen(false);
-                                                            setTypePickerOpen(false);
-                                                        }}
-                                                        aria-haspopup="listbox"
-                                                        aria-expanded={parentPickerOpen}
-                                                        className="flex h-11 w-full items-center justify-between rounded-2xl border border-border bg-background/60 px-3 text-left transition hover:border-brand/25"
-                                                    >
-                                                        <div className="flex min-w-0 items-center gap-2.5">
-                                                            {selectedParentOption ? (
-                                                                <>
-                                                                    <CategoryIcon
-                                                                        name={selectedParentOption.icon}
-                                                                        variant="badge"
-                                                                        presentation={resolveCategoryColorPresentation(selectedParentOption.color, colorMap)}
-                                                                        className="size-7 rounded-[14px]"
-                                                                        iconSize={16}
-                                                                    />
-                                                                    <span className="truncate text-sm font-medium text-foreground">
-                                                                        {selectedParentOption.name}
-                                                                    </span>
-                                                                </>
-                                                            ) : (
-                                                                <span className="truncate text-sm font-medium text-foreground">
-                                                                    Main category
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <ChevronDown className="size-4 text-muted-foreground" />
-                                                    </button>
-
-                                                    {parentPickerOpen ? (
-                                                        <div className="absolute left-0 z-30 mt-2 w-full min-w-56 rounded-3xl border border-brand/20 bg-background/95 p-2 shadow-2xl shadow-black/30 backdrop-blur">
-                                                            <div className="grid gap-2">
-                                                                <div className="relative">
-                                                                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                                                    <Input
-                                                                        value={parentQuery}
-                                                                        onChange={(event) =>
-                                                                            setParentQuery(event.target.value)
-                                                                        }
-                                                                        placeholder="Search categories..."
-                                                                        className="pl-9"
-                                                                    />
-                                                                </div>
-
-                                                                <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
-                                                                    {parentQuery.trim() !== '' ? (
-                                                                        filteredParentResults.length === 0 ? (
-                                                                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-                                                                                No categories matched your search.
-                                                                            </div>
-                                                                        ) : (
-                                                                            filteredParentResults.map((category) => {
-                                                                                const isActive = data.parent_id === String(category.id);
-                                                                                const resultColor = resolveCategoryColorPresentation(category.color, colorMap);
-
-                                                                                return (
-                                                                                    <button
-                                                                                        key={category.id}
-                                                                                        type="button"
-                                                                                        onClick={() => {
-                                                                                            setData('parent_id', String(category.id));
-                                                                                            setParentPickerOpen(false);
-                                                                                            setParentQuery('');
-                                                                                        }}
-                                                                                        className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                                                                                            isActive
-                                                                                                ? 'border-brand/40 bg-brand/15 text-foreground'
-                                                                                                : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
-                                                                                        }`}
-                                                                                    >
-                                                                                        <CategoryIcon
-                                                                                            name={category.icon}
-                                                                                            variant="badge"
-                                                                                            presentation={resultColor}
-                                                                                            className="size-9 rounded-2xl"
-                                                                                            iconSize={18}
-                                                                                        />
-                                                                                        <div className="min-w-0 flex-1">
-                                                                                            <p className="truncate text-sm font-semibold text-foreground">
-                                                                                                {category.name}
-                                                                                            </p>
-                                                                                            <p className="truncate text-xs text-muted-foreground">
-                                                                                                {category.path}
-                                                                                            </p>
-                                                                                        </div>
-                                                                                    </button>
-                                                                                );
-                                                                            })
-                                                                        )
-                                                                    ) : (
-                                                                        <>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    setData('parent_id', '');
-                                                                                    setParentPickerOpen(false);
-                                                                                    setParentQuery('');
-                                                                                }}
-                                                                                className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                                                                                    data.parent_id === ''
-                                                                                        ? 'border-brand/40 bg-brand/15 text-foreground'
-                                                                                        : 'border-border bg-background/50 text-muted-foreground hover:border-brand/20 hover:text-foreground'
-                                                                                }`}
-                                                                            >
-                                                                                <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-dashed border-brand/20 bg-black/15 text-brand/80">
-                                                                                    <Layers3 className="size-4.5" />
-                                                                                </div>
-                                                                                <div className="min-w-0 flex-1">
-                                                                                    <p className="truncate text-sm font-semibold">Main category</p>
-                                                                                    <p className="truncate text-xs text-muted-foreground">No parent. Create a new main category.</p>
-                                                                                </div>
-                                                                            </button>
-
-                                                                            <ParentCategoryTree
-                                                                                categories={activeCategoryTree}
-                                                                                colorMap={colorMap}
-                                                                                expandedIds={expandedParentIds}
-                                                                                selectedParentId={data.parent_id}
-                                                                                onSelect={selectParentCategory}
-                                                                            />
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : null}
-                                                </div>
-                                                <InputError message={errors.parent_id} />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-3 md:grid-cols-[72px_72px] md:items-end">
-
-                                        <div className="grid min-w-0 gap-2">
                                             <Label>Icon</Label>
-                                            <div className="relative" ref={iconPickerRef}>
-                                                <button
-                                                    id="category-icon-trigger"
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setIconPickerOpen((current) => !current);
-                                                        setColorPickerOpen(false);
-                                                        setTypePickerOpen(false);
-                                                        setParentPickerOpen(false);
-                                                    }}
-                                                    aria-haspopup="dialog"
-                                                    aria-expanded={iconPickerOpen}
-                                                    className="flex h-11 w-full items-center justify-between rounded-2xl border border-border bg-background/60 px-3 text-left transition hover:border-brand/25"
-                                                >
-                                                    <CategoryIcon
-                                                        name={data.icon}
-                                                        variant="badge"
-                                                        presentation={selectedColor}
-                                                        className="size-8 rounded-[14px]"
-                                                        iconSize={18}
-                                                    />
-                                                    <ChevronDown className="size-4 text-muted-foreground" />
-                                                </button>
-
-                                                {iconPickerOpen ? (
-                                                    <div className="absolute left-0 z-30 mt-2 w-80 rounded-3xl border border-brand/20 bg-background/95 p-3 shadow-2xl shadow-black/30 backdrop-blur">
-                                                        <Input
-                                                            value={iconQuery}
-                                                            onChange={(event) =>
-                                                                setIconQuery(event.target.value)
-                                                            }
-                                                            placeholder="Search Lucide icons..."
-                                                            className="mb-3"
+                                            <div
+                                                className="relative w-full"
+                                                ref={iconPickerRef}
+                                            >
+                                                <div className="flex h-11 items-center gap-2 rounded-2xl border border-border bg-background/60 px-2 transition hover:border-brand/25 focus-within:border-brand/35">
+                                                    <div
+                                                        id="category-icon-trigger"
+                                                        aria-hidden="true"
+                                                        className="shrink-0 rounded-2xl"
+                                                    >
+                                                        <CategoryIcon
+                                                            name={data.icon}
+                                                            variant="badge"
+                                                            presentation={selectedColor}
+                                                            className="size-8 rounded-[14px]"
+                                                            iconSize={18}
                                                         />
+                                                    </div>
 
+                                                    <div className="relative min-w-0 flex-1">
+                                                        <Search className="pointer-events-none absolute top-1/2 left-0 size-4 -translate-y-1/2 text-muted-foreground" />
+                                                        <Input
+                                                            ref={iconSearchInputRef}
+                                                            value={iconQuery}
+                                                            onFocus={() => {
+                                                                setIconPickerOpen(true);
+                                                                setTypePickerOpen(false);
+                                                                setParentPickerOpen(false);
+                                                            }}
+                                                            onChange={(event) => {
+                                                                setIconQuery(event.target.value);
+                                                                setIconPickerOpen(true);
+                                                            }}
+                                                            placeholder="Search icons"
+                                                            className="h-9 border-0 bg-transparent px-0 pl-6 shadow-none focus-visible:ring-0"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {iconPickerOpen && iconQuery.trim() !== '' ? (
+                                                    <div className="absolute left-0 z-30 mt-2 max-h-80 w-full overflow-y-auto rounded-3xl border border-brand/20 bg-background/95 p-3 shadow-2xl shadow-black/30 backdrop-blur">
                                                         <div className="grid gap-2">
-                                                            {iconQuery.trim() === '' ? (
-                                                                <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-                                                                    Search across all Lucide icons.
-                                                                </div>
-                                                            ) : filteredIconOptions.length === 0 ? (
+                                                            {filteredIconOptions.length === 0 ? (
                                                                 <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
                                                                     No icons matched your search.
                                                                 </div>
@@ -1017,6 +1081,7 @@ export default function AllCategories({
                                                                             type="button"
                                                                             onClick={() => {
                                                                                 setData('icon', iconOption.value);
+                                                                                setIconQuery('');
                                                                                 setIconPickerOpen(false);
                                                                             }}
                                                                             className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
@@ -1051,93 +1116,164 @@ export default function AllCategories({
                                             <InputError message={errors.icon} />
                                         </div>
 
-                                        <div className="grid min-w-0 gap-2">
+                                            <div className="grid min-w-0 gap-2">
                                             <Label>Color</Label>
-                                            <div className="relative" ref={colorPickerRef}>
-                                                <button
-                                                    id="category-color-trigger"
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setColorPickerOpen((current) => !current);
-                                                        setIconPickerOpen(false);
-                                                        setTypePickerOpen(false);
-                                                        setParentPickerOpen(false);
-                                                    }}
-                                                    aria-haspopup="dialog"
-                                                    aria-expanded={colorPickerOpen}
-                                                    className="flex h-11 w-full items-center justify-between rounded-2xl border border-border bg-background/60 px-3 text-left transition hover:border-brand/25"
-                                                >
-                                                    <CategoryColorSwatch
-                                                        presentation={selectedColor}
-                                                        className="size-8 rounded-[14px]"
-                                                    />
-                                                    <ChevronDown className="size-4 text-muted-foreground" />
-                                                </button>
-
-                                                {colorPickerOpen ? (
-                                                    <div className="absolute left-0 z-30 mt-2 w-80 rounded-3xl border border-brand/20 bg-background/95 p-4 shadow-2xl shadow-black/30 backdrop-blur">
-                                                        <div className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
-                                                            <div className="relative size-14">
-                                                                <CategoryColorSwatch
-                                                                    presentation={selectedColor}
-                                                                    className="size-14 rounded-[20px]"
-                                                                />
-                                                                <input
-                                                                    type="color"
-                                                                    value={
-                                                                        isHexColor(data.color)
-                                                                            ? normalizeHexColor(data.color)
-                                                                            : '#10b981'
-                                                                    }
-                                                                    onChange={(event) =>
-                                                                        setData(
-                                                                            'color',
-                                                                            event.target.value,
-                                                                        )
-                                                                    }
-                                                                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <div>
-                                                                    <p className="text-sm font-semibold text-foreground">
-                                                                        Custom color picker
-                                                                    </p>
-                                                                    <p className="text-xs text-muted-foreground">
-                                                                        Pick any color and edit the exact hex value here.
-                                                                    </p>
-                                                                </div>
-                                                                <Input
-                                                                    id="category-color-hex"
-                                                                    value={
-                                                                        isHexColor(data.color)
-                                                                            ? normalizeHexColor(data.color)
-                                                                            : ''
-                                                                    }
-                                                                    onChange={(event) =>
-                                                                        setData(
-                                                                            'color',
-                                                                            event.target.value,
-                                                                        )
-                                                                    }
-                                                                    placeholder="#10b981"
-                                                                    spellCheck={false}
-                                                                    autoCapitalize="off"
-                                                                    autoCorrect="off"
-                                                                />
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    Use values like #10b981 or #2dd4bf.
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : null}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setColorDialogOpen(true)}
+                                                className="flex h-11 w-full items-center gap-3 rounded-2xl border border-border bg-background/60 px-3 text-left transition hover:border-brand/25"
+                                            >
+                                                <CategoryColorSwatch
+                                                    presentation={selectedColor}
+                                                    className="size-8 rounded-[14px]"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-semibold text-foreground">
+                                                        {isHexColor(data.color)
+                                                            ? normalizeHexColor(data.color)
+                                                            : selectedColor.label}
+                                                    </p>
+                                                    <p className="truncate text-xs text-muted-foreground">
+                                                        Open picker
+                                                    </p>
+                                                </div>
+                                                <Palette className="size-4 text-muted-foreground" />
+                                            </button>
                                             <InputError message={errors.color} />
                                         </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                <Dialog open={colorDialogOpen} onOpenChange={setColorDialogOpen}>
+                                    <DialogContent className="border-brand/25 bg-[linear-gradient(180deg,rgba(12,14,18,0.98),rgba(24,28,36,0.98))] p-0 text-foreground sm:max-w-lg">
+                                        <DialogHeader className="border-b border-white/8 px-6 pt-6 pb-4 text-left">
+                                            <DialogTitle className="flex items-center gap-2 text-xl">
+                                                <Palette className="size-5 text-brand" />
+                                                Pick category color
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Choose a preset shade or dial in a custom color that fits your category system.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="grid gap-6 px-6 pb-6">
+                                            <div className="rounded-[28px] border border-white/8 bg-white/4 p-4">
+                                                <div className="flex items-end justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                                                            Presets
+                                                        </p>
+                                                        <p className="mt-2 text-sm text-muted-foreground">
+                                                            Pick from the built-in palette, or use a custom hex below.
+                                                        </p>
+                                                    </div>
+                                                    <div className="hidden items-center gap-3 rounded-full border border-white/8 bg-black/20 px-3 py-2 sm:flex">
+                                                        <CategoryColorSwatch
+                                                            presentation={selectedColor}
+                                                            className="size-7 rounded-2xl border-white/15"
+                                                        />
+                                                        <div>
+                                                            <p className="text-xs uppercase tracking-[0.16em] text-white/55">
+                                                                Selected
+                                                            </p>
+                                                            <p className="text-sm font-semibold text-foreground">
+                                                                {isHexColor(data.color)
+                                                                    ? normalizeHexColor(data.color)
+                                                                    : selectedColor.label}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 grid grid-cols-5 gap-1.5">
+                                                        {categoryColors.map((colorOption) => {
+                                                            const isActive = data.color === colorOption.value;
+                                                            const colorPresentation = resolveCategoryColorPresentation(colorOption.value, colorMap);
+
+                                                            return (
+                                                                <button
+                                                                    key={colorOption.value}
+                                                                    type="button"
+                                                                    onClick={() => setData('color', colorOption.value)}
+                                                                    aria-label={`Choose ${colorOption.label}`}
+                                                                    className={`flex aspect-square w-full items-center justify-center rounded-[14px] border p-0.5 transition ${
+                                                                        isActive
+                                                                            ? 'border-brand bg-brand/12 shadow-[0_0_0_1px_rgba(16,185,129,0.2)]'
+                                                                            : 'border-white/8 bg-black/15 hover:border-brand/25'
+                                                                    }`}
+                                                                >
+                                                                    <CategoryColorSwatch
+                                                                        presentation={colorPresentation}
+                                                                        className="size-full rounded-xl border-white/15"
+                                                                    />
+                                                                </button>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-3 rounded-[28px] border border-white/8 bg-white/4 p-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Custom color
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Use the system color wheel, then refine the hex value if needed.
+                                                        </p>
+                                                    </div>
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="rounded-full border-white/10 bg-black/20"
+                                                        onClick={() => nativeColorInputRef.current?.click()}
+                                                    >
+                                                        <Pipette className="size-4" />
+                                                        Pick custom
+                                                    </Button>
+                                                </div>
+
+                                                <input
+                                                    ref={nativeColorInputRef}
+                                                    type="color"
+                                                    value={
+                                                        isHexColor(data.color)
+                                                            ? normalizeHexColor(data.color)
+                                                            : '#10b981'
+                                                    }
+                                                    onChange={(event) => setData('color', event.target.value)}
+                                                    className="sr-only"
+                                                />
+
+                                                <div className="grid gap-3 sm:grid-cols-[72px_minmax(0,1fr)] sm:items-center">
+                                                    <CategoryColorSwatch
+                                                        presentation={selectedColor}
+                                                        className="size-18 rounded-3xl border-white/15"
+                                                    />
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="category-color-hex">Hex value</Label>
+                                                        <Input
+                                                            id="category-color-hex"
+                                                            value={
+                                                                isHexColor(data.color)
+                                                                    ? normalizeHexColor(data.color)
+                                                                    : data.color
+                                                            }
+                                                            onChange={(event) => setData('color', event.target.value)}
+                                                            placeholder="#10b981"
+                                                            spellCheck={false}
+                                                            autoCapitalize="off"
+                                                            autoCorrect="off"
+                                                            className="h-11 rounded-2xl border-white/10 bg-black/20"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
 
                                 <div className="flex justify-end">
                                     <Button

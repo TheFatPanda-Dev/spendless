@@ -31,7 +31,18 @@ class EnableBankingConnectionController extends Controller
     public function institutions(EnableBankingClient $client): JsonResponse
     {
         $country = (string) config('services.enable_banking.country', 'SI');
-        $aspsps = $client->getAspsps($country);
+
+        try {
+            $aspsps = $client->getAspsps($country);
+        } catch (Throwable $exception) {
+            return response()->json([
+                'configured' => false,
+                'country' => $country,
+                'preferred' => [],
+                'institutions' => [],
+                'message' => 'Enable Banking is not configured for this environment.',
+            ]);
+        }
 
         $mapped = collect($aspsps)
             ->map(fn (array $aspsp): array => [
@@ -46,6 +57,7 @@ class EnableBankingConnectionController extends Controller
             ->values();
 
         return response()->json([
+            'configured' => true,
             'country' => $country,
             'preferred' => $preferred,
             'institutions' => $mapped,
@@ -56,11 +68,16 @@ class EnableBankingConnectionController extends Controller
     {
         $validated = $request->validated();
 
-        $resolvedAspspName = $this->resolveAspspName(
-            client: $client,
-            country: $validated['aspsp_country'],
-            requestedName: $validated['aspsp_name'],
-        );
+        try {
+            $resolvedAspspName = $this->resolveAspspName(
+                client: $client,
+                country: $validated['aspsp_country'],
+                requestedName: $validated['aspsp_name'],
+            );
+        } catch (Throwable $exception) {
+            return to_route('bank-connections')
+                ->with('error', 'Enable Banking is not configured for this environment.');
+        }
 
         if ($resolvedAspspName === null) {
             return to_route('bank-connections')->with('error', 'Selected bank is not available in Enable Banking sandbox.');

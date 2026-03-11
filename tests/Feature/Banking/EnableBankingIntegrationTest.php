@@ -11,11 +11,27 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class EnableBankingIntegrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_institutions_endpoint_returns_empty_payload_when_enable_banking_is_not_configured(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->getJson(route('banking.institutions'));
+
+        $response->assertOk()->assertJson([
+            'configured' => false,
+            'preferred' => [],
+            'institutions' => [],
+            'message' => 'Enable Banking is not configured for this environment.',
+        ]);
+    }
 
     public function test_authenticated_user_can_start_enable_banking_authorization(): void
     {
@@ -132,6 +148,29 @@ class EnableBankingIntegrationTest extends TestCase
         ]);
 
         Queue::assertPushed(SyncEnableBankingConnectionJob::class);
+    }
+
+    public function test_start_redirects_back_with_error_when_enable_banking_is_not_configured(): void
+    {
+        $this->mock(EnableBankingJwtFactory::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('makeToken')
+                ->andThrow(new RuntimeException('Enable Banking credentials are not configured.'));
+        });
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->from(route('bank-connections'))
+            ->post(route('banking.start'), [
+                'aspsp_name' => 'Revolut',
+                'aspsp_country' => 'SI',
+                'psu_type' => 'personal',
+            ]);
+
+        $response->assertRedirect(route('bank-connections'));
+        $response->assertSessionHas('error', 'Enable Banking is not configured for this environment.');
+
+        $this->assertDatabaseCount('bank_connections', 0);
     }
 
     public function test_sync_job_persists_transactions_with_continuation_key(): void
