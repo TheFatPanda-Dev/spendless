@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Categories\CreateDefaultMainCategories;
 use App\Concerns\PasswordValidationRules;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +12,10 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules;
+
+    public function __construct(
+        private readonly CreateDefaultMainCategories $createDefaultMainCategories,
+    ) {}
 
     /**
      * Validate and create a newly registered user.
@@ -25,11 +30,15 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
             'password_set_at' => now(),
         ]);
+
+        $this->createDefaultMainCategories->handle($user);
+
+        return $user;
     }
 }

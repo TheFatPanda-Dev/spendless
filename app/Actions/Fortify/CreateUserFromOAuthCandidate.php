@@ -2,12 +2,17 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Categories\CreateDefaultMainCategories;
 use App\Models\User;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class CreateUserFromOAuthCandidate
 {
+    public function __construct(
+        private readonly CreateDefaultMainCategories $createDefaultMainCategories,
+    ) {}
+
     /**
      * Create or update a user from an OAuth registration candidate.
      *
@@ -35,7 +40,7 @@ class CreateUserFromOAuthCandidate
             ->first();
 
         if (! $user) {
-            return User::create([
+            $user = User::create([
                 'name' => $name !== '' ? $name : Str::title($providerLabel.' User'),
                 'email' => $email,
                 $providerIdColumn => $providerId,
@@ -44,6 +49,10 @@ class CreateUserFromOAuthCandidate
                 'password' => Str::random(40),
                 'password_set_at' => null,
             ]);
+
+            $this->createDefaultMainCategories->handle($user);
+
+            return $user;
         }
 
         $user->{$providerIdColumn} ??= $providerId;

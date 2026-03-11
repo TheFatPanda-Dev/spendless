@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,46 @@ use Tests\TestCase;
 class SocialAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * @return list<string>
+     */
+    private function expectedDefaultMainCategories(): array
+    {
+        return [
+            'Housing',
+            'Transportation',
+            'Groceries',
+            'Food & Drink',
+            'Health & Wellness',
+            'Personal Care',
+            'Shopping',
+            'Entertainment',
+            'Subscriptions',
+            'Travel & Vacation',
+            'Debt Repayment',
+            'Savings & Goals',
+            'Investments',
+            'Education',
+            'Family & Dependents',
+            'Gifts & Occasions',
+            'Giving & Donations',
+        ];
+    }
+
+    private function assertDefaultMainCategoriesCreatedFor(User $user): void
+    {
+        $this->assertSame(
+            $this->expectedDefaultMainCategories(),
+            Category::query()
+                ->where('user_id', $user->id)
+                ->whereNull('parent_id')
+                ->where('type', 'expense')
+                ->orderBy('id')
+                ->pluck('name')
+                ->all(),
+        );
+    }
 
     public function test_google_redirect_route_redirects_to_google_provider()
     {
@@ -410,6 +451,9 @@ class SocialAuthenticationTest extends TestCase
             'google_id' => 'google-prompt-1',
             'google_avatar' => 'https://example.com/prompt-google-avatar.png',
         ]);
+        $this->assertDefaultMainCategoriesCreatedFor(
+            User::query()->where('email', 'prompt-google@example.com')->firstOrFail(),
+        );
     }
 
     public function test_user_can_confirm_oauth_prompt_and_register_with_github(): void
