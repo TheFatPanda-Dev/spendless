@@ -2,6 +2,7 @@
 
 namespace App\Services\Plaid;
 
+use App\Actions\Transactions\ResolveBankTransactionCategory;
 use App\Jobs\SyncPlaidConnectionJob;
 use App\Models\BankAccount;
 use App\Models\BankActivityLog;
@@ -20,6 +21,7 @@ class PlaidTransactionsService
     public function __construct(
         private readonly PlaidClient $plaidClient,
         private readonly PlaidWebhookService $webhookService,
+        private readonly ResolveBankTransactionCategory $resolveBankTransactionCategory,
     ) {}
 
     public function createLinkToken(User $user, Wallet $wallet, ?string $redirectUri = null): string
@@ -324,7 +326,7 @@ class PlaidTransactionsService
             return 0;
         }
 
-        BankTransaction::updateOrCreate(
+        $bankTransaction = BankTransaction::query()->updateOrCreate(
             [
                 'bank_connection_id' => $connection->id,
                 'plaid_transaction_id' => $plaidTransactionId,
@@ -354,6 +356,16 @@ class PlaidTransactionsService
                 'removed_at' => null,
             ],
         );
+
+        if (! $bankTransaction->category_manually_set && $connection->user !== null) {
+            $resolvedCategory = ($this->resolveBankTransactionCategory)($bankTransaction, $connection->user);
+
+            if ($bankTransaction->category_id !== $resolvedCategory?->id) {
+                $bankTransaction->forceFill([
+                    'category_id' => $resolvedCategory?->id,
+                ])->save();
+            }
+        }
 
         return 1;
     }

@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OAuthRegistrationController;
 use App\Http\Controllers\BankAccountController;
-use App\Http\Controllers\BankConnectionsController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PlaidWebhookController;
@@ -23,7 +22,6 @@ Route::inertia('/terms', 'terms')->name('terms');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
-    Route::get('bank-connections', BankConnectionsController::class)->name('bank-connections');
     Route::get('wallets/sync-status', WalletSyncStatusController::class)
         ->middleware('throttle:banking-sensitive')
         ->name('wallets.sync-status');
@@ -33,6 +31,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['index', 'store', 'show']);
     Route::get('accounts/{bankAccount}', [BankAccountController::class, 'show'])
         ->name('accounts.show');
+    Route::patch('accounts/{bankAccount}/transactions/{bankTransaction}', [BankAccountController::class, 'update'])
+        ->name('accounts.transactions.update');
 
     Route::middleware('throttle:banking-sensitive')->group(function (): void {
         Route::post('wallets/quick-connect', [WalletController::class, 'quickConnect'])

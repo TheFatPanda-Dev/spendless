@@ -56,6 +56,22 @@ class AllCategoriesController extends Controller
         return back()->with('success', 'Category created successfully.');
     }
 
+    public function destroy(Request $request, Category $category): RedirectResponse
+    {
+        $this->authorize('delete', $category);
+
+        $hasChildren = $category->children()->exists();
+
+        $category->delete();
+
+        return back()->with(
+            'success',
+            $hasChildren
+                ? 'Category and subcategories deleted.'
+                : 'Category deleted.',
+        );
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */

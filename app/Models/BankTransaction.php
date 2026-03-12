@@ -13,6 +13,8 @@ class BankTransaction extends Model
     protected $fillable = [
         'bank_connection_id',
         'bank_account_id',
+        'category_id',
+        'category_manually_set',
         'external_uid',
         'plaid_transaction_id',
         'plaid_pending_transaction_id',
@@ -46,6 +48,7 @@ class BankTransaction extends Model
             'authorized_date' => 'date',
             'amount' => 'decimal:2',
             'pending' => 'boolean',
+            'category_manually_set' => 'boolean',
             'category' => 'array',
             'personal_finance_category' => 'array',
             'location_encrypted' => 'encrypted:array',
@@ -63,5 +66,10 @@ class BankTransaction extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(BankAccount::class, 'bank_account_id');
+    }
+
+    public function assignedCategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
     }
 }

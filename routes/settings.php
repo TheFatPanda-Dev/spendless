@@ -16,6 +16,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/wallets', [WalletAccountController::class, 'edit'])->name('settings.wallets.edit');
     Route::get('settings/all-categories', [AllCategoriesController::class, 'edit'])->name('settings.categories.edit');
     Route::post('settings/all-categories', [AllCategoriesController::class, 'store'])->name('settings.categories.store');
+    Route::delete('settings/all-categories/{category}', [AllCategoriesController::class, 'destroy'])
+        ->name('settings.categories.destroy');
     Route::patch('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'update'])
         ->name('settings.wallets.update');
     Route::delete('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'destroy'])
@@ -50,7 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::redirect('settings/appearance', '/settings/profile')->name('appearance.edit');
 
     Route::redirect('settings/two-factor', '/settings/security')
         ->name('two-factor.show');

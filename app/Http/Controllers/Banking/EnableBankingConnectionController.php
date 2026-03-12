@@ -25,7 +25,7 @@ class EnableBankingConnectionController extends Controller
 
         $bankConnection->delete();
 
-        return to_route('bank-connections')->with('success', 'Bank connection deleted.');
+        return to_route('dashboard')->with('success', 'Bank connection deleted.');
     }
 
     public function institutions(EnableBankingClient $client): JsonResponse
@@ -75,12 +75,12 @@ class EnableBankingConnectionController extends Controller
                 requestedName: $validated['aspsp_name'],
             );
         } catch (Throwable $exception) {
-            return to_route('bank-connections')
+            return to_route('dashboard')
                 ->with('error', 'Enable Banking is not configured for this environment.');
         }
 
         if ($resolvedAspspName === null) {
-            return to_route('bank-connections')->with('error', 'Selected bank is not available in Enable Banking sandbox.');
+            return to_route('dashboard')->with('error', 'Selected bank is not available in Enable Banking sandbox.');
         }
 
         $connection = BankConnection::create([
@@ -108,7 +108,7 @@ class EnableBankingConnectionController extends Controller
         } catch (Throwable $exception) {
             $connection->delete();
 
-            return to_route('bank-connections')->with('error', 'Could not start bank authorization.');
+            return to_route('dashboard')->with('error', 'Could not start bank authorization.');
         }
 
         $authorizationUrl = (string) Arr::get($response, 'url', '');
@@ -116,7 +116,7 @@ class EnableBankingConnectionController extends Controller
         if ($authorizationUrl === '') {
             $connection->delete();
 
-            return to_route('bank-connections')->with('error', 'Could not start bank authorization.');
+            return to_route('dashboard')->with('error', 'Could not start bank authorization.');
         }
 
         if ($request->header('X-Inertia')) {
@@ -172,7 +172,7 @@ class EnableBankingConnectionController extends Controller
             ->first();
 
         if (! $connection) {
-            return to_route('bank-connections')->with('error', 'Bank authorization state is invalid.');
+            return to_route('dashboard')->with('error', 'Bank authorization state is invalid.');
         }
 
         try {
@@ -210,11 +210,11 @@ class EnableBankingConnectionController extends Controller
         } catch (Throwable $exception) {
             $connection->delete();
 
-            return to_route('bank-connections')->with('error', 'Could not finish bank authorization.');
+            return to_route('dashboard')->with('error', 'Could not finish bank authorization.');
         }
 
         SyncEnableBankingConnectionJob::dispatch($connection->id);
 
-        return to_route('bank-connections')->with('success', 'Bank account connected. Transactions will sync continuously.');
+        return to_route('dashboard')->with('success', 'Bank account connected. Transactions will sync continuously.');
     }
 }

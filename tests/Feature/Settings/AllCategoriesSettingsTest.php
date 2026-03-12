@@ -299,4 +299,75 @@ class AllCategoriesSettingsTest extends TestCase
             'parent_id' => $home->id,
         ]);
     }
+
+    public function test_user_can_delete_their_own_category(): void
+    {
+        $user = User::factory()->create();
+
+        $category = Category::factory()->expense()->create([
+            'user_id' => $user->id,
+            'name' => 'Subscriptions',
+            'icon' => 'monitor',
+            'color' => 'indigo',
+        ]);
+
+        $this->actingAs($user)
+            ->delete("/settings/all-categories/{$category->id}")
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('categories', [
+            'id' => $category->id,
+        ]);
+    }
+
+    public function test_deleting_a_parent_category_removes_its_subcategories(): void
+    {
+        $user = User::factory()->create();
+
+        $parent = Category::factory()->expense()->create([
+            'user_id' => $user->id,
+            'name' => 'Vehicles',
+            'icon' => 'car',
+            'color' => 'sky',
+        ]);
+
+        $child = Category::factory()->expense()->childOf($parent)->create([
+            'name' => 'Fuel',
+            'icon' => 'fuel',
+            'color' => 'amber',
+        ]);
+
+        $this->actingAs($user)
+            ->delete("/settings/all-categories/{$parent->id}")
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('categories', [
+            'id' => $parent->id,
+        ]);
+
+        $this->assertDatabaseMissing('categories', [
+            'id' => $child->id,
+        ]);
+    }
+
+    public function test_user_cannot_delete_another_users_category(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $category = Category::factory()->income()->create([
+            'user_id' => $otherUser->id,
+            'name' => 'Salary',
+            'icon' => 'briefcase',
+            'color' => 'emerald',
+        ]);
+
+        $this->actingAs($user)
+            ->delete("/settings/all-categories/{$category->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('categories', [
+            'id' => $category->id,
+        ]);
+    }
 }

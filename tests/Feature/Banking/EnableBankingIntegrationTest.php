@@ -6,6 +6,7 @@ use App\Jobs\SyncEnableBankingConnectionJob;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
 use App\Models\User;
+use App\Services\EnableBanking\EnableBankingClient;
 use App\Services\EnableBanking\EnableBankingJwtFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -20,6 +21,13 @@ class EnableBankingIntegrationTest extends TestCase
 
     public function test_institutions_endpoint_returns_empty_payload_when_enable_banking_is_not_configured(): void
     {
+        $this->mock(EnableBankingClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('getAspsps')
+                ->once()
+                ->with('SI')
+                ->andThrow(new RuntimeException('Enable Banking credentials are not configured.'));
+        });
+
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)
@@ -132,7 +140,7 @@ class EnableBankingIntegrationTest extends TestCase
             'state' => 'state-123',
         ]));
 
-        $response->assertRedirect(route('bank-connections', absolute: false));
+        $response->assertRedirect(route('dashboard', absolute: false));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('bank_connections', [
@@ -160,14 +168,14 @@ class EnableBankingIntegrationTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)
-            ->from(route('bank-connections'))
+            ->from(route('dashboard'))
             ->post(route('banking.start'), [
                 'aspsp_name' => 'Revolut',
                 'aspsp_country' => 'SI',
                 'psu_type' => 'personal',
             ]);
 
-        $response->assertRedirect(route('bank-connections'));
+        $response->assertRedirect(route('dashboard'));
         $response->assertSessionHas('error', 'Enable Banking is not configured for this environment.');
 
         $this->assertDatabaseCount('bank_connections', 0);

@@ -1,18 +1,11 @@
 import { Link } from '@inertiajs/react';
-import {
-    Palette,
-    Shield,
-    Tags,
-    UserCircle2,
-    WalletCards,
-} from 'lucide-react';
+import { Shield, Tags, UserCircle2, WalletCards } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import type { NavItem } from '@/types';
 
@@ -36,11 +29,6 @@ const sidebarNavItems: NavItem[] = [
         title: 'All Categories',
         href: '/settings/all-categories',
         icon: Tags,
-    },
-    {
-        title: 'Appearance',
-        href: editAppearance(),
-        icon: Palette,
     },
 ];
 
@@ -81,7 +69,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             >
                                 <Link href={item.href}>
                                     {item.icon && (
-                                        <item.icon className="size-[18px] shrink-0" />
+                                        <item.icon className="size-4.5 shrink-0" />
                                     )}
                                     {item.title}
                                 </Link>

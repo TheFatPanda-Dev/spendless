@@ -5,9 +5,11 @@ import type { User } from '@/types';
 export function UserInfo({
     user,
     showEmail = false,
+    detailsClassName,
 }: {
     user: User;
     showEmail?: boolean;
+    detailsClassName?: string;
 }) {
     const getInitials = useInitials();
     const displayName = user.display_name ?? user.name;
@@ -20,7 +22,9 @@ export function UserInfo({
                     {getInitials(displayName)}
                 </AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
+            <div
+                className={`grid flex-1 text-left text-sm leading-tight ${detailsClassName ?? ''}`.trim()}
+            >
                 <span className="truncate font-medium">{displayName}</span>
                 {showEmail && (
                     <span className="truncate text-xs text-muted-foreground">

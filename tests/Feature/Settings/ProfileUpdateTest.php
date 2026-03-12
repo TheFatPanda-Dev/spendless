@@ -56,6 +56,16 @@ class ProfileUpdateTest extends TestCase
             );
     }
 
+    public function test_appearance_page_redirects_to_profile_page(): void
+    {
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->get(route('appearance.edit'))
+            ->assertRedirect(route('profile.edit'));
+    }
+
     public function test_profile_page_falls_back_to_google_avatar_when_local_avatar_file_is_missing(): void
     {
         Storage::fake('public');

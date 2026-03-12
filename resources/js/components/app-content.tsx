@@ -1,11 +1,15 @@
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 type Props = React.ComponentProps<'main'>;
 
-export function AppContent({ children, ...props }: Props) {
+export function AppContent({ children, className, ...props }: Props) {
     return (
         <main
-            className="mx-auto flex h-full w-full max-w-7xl flex-1 flex-col gap-4 rounded-xl"
+            className={cn(
+                'mx-auto flex h-full w-full max-w-7xl flex-1 flex-col gap-4 rounded-xl',
+                className,
+            )}
             {...props}
         >
             {children}

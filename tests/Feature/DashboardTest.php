@@ -27,6 +27,18 @@ class DashboardTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_authenticated_dashboard_responses_disable_browser_caching(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+        $response->assertHeader('Pragma', 'no-cache');
+        $response->assertHeader('Expires', '0');
+    }
+
     public function test_dashboard_defaults_to_the_current_month()
     {
         Carbon::setTestNow('2026-03-09 12:00:00');

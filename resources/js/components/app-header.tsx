@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Landmark, LayoutGrid, Menu } from 'lucide-react';
+import { LayoutGrid, Menu } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { UserInfo } from '@/components/user-info';
@@ -46,11 +46,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             href: dashboardHref,
             icon: LayoutGrid,
         },
-        {
-            title: 'Bank Connections',
-            href: '/bank-connections',
-            icon: Landmark,
-        },
     ];
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     return (
@@ -77,11 +72,22 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     Navigation menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <img
-                                        src="/images/spendless_logo.png"
-                                        alt="SpendLess logo"
-                                        className="h-7 w-7 object-contain"
-                                    />
+                                    <div className="flex items-center gap-3">
+                                        <img
+                                            src="/images/spendless_logo.png"
+                                            alt="SpendLess logo"
+                                            className="h-7 w-7 object-contain"
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-foreground">
+                                                {auth.user.display_name ??
+                                                    auth.user.name}
+                                            </p>
+                                            <p className="truncate text-xs text-muted-foreground">
+                                                {auth.user.email}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex flex-col gap-2 text-sm">
@@ -89,7 +95,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             <Link
                                                 key={item.title}
                                                 href={item.href}
-                                                prefetch
                                                 className={cn(
                                                     'flex items-center space-x-2 rounded-md px-3 py-2 font-medium transition-colors',
                                                     isCurrentUrl(item.href)
@@ -111,7 +116,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                     <Link
                         href={dashboardHref}
-                        prefetch
                         className="flex items-center space-x-2"
                     >
                         <AppLogo />
@@ -156,9 +160,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="h-auto max-w-[240px] justify-start rounded-full px-2 py-1.5 text-left"
+                                    className="h-auto max-w-60 justify-start rounded-full px-1 py-1 text-left sm:px-2 sm:py-1.5"
                                 >
-                                    <UserInfo user={auth.user} showEmail={true} />
+                                    <UserInfo
+                                        user={auth.user}
+                                        showEmail={true}
+                                        detailsClassName="hidden sm:grid"
+                                    />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-48" align="end">
