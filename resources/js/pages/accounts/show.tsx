@@ -345,7 +345,7 @@ function TransactionCategoryEditor({
                 </button>
 
                 {isCategoryPickerOpen ? (
-                    <div className={`absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full max-w-full lg:min-w-full lg:w-max ${categoryPickerPanelClasses}`}>
+                    <div className={`absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full max-w-full lg:w-max lg:min-w-[20rem] ${categoryPickerPanelClasses}`}>
                         {pickerView === 'type' ? (
                             <div className="space-y-3">
                                 <div>
