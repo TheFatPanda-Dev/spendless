@@ -16,6 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import { walletCurrencyOptions } from '@/lib/currency-options';
+import { formatLocalizedDateTime } from '@/lib/date-filters';
 import type { BreadcrumbItem } from '@/types';
 
 type WalletSummary = {
@@ -42,12 +44,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-function formatDate(value: string | null): string {
-    if (!value) {
-        return 'Never';
-    }
-
-    return new Date(value).toLocaleString();
+function formatDate(value: string | null, locale: string): string {
+    return formatLocalizedDateTime(value, locale);
 }
 
 function statusVariant(
@@ -78,12 +76,15 @@ export default function WalletsIndex({
     wallets: WalletSummary[];
 }) {
     const page = usePage();
+    const numberLocale =
+        typeof page.props.number_locale === 'string'
+            ? page.props.number_locale
+            : 'en-GB';
     const currentUrl = page.url;
     const query = currentUrl.includes('?') ? currentUrl.split('?')[1] : '';
     const params = new URLSearchParams(query);
     const requestedType = params.get('type');
     const initialType =
-        requestedType === 'cash' ||
         requestedType === 'stock' ||
         requestedType === 'bank'
             ? requestedType
@@ -174,7 +175,6 @@ export default function WalletsIndex({
                                             <option value="general">
                                                 General
                                             </option>
-                                            <option value="cash">Cash</option>
                                             <option value="stock">Stock</option>
                                             <option value="bank">Bank</option>
                                         </select>
@@ -195,9 +195,14 @@ export default function WalletsIndex({
                                             }
                                             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                                         >
-                                            <option value="EUR">EUR</option>
-                                            <option value="USD">USD</option>
-                                            <option value="GBP">GBP</option>
+                                            {walletCurrencyOptions.map((currencyOption) => (
+                                                <option
+                                                    key={currencyOption.code}
+                                                    value={currencyOption.code}
+                                                >
+                                                    {currencyOption.label}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -271,7 +276,11 @@ export default function WalletsIndex({
                             </div>
 
                             <p className="mt-3 text-xs text-muted-foreground">
-                                Last synced: {formatDate(wallet.last_synced_at)}
+                                Last synced:{' '}
+                                {formatDate(
+                                    wallet.last_synced_at,
+                                    numberLocale,
+                                )}
                             </p>
 
                             <div className="mt-3 flex flex-wrap gap-1.5">

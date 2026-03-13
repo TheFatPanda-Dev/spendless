@@ -5,6 +5,7 @@ import PlaidLinkButton from '@/components/plaid-link-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import { formatDisplayDate, formatLocalizedDateTime } from '@/lib/date-filters';
 import type { BreadcrumbItem } from '@/types';
 
 type SyncRun = {
@@ -65,12 +66,8 @@ type Wallet = {
     connections: Connection[];
 };
 
-function formatDate(value: string | null): string {
-    if (!value) {
-        return 'Never';
-    }
-
-    return new Date(value).toLocaleString();
+function formatDate(value: string | null, locale: string): string {
+    return formatLocalizedDateTime(value, locale);
 }
 
 function statusVariant(
@@ -97,6 +94,10 @@ function statusVariant(
 
 export default function WalletShow({ wallet }: { wallet: Wallet }) {
     const page = usePage();
+    const numberLocale =
+        typeof page.props.number_locale === 'string'
+            ? page.props.number_locale
+            : 'en-GB';
     const query = page.url.includes('?') ? page.url.split('?')[1] : '';
     const params = new URLSearchParams(query);
     const autoConnect = params.get('auto_connect') === '1';
@@ -132,7 +133,10 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                 <span>·</span>
                                 <span>
                                     Last synced:{' '}
-                                    {formatDate(wallet.last_synced_at)}
+                                    {formatDate(
+                                        wallet.last_synced_at,
+                                        numberLocale,
+                                    )}
                                 </span>
                             </div>
                         </div>
@@ -185,12 +189,14 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             Last synced:{' '}
                                             {formatDate(
                                                 connection.last_synced_at,
+                                                numberLocale,
                                             )}
                                         </span>
                                         <span>
                                             Webhook:{' '}
                                             {formatDate(
                                                 connection.last_webhook_at,
+                                                numberLocale,
                                             )}
                                         </span>
                                     </div>
@@ -263,6 +269,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                     Synced{' '}
                                                                     {formatDate(
                                                                         account.last_synced_at,
+                                                                        numberLocale,
                                                                     )}
                                                                 </p>
                                                             </div>
@@ -299,8 +306,12 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                         'Transaction'}
                                                                 </p>
                                                                 <p className="text-xs text-muted-foreground">
-                                                                    {transaction.date ??
-                                                                        'Unknown date'}
+                                                                    {transaction.date
+                                                                        ? formatDisplayDate(
+                                                                            transaction.date,
+                                                                            numberLocale,
+                                                                        )
+                                                                        : 'Unknown date'}
                                                                 </p>
                                                             </div>
                                                             <div className="text-right">
@@ -359,6 +370,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                     <span className="text-xs text-muted-foreground">
                                                         {formatDate(
                                                             run.started_at,
+                                                            numberLocale,
                                                         )}
                                                     </span>
                                                 </div>

@@ -34,7 +34,13 @@ class DashboardTest extends TestCase
         $response = $this->actingAs($user)->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+        $cacheControl = (string) $response->headers->get('Cache-Control', '');
+
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringContainsString('must-revalidate', $cacheControl);
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringContainsString('max-age=0', $cacheControl);
         $response->assertHeader('Pragma', 'no-cache');
         $response->assertHeader('Expires', '0');
     }
@@ -76,5 +82,40 @@ class DashboardTest extends TestCase
                 ->component('dashboard')
                 ->where('filters.start_date', '2026-03-01')
                 ->where('filters.end_date', '2026-03-31'));
+    }
+
+    public function test_dashboard_includes_exchange_rates_for_currency_conversion(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->get(route('dashboard'));
+
+        $response
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('dashboard')
+                ->where('exchange_rates.eur_per_unit.EUR', 1)
+                ->where('number_locale', 'en-GB')
+                ->where('period_breakdown.change_by_currency', [])
+                ->where('period_breakdown.expenses_by_currency', [])
+                ->where('period_breakdown.income_by_currency', []));
+    }
+
+    public function test_dashboard_uses_users_saved_base_currency_preference(): void
+    {
+        $user = User::factory()->create([
+            'preferred_base_currency' => 'GBP',
+            'preferred_number_locale' => 'de-DE',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('dashboard')
+                ->where('base_currency', 'GBP')
+                ->where('number_locale', 'de-DE'));
     }
 }

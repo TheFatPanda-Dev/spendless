@@ -1,7 +1,8 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { formatLocalizedNumericDateFromDate } from '@/lib/date-filters';
 import {
     clearPlaidLinkSession,
     readPlaidLinkSession,
@@ -72,6 +73,11 @@ async function loadPlaidScript(): Promise<void> {
 
 export default function AddAccountPopup() {
     const plaidSessionScope = 'add-account-popup';
+    const page = usePage();
+    const numberLocale =
+        typeof page.props.number_locale === 'string'
+            ? page.props.number_locale
+            : 'en-GB';
     const [isConnecting, setIsConnecting] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -136,7 +142,7 @@ export default function AddAccountPopup() {
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: JSON.stringify({
-                        name: `Bank Wallet ${new Date().toLocaleDateString()}`,
+                        name: `Bank Wallet ${formatLocalizedNumericDateFromDate(new Date(), numberLocale)}`,
                         type: 'bank',
                         currency: 'EUR',
                     }),
@@ -246,7 +252,7 @@ export default function AddAccountPopup() {
             isConnectingRef.current = false;
             setIsConnecting(false);
         }
-    }, [notifyParentAndClose, redirectUri]);
+    }, [notifyParentAndClose, numberLocale, redirectUri]);
 
     useEffect(() => {
         if (hasAutoStartedRef.current) {

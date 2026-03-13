@@ -33,6 +33,8 @@ class User extends Authenticatable
         'github_avatar',
         'avatar_path',
         'password',
+        'preferred_base_currency',
+        'preferred_number_locale',
         'password_set_at',
     ];
 

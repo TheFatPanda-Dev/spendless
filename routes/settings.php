@@ -20,6 +20,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('settings.categories.destroy');
     Route::patch('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'update'])
         ->name('settings.wallets.update');
+    Route::patch('settings/wallets/base-currency', [WalletAccountController::class, 'updateBaseCurrency'])
+        ->name('settings.wallets.base-currency.update');
+    Route::patch('settings/wallets/number-locale', [WalletAccountController::class, 'updateNumberLocale'])
+        ->name('settings.wallets.number-locale.update');
     Route::delete('settings/wallets/accounts/{bankAccount}', [WalletAccountController::class, 'destroy'])
         ->name('settings.wallets.destroy');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');

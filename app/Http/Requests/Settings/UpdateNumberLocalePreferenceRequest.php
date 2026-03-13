@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Settings;
 
+use App\Support\Localization\NumberLocaleOptions;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreWalletRequest extends FormRequest
+class UpdateNumberLocalePreferenceRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,17 +24,24 @@ class StoreWalletRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:120'],
-            'type' => ['required', 'string', 'in:general,stock,bank'],
-            'currency' => ['required', 'string', 'size:3'],
+            'number_locale' => [
+                'required',
+                'string',
+                Rule::in(NumberLocaleOptions::all()),
+            ],
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        $locale = $this->input('number_locale');
+
+        if (! is_string($locale)) {
+            return;
+        }
+
         $this->merge([
-            'type' => strtolower((string) $this->input('type', 'general')),
-            'currency' => strtoupper((string) $this->input('currency', 'EUR')),
+            'number_locale' => NumberLocaleOptions::normalize($locale),
         ]);
     }
 }

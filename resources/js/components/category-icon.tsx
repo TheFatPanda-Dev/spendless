@@ -3,10 +3,11 @@ import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { useEffect, useState } from 'react';
 import {
     categoryIconNames,
-    type CategoryColorPresentation,
+    
     isHexColor,
-    normalizeHexColor,
+    normalizeHexColor
 } from '@/components/category-icon-utils';
+import type {CategoryColorPresentation} from '@/components/category-icon-utils';
 
 type CategoryIconProps = {
     name: string;

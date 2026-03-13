@@ -3,10 +3,10 @@ import { Landmark, RefreshCw, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import AddNewWalletMenu from '@/components/add-new-wallet-menu';
 import Heading from '@/components/heading';
-import { usePlaidAccountLinkedRefresh } from '@/hooks/use-plaid-account-linked-refresh';
-import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { usePlaidAccountLinkedRefresh } from '@/hooks/use-plaid-account-linked-refresh';
+import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { openCenteredPopup } from '@/lib/popup';
@@ -25,6 +25,21 @@ type Account = {
 
 type Props = {
     accounts: Account[];
+    base_currency: {
+        selected: string;
+        options: Array<{
+            code: string;
+            label: string;
+        }>;
+    };
+    number_locale: {
+        selected: string;
+        options: Array<{
+            code: string;
+            label: string;
+            example: string;
+        }>;
+    };
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -43,7 +58,11 @@ function accountTitle(account: Account): string {
     );
 }
 
-export default function WalletSettings({ accounts }: Props) {
+export default function WalletSettings({
+    accounts,
+    base_currency,
+    number_locale,
+}: Props) {
     const [values, setValues] = useState<Record<number, string>>(() =>
         accounts.reduce<Record<number, string>>((carry, account) => {
             carry[account.id] = account.display_name ?? '';
@@ -53,6 +72,16 @@ export default function WalletSettings({ accounts }: Props) {
     );
     const [savingId, setSavingId] = useState<number | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [baseCurrency, setBaseCurrency] = useState<string>(
+        base_currency.selected,
+    );
+    const [isSavingBaseCurrency, setIsSavingBaseCurrency] = useState(false);
+    const [showBaseCurrencySaved, setShowBaseCurrencySaved] = useState(false);
+    const [numberLocale, setNumberLocale] = useState<string>(
+        number_locale.selected,
+    );
+    const [isSavingNumberLocale, setIsSavingNumberLocale] = useState(false);
+    const [showNumberLocaleSaved, setShowNumberLocaleSaved] = useState(false);
 
     usePlaidAccountLinkedRefresh({ only: ['accounts'] });
 
@@ -126,6 +155,66 @@ export default function WalletSettings({ accounts }: Props) {
         popup.focus();
     };
 
+    const handleBaseCurrencyChange = (nextBaseCurrency: string): void => {
+        if (isSavingBaseCurrency) {
+            return;
+        }
+
+        setBaseCurrency(nextBaseCurrency);
+        setIsSavingBaseCurrency(true);
+
+        router.patch(
+            '/settings/wallets/base-currency',
+            { base_currency: nextBaseCurrency },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setShowBaseCurrencySaved(true);
+                    window.setTimeout(() => {
+                        setShowBaseCurrencySaved(false);
+                    }, 2500);
+                },
+                onError: () => {
+                    setBaseCurrency(base_currency.selected);
+                    setShowBaseCurrencySaved(false);
+                },
+                onFinish: () => {
+                    setIsSavingBaseCurrency(false);
+                },
+            },
+        );
+    };
+
+    const handleNumberLocaleChange = (nextNumberLocale: string): void => {
+        if (isSavingNumberLocale) {
+            return;
+        }
+
+        setNumberLocale(nextNumberLocale);
+        setIsSavingNumberLocale(true);
+
+        router.patch(
+            '/settings/wallets/number-locale',
+            { number_locale: nextNumberLocale },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setShowNumberLocaleSaved(true);
+                    window.setTimeout(() => {
+                        setShowNumberLocaleSaved(false);
+                    }, 2500);
+                },
+                onError: () => {
+                    setNumberLocale(number_locale.selected);
+                    setShowNumberLocaleSaved(false);
+                },
+                onFinish: () => {
+                    setIsSavingNumberLocale(false);
+                },
+            },
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Wallet settings" />
@@ -158,6 +247,88 @@ export default function WalletSettings({ accounts }: Props) {
                             <AddNewWalletMenu
                                 onConnectBank={handleAddNewWallet}
                             />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="rounded-lg border border-border bg-card/70 p-4">
+                            <p className="text-sm font-semibold text-foreground">
+                                Dashboard base currency
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Dashboard totals and account amounts will use
+                                this currency as the converted display value.
+                            </p>
+
+                            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <select
+                                    value={baseCurrency}
+                                    onChange={(event) =>
+                                        handleBaseCurrencyChange(
+                                            event.target.value,
+                                        )
+                                    }
+                                    disabled={isSavingBaseCurrency}
+                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                >
+                                    {base_currency.options.map((currencyOption) => (
+                                        <option
+                                            key={currencyOption.code}
+                                            value={currencyOption.code}
+                                        >
+                                            {currencyOption.label}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <span className="text-xs text-muted-foreground">
+                                    {isSavingBaseCurrency
+                                        ? 'Saving base currency...'
+                                        : showBaseCurrencySaved
+                                          ? 'Base currency saved'
+                                          : 'Saved automatically'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card/70 p-4">
+                            <p className="text-sm font-semibold text-foreground">
+                                Number localization
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Choose your preferred number format style for
+                                dashboard amounts.
+                            </p>
+
+                            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <select
+                                    value={numberLocale}
+                                    onChange={(event) =>
+                                        handleNumberLocaleChange(
+                                            event.target.value,
+                                        )
+                                    }
+                                    disabled={isSavingNumberLocale}
+                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                >
+                                    {number_locale.options.map((localeOption) => (
+                                        <option
+                                            key={localeOption.code}
+                                            value={localeOption.code}
+                                        >
+                                            {localeOption.label} ({localeOption.example})
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <span className="text-xs text-muted-foreground">
+                                    {isSavingNumberLocale
+                                        ? 'Saving number localization...'
+                                        : showNumberLocaleSaved
+                                          ? 'Number localization saved'
+                                          : 'Saved automatically'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

@@ -72,4 +72,15 @@ return [
         'initial_days_requested' => (int) env('PLAID_INITIAL_DAYS_REQUESTED', 730),
     ],
 
+    'freecurrencyapi' => [
+        'base_url' => env('FREECURRENCYAPI_BASE_URL', 'https://api.freecurrencyapi.com'),
+        'key' => env('FREECURRENCYAPI_KEY'),
+        'timeout_seconds' => (int) env('FREECURRENCYAPI_TIMEOUT_SECONDS', 8),
+        'cache_ttl_seconds' => (int) env('FREECURRENCYAPI_CACHE_TTL_SECONDS', 3600),
+        'stale_cache_ttl_seconds' => (int) env('FREECURRENCYAPI_STALE_CACHE_TTL_SECONDS', 604800),
+        'max_requests_per_minute' => (int) env('FREECURRENCYAPI_MAX_REQUESTS_PER_MINUTE', 10),
+        'monthly_request_limit' => (int) env('FREECURRENCYAPI_MONTHLY_REQUEST_LIMIT', 1000),
+        'monthly_reserve' => (int) env('FREECURRENCYAPI_MONTHLY_RESERVE', 0),
+    ],
+
 ];

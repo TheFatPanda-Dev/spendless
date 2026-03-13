@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Wallets\CreateManualWallet;
+use App\Http\Requests\StoreManualWalletRequest;
 use App\Http\Requests\StoreWalletRequest;
 use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
@@ -43,9 +45,7 @@ class WalletController extends Controller
         $wallets = $request->user()
             ->wallets()
             ->with([
-                'bankConnections' => fn ($query) => $query
-                    ->where('provider', 'plaid')
-                    ->withCount('accounts'),
+                'bankConnections' => fn ($query) => $query->withCount('accounts'),
                 'bankConnections.accounts',
             ])
             ->latest()
@@ -88,13 +88,27 @@ class WalletController extends Controller
         return to_route('wallets.show', $wallet)->with('success', 'Wallet created successfully.');
     }
 
+    public function storeManual(
+        StoreManualWalletRequest $request,
+        CreateManualWallet $createManualWallet,
+    ): RedirectResponse {
+        Gate::authorize('create', Wallet::class);
+
+        $account = $createManualWallet($request->user(), [
+            'name' => $request->validated('name'),
+            'currency' => $request->validated('currency'),
+            'starting_balance' => $request->validated('starting_balance'),
+        ]);
+
+        return back()->with('success', sprintf('%s created successfully.', $account->display_name ?? $account->name ?? 'Manual wallet'));
+    }
+
     public function show(Request $request, Wallet $wallet): Response
     {
         Gate::authorize('view', $wallet);
 
         $wallet->load([
             'bankConnections' => fn ($query) => $query
-                ->where('provider', 'plaid')
                 ->with(['accounts', 'syncRuns' => fn ($syncRunsQuery) => $syncRunsQuery->latest()->limit(5)]),
             'bankConnections.transactions' => fn ($query) => $query
                 ->whereNull('removed_at')

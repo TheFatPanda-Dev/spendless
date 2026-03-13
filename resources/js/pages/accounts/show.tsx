@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -11,7 +11,7 @@ import {
     Landmark,
     Search,
 } from 'lucide-react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryIcon } from '@/components/category-icon';
 import { resolveCategoryColorPresentation } from '@/components/category-icon-utils';
 import { Button } from '@/components/ui/button';
@@ -21,8 +21,14 @@ import AppLayout from '@/layouts/app-layout';
 import {
     buildDashboardHref,
     formatDisplayDate,
+    formatLocalizedDateTime,
+    formatLocalizedNumericDate,
     shiftMonthRange,
 } from '@/lib/date-filters';
+import {
+    formatLocalizedDecimal,
+    normalizeLocalizedNumber,
+} from '@/lib/localized-number';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
@@ -32,6 +38,8 @@ type Account = {
     name: string | null;
     official_name: string | null;
     institution_name: string | null;
+    provider: string | null;
+    is_manual: boolean;
     mask: string | null;
     currency: string | null;
     balances: {
@@ -113,18 +121,14 @@ function formatCurrency(value: number, currency: string): string {
     })} ${currency}`;
 }
 
-function formatDayLabel(dateValue: string): string {
+function formatDayLabel(dateValue: string, locale: string): string {
     const parsed = new Date(`${dateValue}T00:00:00`);
 
     if (Number.isNaN(parsed.getTime())) {
         return dateValue;
     }
 
-    return parsed.toLocaleDateString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-    });
+    return formatLocalizedNumericDate(dateValue, locale);
 }
 
 function buildCategoryTree(options: CategoryOption[]): CategoryTreeNode[] {
@@ -188,7 +192,7 @@ function formatCategoryPathLabel(path: string): string {
 }
 
 const categoryPickerPanelClasses =
-    'rounded-3xl border border-brand/20 bg-[#f6fbf8] p-3 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.22)] dark:border-brand/15 dark:bg-[#111916] dark:shadow-[0_24px_60px_-30px_rgba(2,6,23,0.65)]';
+    'rounded-3xl border border-brand/20 bg-[#f6fbf8] p-3 shadow-[0_16px_38px_-24px_rgba(15,23,42,0.3)] dark:border-brand/15 dark:bg-[#111916] dark:shadow-[0_16px_38px_-24px_rgba(2,6,23,0.72)]';
 
 const categoryPickerTriggerClasses =
     'flex h-12 w-full items-center justify-between gap-3 rounded-2xl border border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,251,249,0.98))] px-3 text-left text-sm font-medium text-foreground shadow-sm transition hover:border-brand/25 hover:bg-brand/6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card dark:text-slate-100 dark:hover:bg-card';
@@ -200,7 +204,7 @@ const categoryPickerIndicatorClasses =
     'flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand/15 bg-white text-muted-foreground dark:border-white/10 dark:bg-[#1c2823] dark:text-slate-500';
 
 const accountShellClasses =
-    'relative flex h-full flex-1 flex-col gap-6 overflow-x-hidden rounded-[28px] border border-brand/20 bg-[#f4faf7] p-3 shadow-[0_28px_72px_-48px_rgba(16,185,129,0.24)] sm:p-5 lg:p-7 dark:border-brand/15 dark:bg-[#0f1714] dark:shadow-none';
+    'relative flex h-full flex-1 flex-col gap-4 overflow-x-hidden rounded-[28px] border border-brand/20 bg-[#f4faf7] p-3 shadow-[0_28px_72px_-48px_rgba(16,185,129,0.24)] sm:p-5 lg:p-7 dark:border-brand/15 dark:bg-[#0f1714] dark:shadow-none';
 
 const accountPanelClasses =
     'rounded-2xl border border-brand/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,250,247,0.98))] shadow-[0_14px_36px_-24px_rgba(15,23,42,0.18)] dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card dark:shadow-[0_16px_36px_-24px_rgba(2,6,23,0.85)]';
@@ -216,6 +220,9 @@ const transactionEditorFieldClasses =
 
 const transactionEditorButtonClasses =
     'border-brand/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,251,248,0.98))] text-foreground shadow-sm hover:bg-brand/6 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(24,35,30,0.98),rgba(19,29,25,0.98))] dark:text-slate-100 dark:hover:bg-[#1b2823]';
+
+const manualTransactionFocusClasses =
+    'border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,251,249,0.98))] text-foreground shadow-sm hover:bg-brand/6 focus-visible:border-[#39ff14] focus-visible:ring-2 focus-visible:ring-[#39ff14]/35 focus-visible:ring-offset-0 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card dark:text-foreground dark:hover:bg-card dark:focus-visible:border-[#39ff14] dark:focus-visible:ring-[#39ff14]/30';
 
 function CategoryTypeSwitcher({
     activeType,
@@ -304,8 +311,23 @@ function TransactionCategoryEditor({
     onTogglePath: (path: string) => void;
     onSelectCategory: (categoryId: string) => void;
 }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!isCategoryPickerOpen) return;
+
+        function handleClickOutside(event: MouseEvent) {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                onTogglePicker();
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isCategoryPickerOpen, onTogglePicker]);
+
     return (
-        <div className="relative min-w-0">
+        <div ref={containerRef} className="relative min-w-0">
             <div className="relative min-w-0">
                 <button
                     type="button"
@@ -323,7 +345,7 @@ function TransactionCategoryEditor({
                 </button>
 
                 {isCategoryPickerOpen ? (
-                    <div className={`absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full ${categoryPickerPanelClasses}`}>
+                    <div className={`absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full max-w-full lg:min-w-full lg:w-max ${categoryPickerPanelClasses}`}>
                         {pickerView === 'type' ? (
                             <div className="space-y-3">
                                 <div>
@@ -368,7 +390,7 @@ function TransactionCategoryEditor({
                                     />
                                 </div>
 
-                                <div className="mt-3 max-h-72 overflow-y-auto pr-1">
+                                <div className="mt-3 max-h-60 overflow-y-auto pr-1 lg:max-h-64">
                                     {categorySearchQuery.trim() !== '' ? (
                                         <div className="space-y-1.5">
                                             {filteredCategorySearchResults.length > 0 ? (
@@ -580,6 +602,35 @@ export default function AccountShow({
     const [expandedCategoryPaths, setExpandedCategoryPaths] = useState<Set<string>>(new Set());
     const previousMonthRange = shiftMonthRange(filters.start_date, -1);
     const nextMonthRange = shiftMonthRange(filters.start_date, 1);
+    const [showManualTransactionForm, setShowManualTransactionForm] =
+        useState(false);
+    const [manualSelectedCategoryId, setManualSelectedCategoryId] =
+        useState('');
+    const [manualSelectedCategoryType, setManualSelectedCategoryType] =
+        useState<CategoryType>('expense');
+    const [isManualCategoryPickerOpen, setIsManualCategoryPickerOpen] =
+        useState(false);
+    const [manualCategoryPickerView, setManualCategoryPickerView] =
+        useState<CategoryPickerView>('type');
+    const [manualCategorySearchQuery, setManualCategorySearchQuery] =
+        useState('');
+    const [manualExpandedCategoryPaths, setManualExpandedCategoryPaths] =
+        useState<Set<string>>(new Set());
+    const manualNativeDateInputRef = useRef<HTMLInputElement | null>(null);
+    const [manualTransactionAmountInput, setManualTransactionAmountInput] =
+        useState('');
+    const page = usePage();
+    const numberLocale =
+        typeof page.props.number_locale === 'string'
+            ? page.props.number_locale
+            : 'en-GB';
+    const manualTransactionForm = useForm({
+        category_id: '',
+        date: new Date().toISOString().slice(0, 10),
+        merchant_name: '',
+        transaction_name: '',
+        amount: '',
+    });
 
     const filteredTransactions = useMemo(() => {
         const keyword = keywordFilter.trim().toLowerCase();
@@ -628,12 +679,57 @@ export default function AccountShow({
         }
 
         return categoryOptions[selectedCategoryType] ?? [];
-    }, [categoryOptions, selectedCategoryType]);
+    }, [activeTransaction, categoryOptions, selectedCategoryType]);
 
     const activeCategoryTree = useMemo(
         () => buildCategoryTree(activeCategoryOptions),
         [activeCategoryOptions],
     );
+
+    const isManualAccount = account.is_manual;
+
+    const manualCategoryOptions = useMemo(
+        () => categoryOptions[manualSelectedCategoryType] ?? [],
+        [categoryOptions, manualSelectedCategoryType],
+    );
+
+    const manualCategoryTree = useMemo(
+        () => buildCategoryTree(manualCategoryOptions),
+        [manualCategoryOptions],
+    );
+
+    const manualSelectedCategoryOption = useMemo(
+        () =>
+            manualCategoryOptions.find(
+                (option) => String(option.id) === manualSelectedCategoryId,
+            ) ?? null,
+        [manualCategoryOptions, manualSelectedCategoryId],
+    );
+
+    const manualFilteredCategorySearchResults = useMemo(() => {
+        const query = manualCategorySearchQuery.trim().toLowerCase();
+
+        if (query === '') {
+            return [] as CategoryOption[];
+        }
+
+        return manualCategoryOptions.filter((option) => {
+            return (
+                option.name.toLowerCase().includes(query)
+                || option.path.toLowerCase().includes(query)
+            );
+        });
+    }, [manualCategoryOptions, manualCategorySearchQuery]);
+
+    const manualDateDisplay = useMemo(() => {
+        const rawDate = manualTransactionForm.data.date;
+
+        if (rawDate.trim() === '') {
+            return '';
+        }
+
+        return formatLocalizedNumericDate(rawDate, numberLocale);
+    }, [manualTransactionForm.data.date, numberLocale]);
 
     const selectedCategoryOption = useMemo(
         () => activeCategoryOptions.find((option) => String(option.id) === selectedCategoryId) ?? null,
@@ -722,7 +818,9 @@ export default function AccountShow({
             payload,
             {
                 preserveScroll: true,
-                preserveState: false,
+                preserveState: true,
+                preserveUrl: true,
+                only: ['account', 'transactions'],
                 onStart: () => {
                     setIsUpdatingCategory(true);
                 },
@@ -788,6 +886,96 @@ export default function AccountShow({
         setExpandedCategoryPaths(new Set());
     };
 
+    const resetManualTransactionForm = (): void => {
+        const today = new Date().toISOString().slice(0, 10);
+
+        setShowManualTransactionForm(false);
+        setManualSelectedCategoryId('');
+        setManualSelectedCategoryType('expense');
+        setIsManualCategoryPickerOpen(false);
+        setManualCategoryPickerView('type');
+        setManualCategorySearchQuery('');
+        setManualExpandedCategoryPaths(new Set());
+        setManualTransactionAmountInput('');
+        manualTransactionForm.reset();
+        manualTransactionForm.setData('date', today);
+    };
+
+    const selectManualCategory = (categoryId: string): void => {
+        setManualSelectedCategoryId(categoryId);
+        manualTransactionForm.setData('category_id', categoryId);
+        setIsManualCategoryPickerOpen(false);
+        setManualCategoryPickerView('type');
+        setManualCategorySearchQuery('');
+    };
+
+    const selectManualCategoryType = (type: CategoryType): void => {
+        setManualSelectedCategoryType(type);
+        setManualSelectedCategoryId('');
+        manualTransactionForm.setData('category_id', '');
+        setManualCategoryPickerView('category');
+        setIsManualCategoryPickerOpen(true);
+        setManualCategorySearchQuery('');
+        setManualExpandedCategoryPaths(new Set());
+    };
+
+    const toggleManualCategoryPath = (path: string): void => {
+        setManualExpandedCategoryPaths((current) => {
+            const next = new Set(current);
+
+            if (next.has(path)) {
+                next.delete(path);
+            } else {
+                next.add(path);
+            }
+
+            return next;
+        });
+    };
+
+    const toggleManualCategoryPicker = (): void => {
+        if (isManualCategoryPickerOpen) {
+            if (manualCategoryPickerView === 'category') {
+                setManualCategoryPickerView('type');
+                setManualCategorySearchQuery('');
+                setManualExpandedCategoryPaths(new Set());
+
+                return;
+            }
+
+            setIsManualCategoryPickerOpen(false);
+            setManualCategoryPickerView('type');
+
+            return;
+        }
+
+        setIsManualCategoryPickerOpen(true);
+        setManualCategoryPickerView('type');
+        setManualCategorySearchQuery('');
+        setManualExpandedCategoryPaths(new Set());
+    };
+
+    const submitManualTransaction = (): void => {
+        manualTransactionForm.post(
+            `/accounts/${account.id}/manual-transactions?start_date=${filters.start_date}&end_date=${filters.end_date}`,
+            {
+                preserveScroll: true,
+                preserveState: true,
+                preserveUrl: true,
+                only: ['account', 'transactions'],
+                onSuccess: () => {
+                    resetManualTransactionForm();
+                },
+            },
+        );
+    };
+
+    const openManualDatePicker = (): void => {
+        manualNativeDateInputRef.current?.showPicker?.();
+        manualNativeDateInputRef.current?.focus();
+        manualNativeDateInputRef.current?.click();
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={account.display_name ?? account.name ?? 'Account'} />
@@ -801,11 +989,14 @@ export default function AccountShow({
                             </p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 <Landmark className="mr-1 inline size-4 text-brand" />
-                                {account.institution_name ?? 'Institution'}
+                                {account.institution_name ??
+                                    (isManualAccount
+                                        ? 'Manual wallet'
+                                        : 'Institution')}
                                 {account.mask ? ` • **** ${account.mask}` : ''}
                             </p>
                             <p className="mt-2 text-xs text-muted-foreground">
-                                Last synced: {account.last_synced_at ? new Date(account.last_synced_at).toLocaleString() : 'Never'}
+                                Last synced: {formatLocalizedDateTime(account.last_synced_at, numberLocale)}
                             </p>
                         </div>
 
@@ -824,13 +1015,34 @@ export default function AccountShow({
                 </Card>
 
                 <div className="flex w-full flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold">Transactions</h2>
+                    <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start">
+                        <h2 className="text-lg font-semibold">Transactions</h2>
+                        {isManualAccount ? (
+                            <Button
+                                type="button"
+                                disabled={
+                                    showManualTransactionForm
+                                    || manualTransactionForm.processing
+                                }
+                                className={`font-semibold transition-colors disabled:pointer-events-none ${
+                                    showManualTransactionForm
+                                        ? 'border border-brand/35 bg-brand/20 text-brand/80 dark:border-brand/30 dark:bg-brand/20 dark:text-brand/75'
+                                        : 'border border-brand bg-brand text-white hover:bg-brand/90 dark:border-brand dark:bg-brand dark:text-white dark:hover:bg-brand/90'
+                                }`}
+                                onClick={() => {
+                                    setShowManualTransactionForm(true);
+                                }}
+                            >
+                                Add Transaction
+                            </Button>
+                        ) : null}
+                    </div>
 
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:justify-center">
+                    <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:flex-1 lg:justify-center">
                         <select
                             value={counterpartyFilter}
                             onChange={(event) => setCounterpartyFilter(event.target.value)}
-                            className={`h-9 min-w-44 rounded-md border px-3 pr-10 text-sm ${accountControlClasses}`}
+                            className={`h-9 w-full rounded-md border px-3 pr-10 text-sm sm:min-w-44 sm:w-auto ${accountControlClasses}`}
                         >
                             <option value="all">Filter by Merchants</option>
                             {counterparties.map((name) => (
@@ -840,7 +1052,7 @@ export default function AccountShow({
                             ))}
                         </select>
 
-                        <div className="relative min-w-56 flex-1 max-w-md">
+                        <div className="relative w-full sm:min-w-56 sm:flex-1 sm:max-w-md">
                             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={keywordFilter}
@@ -860,7 +1072,7 @@ export default function AccountShow({
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto md:justify-start">
                         <Button
                             variant="outline"
                             size="icon"
@@ -873,9 +1085,12 @@ export default function AccountShow({
                                         end_date: previousMonthRange.endDate,
                                     },
                                     {
-                                        preserveState: false,
+                                        preserveState: true,
                                         preserveScroll: true,
+                                        preserveUrl: true,
                                         replace: true,
+                                        showProgress: false,
+                                        only: ['account', 'filters', 'transactions'],
                                     },
                                 );
                             }}
@@ -886,7 +1101,7 @@ export default function AccountShow({
                         <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${accountControlClasses}`}>
                             <CalendarDays className="size-4 text-muted-foreground" />
                             <span>
-                                {formatDisplayDate(filters.start_date)} - {formatDisplayDate(filters.end_date)}
+                                {formatDisplayDate(filters.start_date, numberLocale)} - {formatDisplayDate(filters.end_date, numberLocale)}
                             </span>
                         </div>
 
@@ -902,9 +1117,12 @@ export default function AccountShow({
                                         end_date: nextMonthRange.endDate,
                                     },
                                     {
-                                        preserveState: false,
+                                        preserveState: true,
                                         preserveScroll: true,
+                                        preserveUrl: true,
                                         replace: true,
+                                        showProgress: false,
+                                        only: ['account', 'filters', 'transactions'],
                                     },
                                 );
                             }}
@@ -913,6 +1131,260 @@ export default function AccountShow({
                         </Button>
                     </div>
                 </div>
+
+                {isManualAccount ? (
+                    <div
+                        className={`grid transition-all duration-300 ease-out ${
+                            showManualTransactionForm
+                                ? 'grid-rows-[1fr] overflow-visible opacity-100'
+                                : 'grid-rows-[0fr] opacity-0'
+                        }`}
+                    >
+                        <div
+                            className={`min-h-0 ${
+                                showManualTransactionForm
+                                    ? 'overflow-visible'
+                                    : 'overflow-hidden'
+                            }`}
+                        >
+                            <Card
+                                className={`relative mt-1 overflow-visible py-0 ${accountPanelClasses}`}
+                            >
+                                <CardContent className="px-4 py-4">
+                                    <div className="grid gap-3 lg:grid-cols-[1.2fr_0.9fr_1fr_1fr_0.8fr_auto] lg:items-end">
+                                        <div className="grid gap-2">
+                                            <label className="text-xs font-medium text-muted-foreground">
+                                                Category
+                                            </label>
+                                            <TransactionCategoryEditor
+                                                activeType={manualSelectedCategoryType}
+                                                pickerView={manualCategoryPickerView}
+                                                onTypeChange={selectManualCategoryType}
+                                                selectedLabel={
+                                                    manualSelectedCategoryOption
+                                                        ? formatCategoryPathLabel(
+                                                            manualSelectedCategoryOption.path,
+                                                        )
+                                                        : 'Choose category'
+                                                }
+                                                isCategoryPickerOpen={isManualCategoryPickerOpen}
+                                                onTogglePicker={toggleManualCategoryPicker}
+                                                categorySearchQuery={manualCategorySearchQuery}
+                                                onSearchChange={setManualCategorySearchQuery}
+                                                filteredCategorySearchResults={manualFilteredCategorySearchResults}
+                                                selectedCategoryId={manualSelectedCategoryId}
+                                                categoryColorMap={categoryColorMap}
+                                                activeCategoryTree={manualCategoryTree}
+                                                expandedCategoryPaths={manualExpandedCategoryPaths}
+                                                onTogglePath={toggleManualCategoryPath}
+                                                onSelectCategory={selectManualCategory}
+                                            />
+                                            {manualTransactionForm.errors.category_id ? (
+                                                <p className="text-xs text-destructive">
+                                                    {
+                                                        manualTransactionForm
+                                                            .errors.category_id
+                                                    }
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <label
+                                                htmlFor="manual-transaction-date"
+                                                className="text-xs font-medium text-muted-foreground"
+                                            >
+                                                Date
+                                            </label>
+                                            <div className="relative">
+                                                <Input
+                                                    id="manual-transaction-date"
+                                                    type="text"
+                                                    readOnly
+                                                    value={manualDateDisplay}
+                                                    onClick={openManualDatePicker}
+                                                    className={`${manualTransactionFocusClasses} cursor-pointer pr-10`}
+                                                />
+
+                                                <input
+                                                    ref={manualNativeDateInputRef}
+                                                    type="date"
+                                                    value={manualTransactionForm.data.date}
+                                                    onChange={(event) =>
+                                                        manualTransactionForm.setData(
+                                                            'date',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    className="pointer-events-none absolute h-0 w-0 opacity-0"
+                                                    tabIndex={-1}
+                                                    aria-hidden="true"
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    onClick={openManualDatePicker}
+                                                    className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                                                    aria-label="Open date picker"
+                                                >
+                                                    <CalendarDays className="size-4" />
+                                                </button>
+                                            </div>
+                                            {manualTransactionForm.errors.date ? (
+                                                <p className="text-xs text-destructive">
+                                                    {manualTransactionForm.errors.date}
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <label
+                                                htmlFor="manual-transaction-merchant"
+                                                className="text-xs font-medium text-muted-foreground"
+                                            >
+                                                Merchant (optional)
+                                            </label>
+                                            <Input
+                                                id="manual-transaction-merchant"
+                                                value={manualTransactionForm.data.merchant_name}
+                                                onChange={(event) =>
+                                                    manualTransactionForm.setData(
+                                                        'merchant_name',
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                placeholder="Merchant name"
+                                                className={manualTransactionFocusClasses}
+                                            />
+                                            {manualTransactionForm.errors.merchant_name ? (
+                                                <p className="text-xs text-destructive">
+                                                    {
+                                                        manualTransactionForm
+                                                            .errors.merchant_name
+                                                    }
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <label
+                                                htmlFor="manual-transaction-name"
+                                                className="text-xs font-medium text-muted-foreground"
+                                            >
+                                                Transaction (optional)
+                                            </label>
+                                            <Input
+                                                id="manual-transaction-name"
+                                                value={manualTransactionForm.data.transaction_name}
+                                                onChange={(event) =>
+                                                    manualTransactionForm.setData(
+                                                        'transaction_name',
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                placeholder="Transaction name"
+                                                className={manualTransactionFocusClasses}
+                                            />
+                                            {manualTransactionForm.errors.transaction_name ? (
+                                                <p className="text-xs text-destructive">
+                                                    {
+                                                        manualTransactionForm
+                                                            .errors.transaction_name
+                                                    }
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <label
+                                                htmlFor="manual-transaction-amount"
+                                                className="text-xs font-medium text-muted-foreground"
+                                            >
+                                                Amount ({currency})
+                                            </label>
+                                            <Input
+                                                id="manual-transaction-amount"
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={manualTransactionAmountInput}
+                                                onChange={(event) => {
+                                                    const nextValue =
+                                                        event.target.value;
+
+                                                    setManualTransactionAmountInput(
+                                                        nextValue,
+                                                    );
+                                                    manualTransactionForm.setData(
+                                                        'amount',
+                                                        normalizeLocalizedNumber(
+                                                            nextValue,
+                                                            numberLocale,
+                                                        ),
+                                                    );
+                                                }}
+                                                onBlur={(event) => {
+                                                    const nextValue =
+                                                        event.target.value;
+
+                                                    if (
+                                                        nextValue.trim() === ''
+                                                    ) {
+                                                        return;
+                                                    }
+
+                                                    setManualTransactionAmountInput(
+                                                        formatLocalizedDecimal(
+                                                            nextValue,
+                                                            numberLocale,
+                                                        ),
+                                                    );
+                                                }}
+                                                placeholder={formatLocalizedDecimal(
+                                                    '0',
+                                                    numberLocale,
+                                                )}
+                                                className={manualTransactionFocusClasses}
+                                            />
+                                            {manualTransactionForm.errors.amount ? (
+                                                <p className="text-xs text-destructive">
+                                                    {
+                                                        manualTransactionForm
+                                                            .errors.amount
+                                                    }
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="flex items-end justify-end gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className={accountControlClasses}
+                                                onClick={() => {
+                                                    resetManualTransactionForm();
+                                                }}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                onClick={submitManualTransaction}
+                                                disabled={
+                                                    manualTransactionForm.processing
+                                                }
+                                                className="bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:opacity-100 disabled:bg-brand/65 disabled:text-white!"
+                                            >
+                                                {manualTransactionForm.processing
+                                                    ? 'Saving...'
+                                                    : 'Add Transaction'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                ) : null}
 
                 <Card className={`relative w-full overflow-visible py-0 ${accountPanelClasses}`}>
                     <div className="divide-y divide-brand/10 dark:divide-white/6">
@@ -926,7 +1398,7 @@ export default function AccountShow({
                                 <section key={day} className="px-4 py-4">
                                     <div className="mb-3 flex items-center justify-between border-b border-brand/10 pb-3 dark:border-white/8">
                                         <h3 className="text-xl font-semibold tracking-tight text-foreground dark:text-slate-100">
-                                            {day === 'Unknown date' ? day : formatDayLabel(day)}
+                                            {day === 'Unknown date' ? day : formatDayLabel(day, numberLocale)}
                                         </h3>
                                         <p
                                             className={`text-lg font-semibold ${
@@ -1089,7 +1561,7 @@ export default function AccountShow({
                                         })}
                                     </div>
 
-                                    <div className="hidden overflow-x-auto lg:block">
+                                    <div className="hidden lg:block">
                                         <table className="w-full table-fixed border-separate border-spacing-y-1.5">
                                             <colgroup>
                                                 <col className="w-[30%]" />

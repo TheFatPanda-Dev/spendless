@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Transactions\CreateManualTransaction;
 use App\Actions\Transactions\ResolveBankTransactionCategory;
+use App\Http\Requests\Banking\StoreManualTransactionRequest;
 use App\Http\Requests\Banking\UpdateBankTransactionRequest;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
@@ -85,6 +87,8 @@ class BankAccountController extends Controller
                 'name' => $bankAccount->name,
                 'official_name' => $bankAccount->official_name,
                 'institution_name' => $bankAccount->connection?->institution_name,
+                'provider' => $bankAccount->connection?->provider,
+                'is_manual' => $bankAccount->connection?->provider === 'manual',
                 'mask' => $bankAccount->mask_encrypted ? str_pad(substr((string) $bankAccount->mask_encrypted, -4), 4, '*', STR_PAD_LEFT) : null,
                 'currency' => $bankAccount->currency_code ?: $bankAccount->currency,
                 'balances' => $bankAccount->balances_encrypted,
@@ -132,12 +136,39 @@ class BankAccountController extends Controller
         return back()->with('success', 'Transaction updated.');
     }
 
+    public function storeManualTransaction(
+        StoreManualTransactionRequest $request,
+        BankAccount $bankAccount,
+        CreateManualTransaction $createManualTransaction,
+    ): RedirectResponse {
+        $this->ensureAccountIsAccessible($request, $bankAccount);
+
+        abort_unless($bankAccount->connection?->provider === 'manual', 403);
+
+        $category = Category::query()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($request->integer('category_id'));
+
+        $createManualTransaction($bankAccount, [
+            'category' => $category,
+            'amount' => (float) $request->validated('amount'),
+            'date' => $request->validated('date'),
+            'merchant_name' => $request->validated('merchant_name'),
+            'transaction_name' => $request->validated('transaction_name'),
+        ]);
+
+        return to_route('accounts.show', [
+            'bankAccount' => $bankAccount,
+            'start_date' => (string) $request->query('start_date', now()->startOfMonth()->toDateString()),
+            'end_date' => (string) $request->query('end_date', now()->endOfMonth()->toDateString()),
+        ])->with('success', 'Manual transaction added.');
+    }
+
     private function ensureAccountIsAccessible(Request $request, BankAccount $bankAccount): void
     {
         abort_unless(
             $bankAccount->connection !== null
-            && $bankAccount->connection->user_id === $request->user()->id
-            && $bankAccount->connection->provider === 'plaid',
+            && $bankAccount->connection->user_id === $request->user()->id,
             403,
         );
     }

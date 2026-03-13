@@ -33,18 +33,78 @@ export function formatDateForFilter(date: Date): string {
     return `${year}-${month}-${day}`;
 }
 
-export function formatDisplayDate(dateValue: string): string {
+export function formatLocalizedNumericDate(
+    dateValue: string,
+    locale: string,
+): string {
     const parsed = parseDate(dateValue);
 
     if (!parsed) {
         return dateValue;
     }
 
-    return parsed.toLocaleDateString('en-US', {
-        month: 'short',
-        day: '2-digit',
+    const formatter = new Intl.DateTimeFormat(locale, {
         year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
     });
+
+    const orderedParts = formatter
+        .formatToParts(parsed)
+        .filter(
+            (part) =>
+                part.type === 'day'
+                || part.type === 'month'
+                || part.type === 'year',
+        )
+        .map((part) => part.value);
+
+    if (orderedParts.length === 3) {
+        return orderedParts.join('/');
+    }
+
+    return formatter.format(parsed);
+}
+
+export function formatLocalizedNumericDateFromDate(
+    value: Date,
+    locale: string,
+): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return formatLocalizedNumericDate(`${year}-${month}-${day}`, locale);
+}
+
+export function formatLocalizedDateTime(
+    value: string | null,
+    locale: string,
+): string {
+    if (!value) {
+        return 'Never';
+    }
+
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    return parsed.toLocaleString(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+export function formatDisplayDate(
+    dateValue: string,
+    locale = 'en-GB',
+): string {
+    return formatLocalizedNumericDate(dateValue, locale);
 }
 
 export function shiftMonth(dateValue: string, direction: -1 | 1): string {

@@ -67,7 +67,90 @@ class WalletSettingsTest extends TestCase
                 ->has('accounts', 1)
                 ->where('accounts.0.id', $ownerAccount->id)
                 ->where('accounts.0.display_name', 'Daily spending')
-                ->where('accounts.0.wallet_name', 'Owner Wallet'));
+                ->where('accounts.0.wallet_name', 'Owner Wallet')
+                ->where('base_currency.selected', 'EUR')
+                ->where('base_currency.options.0.code', 'EUR')
+                ->where('base_currency.options.0.label', 'EUR - Euro')
+                ->where('base_currency.options.1.code', 'USD')
+                ->where('base_currency.options.1.label', 'USD - US Dollar')
+                ->where('base_currency.options.2.code', 'GBP')
+                ->where('base_currency.options.2.label', 'GBP - British Pound')
+                ->where('number_locale.selected', 'en-GB')
+                ->where('number_locale.options.0.code', 'en-GB')
+                ->where('number_locale.options.0.example', '1,000.00')
+                ->where('number_locale.options.2.code', 'de-DE')
+                ->where('number_locale.options.2.example', '1.000,00'));
+    }
+
+    public function test_user_can_update_wallet_base_currency_preference(): void
+    {
+        $user = User::factory()->create();
+
+        $wallet = Wallet::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Main Wallet',
+            'type' => 'bank',
+            'currency' => 'GBP',
+        ]);
+
+        $connection = $this->createPlaidConnection($user, $wallet, 'base-currency-item');
+
+        BankAccount::query()->create([
+            'bank_connection_id' => $connection->id,
+            'external_uid' => 'acc-base-1',
+            'plaid_account_id' => 'acc-base-1',
+            'name' => 'Checking',
+            'currency' => 'GBP',
+            'currency_code' => 'GBP',
+            'balances_encrypted' => ['current' => 100],
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->patch('/settings/wallets/base-currency', [
+                'base_currency' => 'GBP',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'preferred_base_currency' => 'GBP',
+        ]);
+    }
+
+    public function test_user_can_set_top_world_base_currency_without_matching_account_currency(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patch('/settings/wallets/base-currency', [
+                'base_currency' => 'CAD',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'preferred_base_currency' => 'CAD',
+        ]);
+    }
+
+    public function test_user_can_update_number_localization_preference(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patch('/settings/wallets/number-locale', [
+                'number_locale' => 'de-DE',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'preferred_number_locale' => 'de-DE',
+        ]);
     }
 
     public function test_user_can_update_bank_account_display_name(): void

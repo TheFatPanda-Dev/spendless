@@ -4,6 +4,7 @@ import {
     ArrowRight,
     Building2,
     CalendarDays,
+    ChevronDown,
     Loader2,
     RefreshCw,
 } from 'lucide-react';
@@ -38,22 +39,28 @@ type DashboardAccount = {
     last_synced_at: string | null;
 };
 
-type DashboardSummary = {
-    total_balance: number;
-    period_change: number;
-    period_expenses: number;
-    period_income: number;
-};
-
 type DashboardFilters = {
     start_date: string;
     end_date: string;
 };
 
+type DashboardExchangeRates = {
+    eur_per_unit: Record<string, number>;
+};
+
+type DashboardPeriodBreakdown = {
+    change_by_currency: Record<string, number>;
+    expenses_by_currency: Record<string, number>;
+    income_by_currency: Record<string, number>;
+};
+
 type Props = {
     accounts: DashboardAccount[];
-    summary: DashboardSummary;
     filters: DashboardFilters;
+    base_currency: string;
+    number_locale: string;
+    exchange_rates: DashboardExchangeRates;
+    period_breakdown: DashboardPeriodBreakdown;
 };
 
 const dashboardShellClasses =
@@ -65,13 +72,65 @@ const dashboardPanelClasses =
 const dashboardControlClasses =
     'border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,251,249,0.98))] text-foreground shadow-sm hover:bg-brand/6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card dark:text-foreground dark:hover:bg-card';
 
-function formatCurrency(value: number, currency: string): string {
+const DEFAULT_EUR_PER_UNIT: Record<string, number> = {
+    EUR: 1,
+    GBP: 1.17,
+    USD: 0.92,
+};
+
+const DEFAULT_BASE_CURRENCY = 'EUR';
+
+function normalizeCurrencyCode(currency: string | null | undefined): string {
+    return (currency ?? DEFAULT_BASE_CURRENCY).toUpperCase();
+}
+
+function convertAmount(
+    amount: number,
+    fromCurrency: string,
+    toCurrency: string,
+    eurPerUnit: Record<string, number>,
+): number {
+    const normalizedFrom = normalizeCurrencyCode(fromCurrency);
+    const normalizedTo = normalizeCurrencyCode(toCurrency);
+    const fromRate = eurPerUnit[normalizedFrom];
+    const toRate = eurPerUnit[normalizedTo];
+
+    if (!fromRate || !toRate) {
+        return amount;
+    }
+
+    const amountInEur = amount * fromRate;
+
+    return amountInEur / toRate;
+}
+
+function convertTotalsByCurrency(
+    totalsByCurrency: Record<string, number>,
+    toCurrency: string,
+    eurPerUnit: Record<string, number>,
+): number {
+    return Object.entries(totalsByCurrency).reduce(
+        (sum, [currency, value]) =>
+            sum + convertAmount(value, currency, toCurrency, eurPerUnit),
+        0,
+    );
+}
+
+function formatCurrency(
+    value: number,
+    currency: string,
+    numberLocale: string,
+): string {
     const sign = value > 0 ? '+' : '';
 
-    return `${sign}${value.toLocaleString(undefined, {
+    return `${sign}${value.toLocaleString(numberLocale, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })} ${currency}`;
+}
+
+function formatNumber(value: number, numberLocale: string): string {
+    return value.toLocaleString(numberLocale);
 }
 
 function applyDateFilter(startDate: string, endDate: string): void {
@@ -82,14 +141,24 @@ function applyDateFilter(startDate: string, endDate: string): void {
             end_date: endDate,
         },
         {
-            preserveState: false,
+            preserveState: true,
             preserveScroll: true,
+            preserveUrl: true,
             replace: true,
+            showProgress: false,
+            only: ['filters', 'accounts', 'exchange_rates', 'period_breakdown'],
         },
     );
 }
 
-export default function Dashboard({ accounts, summary, filters }: Props) {
+export default function Dashboard({
+    accounts,
+    filters,
+    base_currency,
+    number_locale,
+    exchange_rates,
+    period_breakdown,
+}: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Dashboard',
@@ -99,8 +168,57 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
 
     const [connectError, setConnectError] = useState<string | null>(null);
     const [showPendingNewAccount, setShowPendingNewAccount] = useState(false);
+    const [mobileAccountsOpen, setMobileAccountsOpen] = useState(false);
+    const [selectedMobileAccountId, setSelectedMobileAccountId] = useState<
+        number | null
+    >(accounts[0]?.id ?? null);
     const previousMonthRange = shiftMonthRange(filters.start_date, -1);
     const nextMonthRange = shiftMonthRange(filters.start_date, 1);
+
+    const selectedMobileAccount =
+        accounts.find((account) => account.id === selectedMobileAccountId) ??
+        accounts[0] ??
+        null;
+
+    const eurPerUnit = {
+        ...DEFAULT_EUR_PER_UNIT,
+        ...Object.fromEntries(
+            Object.entries(exchange_rates.eur_per_unit).map(
+                ([currency, value]) => [normalizeCurrencyCode(currency), value],
+            ),
+        ),
+    };
+
+    const baseCurrency = normalizeCurrencyCode(base_currency);
+    const numberLocale = number_locale;
+
+    const totalConvertedBalance = accounts.reduce((sum, account) => {
+        return (
+            sum +
+            convertAmount(
+                account.current_balance,
+                account.currency,
+                baseCurrency,
+                eurPerUnit,
+            )
+        );
+    }, 0);
+
+    const convertedPeriodChange = convertTotalsByCurrency(
+        period_breakdown.change_by_currency,
+        baseCurrency,
+        eurPerUnit,
+    );
+    const convertedPeriodExpenses = convertTotalsByCurrency(
+        period_breakdown.expenses_by_currency,
+        baseCurrency,
+        eurPerUnit,
+    );
+    const convertedPeriodIncome = convertTotalsByCurrency(
+        period_breakdown.income_by_currency,
+        baseCurrency,
+        eurPerUnit,
+    );
 
     const { isRefreshing } = usePlaidAccountLinkedRefresh({
         only: ['accounts', 'summary'],
@@ -154,16 +272,16 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                 <div className="pointer-events-none absolute inset-x-[18%] top-12 h-40 bg-[radial-gradient(circle,rgba(16,185,129,0.08),transparent_68%)] blur-2xl dark:bg-[radial-gradient(circle,rgba(16,185,129,0.06),transparent_70%)]" />
 
                 <section className="relative animate-in duration-500 fade-in-0 slide-in-from-top-2">
-                    <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             Accounts
                         </h2>
 
-                        <div className="flex items-center gap-2">
+                        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-1 sm:auto-cols-max sm:grid-flow-col sm:items-center">
                             <Button
                                 type="button"
                                 variant="outline"
-                                className={dashboardControlClasses}
+                                className={`w-full sm:w-auto ${dashboardControlClasses}`}
                                 onClick={() => {
                                     void startSyncAll();
                                 }}
@@ -175,9 +293,7 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                                 Sync All
                             </Button>
 
-                            <AddNewWalletMenu
-                                onConnectBank={handleConnectBank}
-                            />
+                            <AddNewWalletMenu onConnectBank={handleConnectBank} />
                         </div>
                     </div>
 
@@ -213,7 +329,170 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                         </div>
                     ) : null}
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="space-y-3 sm:hidden">
+                        {accounts.length > 0 ? (
+                            <>
+                                {selectedMobileAccount ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className={`w-full rounded-2xl border border-brand/30 bg-[linear-gradient(140deg,rgba(3,10,9,0.98),rgba(4,15,13,0.95)_38%,rgba(2,7,8,0.98))] p-4 text-left shadow-[0_18px_48px_-30px_rgba(16,185,129,0.62)] transition hover:border-brand/45 ${dashboardPanelClasses}`}
+                                            onClick={() => {
+                                                setMobileAccountsOpen(
+                                                    (currentOpen) =>
+                                                        !currentOpen,
+                                                );
+                                            }}
+                                            aria-expanded={mobileAccountsOpen}
+                                            aria-controls="mobile-accounts-list"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="inline-flex items-center rounded-full border border-brand/35 bg-brand/12 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-brand/90">
+                                                        Portfolio Snapshot
+                                                    </div>
+                                                    <p
+                                                        className={`mt-3 text-[2.45rem] leading-none font-semibold tracking-[-0.02em] sm:text-5xl ${
+                                                            totalConvertedBalance >
+                                                            0
+                                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                                : totalConvertedBalance <
+                                                                    0
+                                                                  ? 'text-[#ff6f61] dark:text-[#ff8b80]'
+                                                                  : 'text-muted-foreground dark:text-slate-400'
+                                                        }`}
+                                                    >
+                                                        {formatCurrency(
+                                                            totalConvertedBalance,
+                                                            baseCurrency,
+                                                            numberLocale,
+                                                        )}
+                                                    </p>
+                                                    <p className="mt-2 text-xs text-slate-400">
+                                                        Open to see all wallets ({formatNumber(accounts.length, numberLocale)})
+                                                    </p>
+                                                </div>
+
+                                                <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full border border-brand/35 bg-brand/10">
+                                                    <ChevronDown
+                                                        className={`size-5 text-slate-300 transition-transform duration-300 ${
+                                                            mobileAccountsOpen
+                                                                ? 'rotate-180'
+                                                                : 'rotate-0'
+                                                        }`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </button>
+
+                                        <div
+                                            id="mobile-accounts-list"
+                                            className={`overflow-hidden transition-all duration-300 ease-out ${
+                                                mobileAccountsOpen
+                                                    ? 'max-h-[30rem] opacity-100'
+                                                    : 'max-h-0 opacity-0'
+                                            }`}
+                                        >
+                                            <div className="space-y-2 pt-1">
+                                                {accounts.map((account) => {
+                                                    const title =
+                                                        account.display_name ??
+                                                        account.name ??
+                                                        account.official_name ??
+                                                        'Linked Account';
+                                                    const subtitle =
+                                                        account.institution_name ??
+                                                        account.subtype ??
+                                                        account.type ??
+                                                        'Bank account';
+                                                    const isSelected =
+                                                        selectedMobileAccount.id ===
+                                                        account.id;
+
+                                                    return (
+                                                        <Link
+                                                            key={account.id}
+                                                            href={`/accounts/${account.id}?start_date=${filters.start_date}&end_date=${filters.end_date}`}
+                                                            className={`block w-full rounded-xl border px-3 py-2 text-left transition ${
+                                                                isSelected
+                                                                    ? 'border-brand/40 bg-brand/8'
+                                                                    : 'border-brand/15 bg-card'
+                                                            }`}
+                                                            onClick={() => {
+                                                                setSelectedMobileAccountId(
+                                                                    account.id,
+                                                                );
+                                                                setMobileAccountsOpen(
+                                                                    false,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <p className="truncate text-sm font-medium text-foreground">
+                                                                    {title}
+                                                                </p>
+                                                                <p
+                                                                    className={`shrink-0 text-sm font-semibold ${
+                                                                        convertAmount(
+                                                                            account.current_balance,
+                                                                            account.currency,
+                                                                            baseCurrency,
+                                                                            eurPerUnit,
+                                                                        ) >
+                                                                        0
+                                                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                                                            : convertAmount(
+                                                                                    account.current_balance,
+                                                                                    account.currency,
+                                                                                    baseCurrency,
+                                                                                    eurPerUnit,
+                                                                                ) <
+                                                                                0
+                                                                              ? 'text-[#ff6f61] dark:text-[#ff8b80]'
+                                                                              : 'text-muted-foreground dark:text-slate-400'
+                                                                    }`}
+                                                                >
+                                                                    {formatCurrency(
+                                                                        convertAmount(
+                                                                            account.current_balance,
+                                                                            account.currency,
+                                                                            baseCurrency,
+                                                                            eurPerUnit,
+                                                                        ),
+                                                                        baseCurrency,
+                                                                        numberLocale,
+                                                                    )}
+                                                                </p>
+                                                            </div>
+                                                            <div className="mt-0.5 flex items-center justify-between gap-3">
+                                                                <p className="truncate text-xs text-muted-foreground">
+                                                                    {subtitle}
+                                                                    {account.mask
+                                                                        ? ` • **** ${account.mask}`
+                                                                        : ''}
+                                                                </p>
+                                                                {normalizeCurrencyCode(account.currency) !== baseCurrency ? (
+                                                                    <p className="shrink-0 text-[11px] text-muted-foreground">
+                                                                        {formatCurrency(
+                                                                            account.current_balance,
+                                                                            account.currency,
+                                                                            numberLocale,
+                                                                        )}
+                                                                    </p>
+                                                                ) : null}
+                                                            </div>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : null}
+                            </>
+                        ) : null}
+                    </div>
+
+                    <div className="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-4">
                         {showPendingNewAccount && isRefreshing ? (
                             <Card className="gap-0 rounded-2xl border border-dashed border-emerald-300/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,252,247,0.98))] py-4 dark:border-emerald-700/45 dark:bg-linear-to-br dark:from-emerald-500/8 dark:via-card dark:to-card">
                                 <CardContent className="flex items-center gap-3 px-4">
@@ -235,8 +514,6 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                         ) : null}
 
                         {accounts.map((account, index) => {
-                            const isPositive = account.current_balance > 0;
-                            const isNegative = account.current_balance < 0;
                             const title =
                                 account.display_name ??
                                 account.name ??
@@ -265,30 +542,55 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                                                 <Building2 className="size-5" />
                                             </div>
 
-                                            <div className="min-w-0">
-                                                <p className="truncate text-[15px] font-medium text-foreground">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[15px] leading-tight font-medium text-foreground break-words">
                                                     {title}
                                                 </p>
-                                                <p className="truncate text-xs text-muted-foreground">
+                                                <p className="mt-1 text-xs text-muted-foreground break-words">
                                                     {subtitle}
                                                     {account.mask
                                                         ? ` • **** ${account.mask}`
                                                         : ''}
                                                 </p>
                                                 <p
-                                                    className={`mt-1.5 text-2xl leading-none font-semibold tracking-tight ${
-                                                        isPositive
+                                                    className={`mt-2 text-xl leading-none font-semibold tracking-tight ${
+                                                        convertAmount(
+                                                            account.current_balance,
+                                                            account.currency,
+                                                            baseCurrency,
+                                                            eurPerUnit,
+                                                        ) > 0
                                                             ? 'text-emerald-600 dark:text-emerald-400'
-                                                            : isNegative
+                                                            : convertAmount(
+                                                                    account.current_balance,
+                                                                    account.currency,
+                                                                    baseCurrency,
+                                                                    eurPerUnit,
+                                                                ) < 0
                                                               ? 'text-[#ff6f61] dark:text-[#ff8b80]'
                                                               : 'text-muted-foreground dark:text-slate-400'
                                                     }`}
                                                 >
                                                     {formatCurrency(
-                                                        account.current_balance,
-                                                        account.currency,
+                                                        convertAmount(
+                                                            account.current_balance,
+                                                            account.currency,
+                                                            baseCurrency,
+                                                            eurPerUnit,
+                                                        ),
+                                                        baseCurrency,
+                                                        numberLocale,
                                                     )}
                                                 </p>
+                                                {normalizeCurrencyCode(account.currency) !== baseCurrency ? (
+                                                    <p className="mt-1 text-[11px] text-muted-foreground">
+                                                        {formatCurrency(
+                                                            account.current_balance,
+                                                            account.currency,
+                                                            numberLocale,
+                                                        )}
+                                                    </p>
+                                                ) : null}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -305,6 +607,17 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                             </Card>
                         )}
                     </div>
+
+                    {accounts.length === 0 && (
+                        <div className="sm:hidden">
+                            <Card className="col-span-full gap-0 rounded-2xl border border-dashed border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,247,0.9))] py-6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card">
+                                <CardContent className="px-4 text-center text-sm text-muted-foreground">
+                                    No connected bank accounts yet. Use Add New
+                                    Wallet to connect one with Plaid.
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
                 </section>
 
                 <section className="relative animate-in duration-500 fade-in-0 [animation-delay:120ms] slide-in-from-bottom-2">
@@ -313,7 +626,7 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                             Current Period
                         </h2>
 
-                        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                        <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-start">
                             <Button
                                 variant="outline"
                                 size="icon"
@@ -333,8 +646,8 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                             >
                                 <CalendarDays className="size-4 text-muted-foreground" />
                                 <span>
-                                    {formatDisplayDate(filters.start_date)} -{' '}
-                                    {formatDisplayDate(filters.end_date)}
+                                    {formatDisplayDate(filters.start_date, numberLocale)} -{' '}
+                                    {formatDisplayDate(filters.end_date, numberLocale)}
                                 </span>
                             </div>
 
@@ -356,41 +669,17 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <div
-                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
+                            className={`hidden rounded-xl p-4 sm:block ${dashboardPanelClasses}`}
                         >
                             <p className="text-sm font-medium text-muted-foreground">
                                 Current Wallet Balance
                             </p>
                             <p className="mt-1 text-4xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
-                                {formatCurrency(summary.total_balance, 'EUR')}
-                            </p>
-                        </div>
-
-                        <div
-                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
-                        >
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Total Period Change
-                            </p>
-                            <p
-                                className={`mt-1 text-4xl font-semibold tracking-tight ${
-                                    summary.period_change >= 0
-                                        ? 'text-emerald-600 dark:text-emerald-400'
-                                        : 'text-[#ff6f61] dark:text-[#ff8b80]'
-                                }`}
-                            >
-                                {formatCurrency(summary.period_change, 'EUR')}
-                            </p>
-                        </div>
-
-                        <div
-                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
-                        >
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Total Period Expenses
-                            </p>
-                            <p className="mt-1 text-4xl font-semibold tracking-tight text-[#ff6f61] dark:text-[#ff8b80]">
-                                {formatCurrency(summary.period_expenses, 'EUR')}
+                                {formatCurrency(
+                                    totalConvertedBalance,
+                                    baseCurrency,
+                                    numberLocale,
+                                )}
                             </p>
                         </div>
 
@@ -401,7 +690,41 @@ export default function Dashboard({ accounts, summary, filters }: Props) {
                                 Total Period Income
                             </p>
                             <p className="mt-1 text-4xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
-                                {formatCurrency(summary.period_income, 'EUR')}
+                                {formatCurrency(
+                                    convertedPeriodIncome,
+                                    baseCurrency,
+                                    numberLocale,
+                                )}
+                            </p>
+                        </div>
+
+                        <div
+                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
+                        >
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Total Period Expenses
+                            </p>
+                            <p className="mt-1 text-4xl font-semibold tracking-tight text-[#ff6f61] dark:text-[#ff8b80]">
+                                {formatCurrency(
+                                    convertedPeriodExpenses,
+                                    baseCurrency,
+                                    numberLocale,
+                                )}
+                            </p>
+                        </div>
+
+                        <div
+                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
+                        >
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Total Period Change
+                            </p>
+                            <p className="mt-1 text-4xl font-semibold tracking-tight text-amber-500 dark:text-amber-400">
+                                {formatCurrency(
+                                    convertedPeriodChange,
+                                    baseCurrency,
+                                    numberLocale,
+                                )}
                             </p>
                         </div>
                     </div>

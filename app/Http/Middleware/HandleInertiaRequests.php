@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Localization\NumberLocaleOptions;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +42,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'number_locale' => NumberLocaleOptions::normalize((string) ($request->user()?->preferred_number_locale ?: 'en-GB')),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

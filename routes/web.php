@@ -27,10 +27,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('wallets.sync-status');
     Route::get('wallets/add-account', [WalletController::class, 'addAccount'])
         ->name('wallets.add-account');
+    Route::post('wallets/manual', [WalletController::class, 'storeManual'])
+        ->name('wallets.manual.store');
     Route::resource('wallets', WalletController::class)
         ->only(['index', 'store', 'show']);
     Route::get('accounts/{bankAccount}', [BankAccountController::class, 'show'])
         ->name('accounts.show');
+    Route::post('accounts/{bankAccount}/manual-transactions', [BankAccountController::class, 'storeManualTransaction'])
+        ->name('accounts.transactions.manual.store');
     Route::patch('accounts/{bankAccount}/transactions/{bankTransaction}', [BankAccountController::class, 'update'])
         ->name('accounts.transactions.update');
 

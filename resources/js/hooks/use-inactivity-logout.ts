@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
-import { logout } from '@/routes';
+import { login, logout } from '@/routes';
 
 const AUTO_LOGOUT_TIMEOUT_MS = 15 * 60 * 1000;
 const LAST_ACTIVITY_STORAGE_KEY = 'auth:last-activity-at';
@@ -24,6 +24,16 @@ function getStoredLastActivity(): number | null {
 
 function storeLastActivity(timestamp: number): void {
     window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(timestamp));
+}
+
+function getCookieValue(name: string): string | undefined {
+    const match = document.cookie.match(
+        new RegExp(
+            `(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`,
+        ),
+    );
+
+    return match ? decodeURIComponent(match[1]) : undefined;
 }
 
 export function clearInactivityLogoutState(): void {
@@ -64,7 +74,50 @@ export function useInactivityLogout(
             clearLogoutTimer();
             clearInactivityLogoutState();
             router.flushAll();
-            router.post(logout.url(), {}, { replace: true });
+
+            const redirectToLogin = (): void => {
+                window.location.assign(login.url());
+            };
+
+            const csrfToken = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content');
+            const xsrfToken = getCookieValue('XSRF-TOKEN');
+
+            void fetch(logout.url(), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+                },
+            })
+                .then((response) => {
+                    if (response.status === 401 || response.status === 419) {
+                        redirectToLogin();
+
+                        return;
+                    }
+
+                    if (response.redirected) {
+                        window.location.assign(response.url);
+
+                        return;
+                    }
+
+                    if (response.ok) {
+                        redirectToLogin();
+
+                        return;
+                    }
+
+                    redirectToLogin();
+                })
+                .catch(() => {
+                    redirectToLogin();
+                });
         };
 
         const syncLoggedOutState = (): void => {
