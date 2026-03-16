@@ -97,8 +97,10 @@ class BankAccountTransactionsTest extends TestCase
                         && $transactionsByName->get('Fuel purchase')['category'] === 'Vehicles / Car'
                         && $transactionsByName->get('Fuel purchase')['category_id'] === $car->id
                         && $transactionsByName->get('Fuel purchase')['category_source'] === 'automatic'
+                        && $transactionsByName->get('Fuel purchase')['amount'] === -72.85
                         && $transactionsByName->get('Card payment')['category'] === 'Other'
-                        && $transactionsByName->get('Card payment')['category_source'] === 'automatic';
+                        && $transactionsByName->get('Card payment')['category_source'] === 'automatic'
+                        && $transactionsByName->get('Card payment')['amount'] === -19.45;
                 })
             );
     }

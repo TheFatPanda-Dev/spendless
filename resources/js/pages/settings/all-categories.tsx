@@ -140,6 +140,36 @@ const iconSearchAliases: Record<string, string[]> = {
     fuel: ['gas', 'gasoline', 'gas-station', 'gas station', 'petrol'],
 };
 
+const semanticIconRecommendations: Record<string, string[]> = {
+    food: [
+        'utensils-crossed',
+        'chef-hat',
+        'cooking-pot',
+        'pizza',
+        'sandwich',
+        'beef',
+        'fish',
+        'egg-fried',
+        'salad',
+        'apple',
+        'carrot',
+        'cookie',
+        'donut',
+        'ice-cream-bowl',
+        'coffee',
+        'cup-soda',
+    ],
+    burger: ['sandwich', 'beef', 'utensils-crossed', 'cooking-pot', 'chef-hat'],
+    hamburger: ['sandwich', 'beef', 'utensils-crossed', 'cooking-pot', 'chef-hat'],
+    meal: ['utensils-crossed', 'cooking-pot', 'chef-hat', 'sandwich', 'pizza'],
+    restaurant: ['utensils-crossed', 'chef-hat', 'cooking-pot', 'menu', 'receipt'],
+    drink: ['coffee', 'cup-soda', 'wine', 'beer', 'martini'],
+};
+
+const iconOptionsByValue = new Map(
+    allIconOptions.map((option) => [option.value, option] as const),
+);
+
 const searchableIconOptions: SearchableCategoryOption[] = allIconOptions.map(
     (option) => ({
         ...option,
@@ -147,7 +177,9 @@ const searchableIconOptions: SearchableCategoryOption[] = allIconOptions.map(
             new Set([
                 option.value.toLowerCase(),
                 option.value.toLowerCase().replace(/-/g, ' '),
+                option.value.toLowerCase().replace(/[-\s]/g, ''),
                 option.label.toLowerCase(),
+                option.label.toLowerCase().replace(/[-\s]/g, ''),
                 ...(iconSearchAliases[option.value] ?? []).map((alias) =>
                     alias.toLowerCase(),
                 ),
@@ -201,19 +233,22 @@ const categoryDeleteButtonClasses =
     'absolute top-3 right-3 z-10 size-9 rounded-xl border border-red-400/20 bg-red-500/12 text-red-200 opacity-100 shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition duration-200 hover:border-red-400/35 hover:bg-red-500/18 hover:text-red-100 md:top-1/2 md:right-2 md:size-10 md:-translate-y-1/2 md:translate-x-4 md:opacity-0 md:focus-visible:translate-x-0 md:focus-visible:opacity-100 md:group-hover/category:translate-x-0 md:group-hover/category:opacity-100 md:group-focus-within/category:translate-x-0 md:group-focus-within/category:opacity-100';
 
 const studioPanelSurfaceClasses =
-    'border border-brand/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,250,247,0.98))] shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-black/10 dark:shadow-none';
+    'border border-brand/15 bg-linear-to-b from-background via-background to-brand/6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:bg-black/10 dark:shadow-none';
 
 const studioFieldSurfaceClasses =
-    'border-brand/15 bg-white/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] dark:border-border dark:bg-background/60 dark:shadow-none';
+    'border-brand/15 bg-background/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-border dark:bg-background/60 dark:shadow-none';
 
 const studioPopoverSurfaceClasses =
-    'border border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(246,251,248,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.14)] backdrop-blur dark:bg-background/95 dark:shadow-black/30';
+    'border border-brand/20 bg-linear-to-b from-background via-background to-brand/6 shadow-[0_24px_60px_rgba(15,23,42,0.14)] backdrop-blur dark:bg-background/95 dark:shadow-black/30';
 
 const studioIdleOptionClasses =
-    'border-brand/15 bg-white/90 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:border-brand/25 hover:bg-brand/5 hover:text-foreground dark:border-border dark:bg-background/50 dark:shadow-none';
+    'border-brand/15 bg-background/82 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] hover:border-brand/25 hover:bg-brand/5 hover:text-foreground dark:border-border dark:bg-background/50 dark:shadow-none';
 
 const studioSectionFrameClasses =
-    'border border-brand/15 bg-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-white/8 dark:bg-black/15 dark:shadow-none';
+    'border border-brand/15 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:border-white/8 dark:bg-black/15 dark:shadow-none';
+
+const categoryTreeCardSurfaceClasses =
+    'relative min-w-0 overflow-hidden rounded-2xl border border-brand/15 bg-linear-to-b from-background via-background to-brand/6 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition hover:border-brand/25 hover:bg-linear-to-b hover:from-background hover:via-brand/5 hover:to-brand/8 dark:bg-black/15 dark:shadow-sm dark:shadow-brand/5 dark:hover:bg-white/3';
 
 function CategoryTree({
     categories,
@@ -253,7 +288,7 @@ function CategoryTree({
                         className="group/category min-w-0 space-y-3"
                     >
                         {hasChildren ? (
-                            <div className="relative min-w-0 overflow-hidden rounded-2xl border border-brand/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,249,247,0.98))] shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition hover:border-brand/25 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(240,249,245,1))] dark:bg-black/15 dark:shadow-sm dark:shadow-brand/5 dark:hover:bg-white/3">
+                            <div className={categoryTreeCardSurfaceClasses}>
                                 <button
                                     type="button"
                                     onClick={() => onToggle(category.id)}
@@ -264,7 +299,7 @@ function CategoryTree({
                                     }
                                     className="flex w-full min-w-0 items-center gap-2.5 p-3 pr-14 text-left md:gap-3 md:pr-16"
                                 >
-                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-brand/15 bg-white/80 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-brand/25 hover:text-foreground dark:bg-background/50 dark:shadow-none">
+                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-brand/15 bg-background/75 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] transition hover:border-brand/25 hover:text-foreground dark:bg-background/50 dark:shadow-none">
                                         <ChevronRight
                                             className={`size-4 transition ${isExpanded ? 'rotate-90 text-brand' : ''}`}
                                         />
@@ -304,9 +339,9 @@ function CategoryTree({
                                 </Button>
                             </div>
                         ) : (
-                            <div className="relative min-w-0 overflow-hidden rounded-2xl border border-brand/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,249,247,0.98))] p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition hover:border-brand/25 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(240,249,245,1))] dark:bg-black/15 dark:shadow-sm dark:shadow-brand/5 dark:hover:bg-white/3">
+                            <div className={`${categoryTreeCardSurfaceClasses} p-3`}>
                                 <div className="flex min-w-0 items-center gap-2.5 pr-14 md:gap-3 md:pr-16">
-                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-dashed border-brand/15 bg-white/70 text-muted-foreground/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:bg-background/35 dark:shadow-none">
+                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-dashed border-brand/15 bg-background/70 text-muted-foreground/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:bg-background/35 dark:shadow-none">
                                         <div className="size-1.5 rounded-full bg-current" />
                                     </div>
 
@@ -490,6 +525,9 @@ export default function AllCategories({
     categoryTypes,
     categoryColors,
 }: Props) {
+    const [lucideTagsByIcon, setLucideTagsByIcon] = useState<
+        Record<string, string[]>
+    >({});
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [colorDialogOpen, setColorDialogOpen] = useState(false);
     const [typePickerOpen, setTypePickerOpen] = useState(false);
@@ -557,28 +595,106 @@ export default function AllCategories({
         data.color,
         colorMap,
     );
+
+    useEffect(() => {
+        let isActive = true;
+
+        fetch('/lucide-tags.json')
+            .then((response) => {
+                if (!response.ok) {
+                    return null;
+                }
+
+                return response.json() as Promise<unknown>;
+            })
+            .then((payload) => {
+                if (!isActive || payload === null || typeof payload !== 'object') {
+                    return;
+                }
+
+                const entries = Object.entries(payload as Record<string, unknown>)
+                    .filter(
+                        (entry): entry is [string, string[]] =>
+                            Array.isArray(entry[1])
+                            && entry[1].every((value) => typeof value === 'string'),
+                    );
+
+                setLucideTagsByIcon(Object.fromEntries(entries));
+            })
+            .catch(() => {
+                if (isActive) {
+                    setLucideTagsByIcon({});
+                }
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, []);
+
+    const lucideTagSearchTermsByIcon = useMemo(() => {
+        return new Map(
+            Object.entries(lucideTagsByIcon).map(([iconName, tags]) => {
+                const terms = Array.from(
+                    new Set(
+                        tags.flatMap((tag) => {
+                            const lower = tag.toLowerCase();
+
+                            return [
+                                lower,
+                                lower.replace(/-/g, ' '),
+                                lower.replace(/[-\s]/g, ''),
+                            ];
+                        }),
+                    ),
+                );
+
+                return [iconName, terms] as const;
+            }),
+        );
+    }, [lucideTagsByIcon]);
     const flattenedActiveCategories = useMemo(
         () => flattenCategoryTree(activeCategoryTree),
         [activeCategoryTree],
     );
-    const filteredIconOptions = useMemo(() => {
+    const filteredIconOptions = useMemo<CategoryOption[]>(() => {
         const query = iconQuery.trim().toLowerCase();
 
         if (query === '') {
             return [];
         }
 
-        return searchableIconOptions
+        const normalizedQuery = query.replace(/[^a-z0-9\s-]/g, ' ');
+        const queryTokens = normalizedQuery
+            .split(/[\s-]+/)
+            .filter((token) => token.length > 0);
+
+        const matchedOptions = searchableIconOptions
             .map((option) => {
                 const label = option.label.toLowerCase();
                 const value = option.value.toLowerCase();
                 const startsWithScore =
                     label.startsWith(query) || value.startsWith(query) ? 0 : 1;
-                const includesMatch = option.searchTerms.some((term) =>
+                const metadataSearchTerms =
+                    lucideTagSearchTermsByIcon.get(option.value) ?? [];
+                const allSearchTerms = [
+                    ...option.searchTerms,
+                    ...metadataSearchTerms,
+                ];
+
+                const includesFullQuery = allSearchTerms.some((term) =>
                     term.includes(query),
                 );
+                const includesCompactQuery = allSearchTerms.some((term) =>
+                    term.includes(query.replace(/[\s-]/g, '')),
+                );
+                const tokenMatch =
+                    queryTokens.length > 0
+                    && queryTokens.every((token) =>
+                        allSearchTerms.some((term) => term.includes(token)),
+                    );
 
-                if (!includesMatch) {
+                if (!includesFullQuery && !includesCompactQuery && !tokenMatch) {
                     return null;
                 }
 
@@ -603,7 +719,42 @@ export default function AllCategories({
                 return left.option.label.localeCompare(right.option.label);
             })
             .map((entry) => entry.option);
-    }, [iconQuery]);
+
+        if (matchedOptions.length > 0) {
+            return matchedOptions;
+        }
+
+        const recommendationTokens = new Set([
+            normalizedQuery.trim(),
+            ...queryTokens,
+        ]);
+        const recommendedValues: string[] = [];
+
+        for (const [keyword, iconValues] of Object.entries(
+            semanticIconRecommendations,
+        )) {
+            const shouldInclude = Array.from(recommendationTokens).some(
+                (token) =>
+                    token.length > 0
+                    && (keyword.includes(token) || token.includes(keyword)),
+            );
+
+            if (!shouldInclude) {
+                continue;
+            }
+
+            for (const iconValue of iconValues) {
+                if (!recommendedValues.includes(iconValue)) {
+                    recommendedValues.push(iconValue);
+                }
+            }
+        }
+
+        return recommendedValues
+            .map((value) => iconOptionsByValue.get(value) ?? null)
+            .filter((option): option is CategoryOption => option !== null)
+            .slice(0, 24);
+    }, [iconQuery, lucideTagSearchTermsByIcon]);
     const filteredParentResults = useMemo(() => {
         const query = parentQuery.trim().toLowerCase();
 
@@ -838,7 +989,7 @@ export default function AllCategories({
                     </div>
 
                     <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
-                        <Card className="relative min-w-0 overflow-visible border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(242,250,246,0.98))] shadow-[0_24px_80px_-52px_rgba(16,185,129,0.28)] dark:bg-linear-to-br dark:from-brand/8 dark:via-card dark:to-card dark:shadow-[0_24px_80px_-48px_rgba(16,185,129,0.75)]">
+                        <Card className="relative min-w-0 overflow-visible border-brand/20 bg-linear-to-br from-background via-background to-brand/8 shadow-[0_24px_80px_-52px_rgba(16,185,129,0.22)] dark:bg-linear-to-br dark:from-brand/8 dark:via-card dark:to-card dark:shadow-[0_24px_80px_-48px_rgba(16,185,129,0.75)]">
                             <CardHeader className="border-b border-brand/10 pb-4">
                                 <CardTitle className="text-xl">
                                     Create a new category
@@ -1079,7 +1230,7 @@ export default function AllCategories({
                                                                                     '',
                                                                                 );
                                                                             }}
-                                                                            className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-brand/15 bg-white/80 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-brand/25 hover:text-foreground dark:bg-background/50 dark:shadow-none"
+                                                                            className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-brand/15 bg-background/75 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] transition hover:border-brand/25 hover:text-foreground dark:bg-background/50 dark:shadow-none"
                                                                             aria-label="Back to category type selection"
                                                                         >
                                                                             <ArrowLeft className="size-4" />

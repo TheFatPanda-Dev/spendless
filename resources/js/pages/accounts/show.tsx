@@ -345,7 +345,10 @@ function TransactionCategoryEditor({
                 </button>
 
                 {isCategoryPickerOpen ? (
-                    <div className={`absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full max-w-full lg:w-max lg:min-w-[20rem] ${categoryPickerPanelClasses}`}>
+                    <div
+                        className={`absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full max-w-full lg:w-max lg:min-w-[20rem] ${categoryPickerPanelClasses}`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                    >
                         {pickerView === 'type' ? (
                             <div className="space-y-3">
                                 <div>
@@ -995,9 +998,11 @@ export default function AccountShow({
                                         : 'Institution')}
                                 {account.mask ? ` • **** ${account.mask}` : ''}
                             </p>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                                Last synced: {formatLocalizedDateTime(account.last_synced_at, numberLocale)}
-                            </p>
+                            {!isManualAccount ? (
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    Last synced: {formatLocalizedDateTime(account.last_synced_at, numberLocale)}
+                                </p>
+                            ) : null}
                         </div>
 
                         <div className="text-right">
@@ -1005,7 +1010,7 @@ export default function AccountShow({
                             <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
                                 {formatCurrency(currentBalance, currency)}
                             </p>
-                            {typeof availableBalance === 'number' ? (
+                            {!isManualAccount && typeof availableBalance === 'number' ? (
                                 <p className="text-xs text-muted-foreground">
                                     Available: {formatCurrency(availableBalance, currency)}
                                 </p>

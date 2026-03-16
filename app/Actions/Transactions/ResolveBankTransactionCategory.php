@@ -118,6 +118,10 @@ class ResolveBankTransactionCategory
 
     public static function resolveTransactionType(BankTransaction $transaction): string
     {
+        if (Str::startsWith((string) $transaction->external_uid, 'manual-opening-balance-')) {
+            return (float) $transaction->amount < 0 ? 'expense' : 'income';
+        }
+
         $primary = Str::lower((string) data_get($transaction->personal_finance_category, 'primary', ''));
         $detailed = Str::lower((string) data_get($transaction->personal_finance_category, 'detailed', ''));
 

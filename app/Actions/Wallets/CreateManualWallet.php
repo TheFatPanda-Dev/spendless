@@ -4,6 +4,7 @@ namespace App\Actions\Wallets;
 
 use App\Models\BankAccount;
 use App\Models\BankConnection;
+use App\Models\BankTransaction;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,7 @@ class CreateManualWallet
 
             $startingBalance = round((float) ($attributes['starting_balance'] ?? 0), 2);
 
-            return BankAccount::query()->create([
+            $account = BankAccount::query()->create([
                 'bank_connection_id' => $connection->id,
                 'external_uid' => 'manual-account-'.Str::uuid(),
                 'name' => $attributes['name'],
@@ -56,6 +57,26 @@ class CreateManualWallet
                 'is_active' => true,
                 'last_synced_at' => now(),
             ]);
+
+            if ($startingBalance !== 0.0) {
+                $openedOn = now()->toDateString();
+
+                BankTransaction::query()->create([
+                    'bank_connection_id' => $connection->id,
+                    'bank_account_id' => $account->id,
+                    'external_uid' => 'manual-opening-balance-'.Str::uuid(),
+                    'name' => 'Opening balance',
+                    'amount' => $startingBalance,
+                    'currency' => $attributes['currency'],
+                    'iso_currency_code' => $attributes['currency'],
+                    'booked_at' => $openedOn,
+                    'date' => $openedOn,
+                    'pending' => false,
+                    'description' => 'Opening balance',
+                ]);
+            }
+
+            return $account;
         });
     }
 }

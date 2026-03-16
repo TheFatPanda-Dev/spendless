@@ -275,13 +275,15 @@ export default function WalletsIndex({
                                 </div>
                             </div>
 
-                            <p className="mt-3 text-xs text-muted-foreground">
-                                Last synced:{' '}
-                                {formatDate(
-                                    wallet.last_synced_at,
-                                    numberLocale,
-                                )}
-                            </p>
+                            {wallet.type !== 'cash' ? (
+                                <p className="mt-3 text-xs text-muted-foreground">
+                                    Last synced:{' '}
+                                    {formatDate(
+                                        wallet.last_synced_at,
+                                        numberLocale,
+                                    )}
+                                </p>
+                            ) : null}
 
                             <div className="mt-3 flex flex-wrap gap-1.5">
                                 {wallet.connections.length === 0 ? (

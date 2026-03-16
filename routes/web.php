@@ -10,12 +10,20 @@ use App\Http\Controllers\PlaidWebhookController;
 use App\Http\Controllers\WalletBankConnectionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WalletSyncStatusController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::get('/', function (Request $request) {
+    if ($request->user()) {
+        return to_route('dashboard');
+    }
+
+    return Inertia::render('welcome', [
+        'canRegister' => Features::enabled(Features::registration()),
+    ]);
+})->name('home');
 
 Route::inertia('/privacy', 'privacy')->name('privacy');
 Route::inertia('/terms', 'terms')->name('terms');

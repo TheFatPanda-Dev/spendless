@@ -507,7 +507,19 @@ class PlaidIntegrationTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('accounts/show')
                 ->where('account.id', $account->id)
-                ->has('transactions', 1));
+                ->has('transactions', 1)
+                ->where('transactions.0.amount', -41.8));
+
+        $wallet = $connection->wallet;
+
+        $this->assertNotNull($wallet);
+
+        $this->actingAs($owner)
+            ->get(route('wallets.show', $wallet))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('wallets/show')
+                ->where('wallet.connections.0.transactions.0.amount', -41.8));
 
         $this->actingAs($otherUser)
             ->get("/accounts/{$account->id}")

@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Landmark, RefreshCw, Trash2 } from 'lucide-react';
+import { ChevronDown, Landmark, RefreshCw, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import AddNewWalletMenu from '@/components/add-new-wallet-menu';
 import Heading from '@/components/heading';
@@ -261,6 +261,7 @@ export default function WalletSettings({
                             </p>
 
                             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <div className="relative min-w-0">
                                 <select
                                     value={baseCurrency}
                                     onChange={(event) =>
@@ -269,7 +270,7 @@ export default function WalletSettings({
                                         )
                                     }
                                     disabled={isSavingBaseCurrency}
-                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                    className="h-10 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-9 text-sm"
                                 >
                                     {base_currency.options.map((currencyOption) => (
                                         <option
@@ -280,6 +281,8 @@ export default function WalletSettings({
                                         </option>
                                     ))}
                                 </select>
+                                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                </div>
 
                                 <span className="text-xs text-muted-foreground">
                                     {isSavingBaseCurrency
@@ -301,6 +304,7 @@ export default function WalletSettings({
                             </p>
 
                             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <div className="relative min-w-0">
                                 <select
                                     value={numberLocale}
                                     onChange={(event) =>
@@ -309,7 +313,7 @@ export default function WalletSettings({
                                         )
                                     }
                                     disabled={isSavingNumberLocale}
-                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                    className="h-10 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-9 text-sm"
                                 >
                                     {number_locale.options.map((localeOption) => (
                                         <option
@@ -320,6 +324,8 @@ export default function WalletSettings({
                                         </option>
                                     ))}
                                 </select>
+                                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                </div>
 
                                 <span className="text-xs text-muted-foreground">
                                     {isSavingNumberLocale

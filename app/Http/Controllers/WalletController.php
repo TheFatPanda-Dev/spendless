@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Transactions\ResolveBankTransactionCategory;
 use App\Actions\Wallets\CreateManualWallet;
 use App\Http\Requests\StoreManualWalletRequest;
 use App\Http\Requests\StoreWalletRequest;
+use App\Models\BankTransaction;
 use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -103,14 +105,18 @@ class WalletController extends Controller
         return back()->with('success', sprintf('%s created successfully.', $account->display_name ?? $account->name ?? 'Manual wallet'));
     }
 
-    public function show(Request $request, Wallet $wallet): Response
-    {
+    public function show(
+        Request $request,
+        Wallet $wallet,
+        ResolveBankTransactionCategory $resolveBankTransactionCategory,
+    ): Response {
         Gate::authorize('view', $wallet);
 
         $wallet->load([
             'bankConnections' => fn ($query) => $query
                 ->with(['accounts', 'syncRuns' => fn ($syncRunsQuery) => $syncRunsQuery->latest()->limit(5)]),
             'bankConnections.transactions' => fn ($query) => $query
+                ->with('assignedCategory')
                 ->whereNull('removed_at')
                 ->latest('date')
                 ->limit(50),
@@ -141,15 +147,24 @@ class WalletController extends Controller
                         'balances' => $account->balances_encrypted,
                         'last_synced_at' => $account->last_synced_at?->toIso8601String(),
                     ])->values(),
-                    'transactions' => $connection->transactions->map(fn ($transaction): array => [
-                        'id' => $transaction->id,
-                        'name' => $transaction->name,
-                        'merchant_name' => $transaction->merchant_name,
-                        'amount' => (float) $transaction->amount,
-                        'currency' => $transaction->iso_currency_code,
-                        'date' => $transaction->date?->toDateString(),
-                        'pending' => $transaction->pending,
-                    ])->values(),
+                    'transactions' => $connection->transactions->map(function (BankTransaction $transaction) use ($request, $resolveBankTransactionCategory): array {
+                        $resolvedCategory = $transaction->assignedCategory
+                            ?? ($resolveBankTransactionCategory)($transaction, $request->user());
+                        $transactionType = $resolvedCategory?->type
+                            ?? ResolveBankTransactionCategory::resolveTransactionType($transaction);
+
+                        return [
+                            'id' => $transaction->id,
+                            'name' => $transaction->name,
+                            'merchant_name' => $transaction->merchant_name,
+                            'amount' => $transactionType === 'income'
+                                ? abs((float) $transaction->amount)
+                                : -abs((float) $transaction->amount),
+                            'currency' => $transaction->iso_currency_code,
+                            'date' => $transaction->date?->toDateString(),
+                            'pending' => $transaction->pending,
+                        ];
+                    })->values(),
                     'sync_runs' => $connection->syncRuns->map(fn ($run): array => [
                         'id' => $run->id,
                         'sync_type' => $run->sync_type,

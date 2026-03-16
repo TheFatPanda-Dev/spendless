@@ -38,6 +38,27 @@ class ManualWalletsTest extends TestCase
         $this->assertSame('cash', $account->connection?->wallet?->type);
         $this->assertSame('GBP', $account->currency_code);
         $this->assertSame(250.75, (float) ($account->balances_encrypted['current'] ?? 0));
+
+        $openingBalanceTransaction = $account->transactions()->first();
+
+        $this->assertNotNull($openingBalanceTransaction);
+        $this->assertSame('Opening balance', $openingBalanceTransaction->name);
+        $this->assertSame(250.75, (float) $openingBalanceTransaction->amount);
+
+        $wallet = $account->connection?->wallet;
+
+        $this->assertNotNull($wallet);
+
+        $this->actingAs($user)
+            ->get(route('wallets.show', $wallet))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('wallets/show')
+                ->where('wallet.id', $wallet->id)
+                ->where('wallet.connections.0.transactions', fn ($transactions): bool => collect($transactions)->contains(
+                    fn (array $transaction): bool => $transaction['name'] === 'Opening balance'
+                        && (float) $transaction['amount'] === 250.75,
+                )));
     }
 
     public function test_manual_wallet_is_visible_on_dashboard_and_wallet_settings(): void
@@ -139,8 +160,10 @@ class ManualWalletsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('accounts/show')
                 ->where('account.is_manual', true)
-                ->where('transactions.0.name', 'Fruit and veg')
-                ->where('transactions.0.category', 'Groceries')
-                ->where('transactions.0.amount', -12.5));
+                ->where('transactions', fn ($transactions): bool => collect($transactions)->contains(
+                    fn (array $transaction): bool => $transaction['name'] === 'Fruit and veg'
+                        && $transaction['category'] === 'Groceries'
+                        && (float) $transaction['amount'] === -12.5,
+                )));
     }
 }

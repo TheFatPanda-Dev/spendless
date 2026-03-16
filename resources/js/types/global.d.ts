@@ -4,6 +4,7 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            support_email?: string;
             auth: Auth;
             number_locale?: string;
             flash?: {

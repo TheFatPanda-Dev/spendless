@@ -72,7 +72,9 @@ class BankAccountController extends Controller
                         : ($resolvedCategory instanceof Category ? 'automatic' : 'fallback'),
                     'category_type' => $displayCategoryType,
                     'provider_category' => $this->formatProviderCategory($transaction),
-                    'amount' => (float) $transaction->amount,
+                    'amount' => $displayCategoryType === 'income'
+                        ? abs((float) $transaction->amount)
+                        : -abs((float) $transaction->amount),
                     'currency' => $transaction->iso_currency_code ?: $transaction->currency,
                     'date' => $transaction->date?->toDateString(),
                     'pending' => $transaction->pending,

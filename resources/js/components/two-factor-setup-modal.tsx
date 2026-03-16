@@ -206,6 +206,7 @@ function TwoFactorVerificationStep({
                         <InputOTP
                             id="otp"
                             name="code"
+                            autoComplete="one-time-code"
                             maxLength={OTP_MAX_LENGTH}
                             onChange={setCode}
                             disabled={processing}

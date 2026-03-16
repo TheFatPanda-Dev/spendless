@@ -17,6 +17,7 @@ import {
 import {
     Sheet,
     SheetContent,
+    SheetDescription,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
@@ -71,6 +72,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 <SheetTitle className="sr-only">
                                     Navigation menu
                                 </SheetTitle>
+                                <SheetDescription className="sr-only">
+                                    Main navigation links
+                                </SheetDescription>
                                 <SheetHeader className="flex justify-start text-left">
                                     <div className="flex items-center gap-3">
                                         <img

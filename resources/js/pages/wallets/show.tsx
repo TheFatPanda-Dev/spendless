@@ -130,14 +130,18 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                 <span>
                                     {wallet.type} · {wallet.currency}
                                 </span>
-                                <span>·</span>
-                                <span>
-                                    Last synced:{' '}
-                                    {formatDate(
-                                        wallet.last_synced_at,
-                                        numberLocale,
-                                    )}
-                                </span>
+                                {wallet.type !== 'cash' ? (
+                                    <>
+                                        <span>·</span>
+                                        <span>
+                                            Last synced:{' '}
+                                            {formatDate(
+                                                wallet.last_synced_at,
+                                                numberLocale,
+                                            )}
+                                        </span>
+                                    </>
+                                ) : null}
                             </div>
                         </div>
 
@@ -185,20 +189,24 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                         >
                                             {connection.status}
                                         </Badge>
-                                        <span>
-                                            Last synced:{' '}
-                                            {formatDate(
-                                                connection.last_synced_at,
-                                                numberLocale,
-                                            )}
-                                        </span>
-                                        <span>
-                                            Webhook:{' '}
-                                            {formatDate(
-                                                connection.last_webhook_at,
-                                                numberLocale,
-                                            )}
-                                        </span>
+                                        {wallet.type !== 'cash' ? (
+                                            <>
+                                                <span>
+                                                    Last synced:{' '}
+                                                    {formatDate(
+                                                        connection.last_synced_at,
+                                                        numberLocale,
+                                                    )}
+                                                </span>
+                                                <span>
+                                                    Webhook:{' '}
+                                                    {formatDate(
+                                                        connection.last_webhook_at,
+                                                        numberLocale,
+                                                    )}
+                                                </span>
+                                            </>
+                                        ) : null}
                                     </div>
                                     {connection.error_message ? (
                                         <p className="text-sm text-destructive">
@@ -265,13 +273,15 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                     {account.currency ??
                                                                         wallet.currency}
                                                                 </p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    Synced{' '}
-                                                                    {formatDate(
-                                                                        account.last_synced_at,
-                                                                        numberLocale,
-                                                                    )}
-                                                                </p>
+                                                                {wallet.type !== 'cash' ? (
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        Synced{' '}
+                                                                        {formatDate(
+                                                                            account.last_synced_at,
+                                                                            numberLocale,
+                                                                        )}
+                                                                    </p>
+                                                                ) : null}
                                                             </div>
                                                         </div>
                                                     </div>
