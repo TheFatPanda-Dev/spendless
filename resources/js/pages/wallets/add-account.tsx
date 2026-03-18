@@ -2,74 +2,14 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { getCsrfToken } from '@/lib/csrf';
 import { formatLocalizedNumericDateFromDate } from '@/lib/date-filters';
 import {
     clearPlaidLinkSession,
     readPlaidLinkSession,
     writePlaidLinkSession,
 } from '@/lib/plaid-link-session';
-
-type PlaidHandler = {
-    open: () => void;
-    destroy: () => void;
-};
-
-type PlaidCreateConfig = {
-    token: string;
-    receivedRedirectUri?: string;
-    onSuccess: (publicToken: string) => void;
-    onExit: () => void;
-};
-
-declare global {
-    interface Window {
-        Plaid?: {
-            create: (config: PlaidCreateConfig) => PlaidHandler;
-        };
-    }
-}
-
-function getCsrfToken(): string {
-    const token = document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content');
-
-    return token ?? '';
-}
-
-async function loadPlaidScript(): Promise<void> {
-    if (window.Plaid) {
-        return;
-    }
-
-    await new Promise<void>((resolve, reject) => {
-        const existingScript = document.querySelector(
-            'script[src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"]',
-        );
-
-        if (existingScript) {
-            existingScript.addEventListener('load', () => resolve(), {
-                once: true,
-            });
-            existingScript.addEventListener(
-                'error',
-                () => reject(new Error('Plaid Link failed to load.')),
-                { once: true },
-            );
-
-            return;
-        }
-
-        const script = document.createElement('script');
-
-        script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Plaid Link failed to load.'));
-
-        document.head.appendChild(script);
-    });
-}
+import { loadPlaidScript } from '@/lib/plaid-loader';
 
 export default function AddAccountPopup() {
     const plaidSessionScope = 'add-account-popup';
@@ -247,7 +187,7 @@ export default function AddAccountPopup() {
         } catch {
             clearPlaidLinkSession(plaidSessionScope);
             setErrorMessage(
-                'Could not start Plaid connection. Please verify Plaid credentials and try again.',
+                'Could not start Plaid connection. This can happen when a browser privacy/ad blocker blocks cdn.plaid.com (ERR_BLOCKED_BY_CLIENT). Allowlist it and try again.',
             );
             isConnectingRef.current = false;
             setIsConnecting(false);

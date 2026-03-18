@@ -58,7 +58,7 @@ export function usePlaidAccountLinkedRefresh(
         return () => {
             window.removeEventListener('message', onMessage);
         };
-    }, [onlyKey]);
+    }, [onlyKey, options.onLinked, options.onRefreshFinished, options.only]);
 
     return { isRefreshing };
 }

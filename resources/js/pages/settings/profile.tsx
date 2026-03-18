@@ -1,5 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Cookie } from 'lucide-react';
 import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import AppearanceTabs from '@/components/appearance-tabs';
@@ -12,6 +13,9 @@ import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { readCookieConsent, writeCookieConsent } from '@/lib/site-prefs';
+import type { ConsentChoice } from '@/lib/site-prefs';
+import { cn } from '@/lib/utils';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
@@ -38,6 +42,15 @@ export default function Profile({
     const getInitials = useInitials();
     const displayName = auth.user.display_name ?? auth.user.name;
     const [isChangingEmail, setIsChangingEmail] = useState(false);
+    const [cookieConsent, setCookieConsent] = useState(() =>
+        readCookieConsent(),
+    );
+
+    const saveCookieConsent = (choice: ConsentChoice): void => {
+        const nextConsent = writeCookieConsent(choice);
+
+        setCookieConsent(nextConsent);
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -265,6 +278,78 @@ export default function Profile({
                                 </>
                             )}
                         </Form>
+                    </div>
+
+                    <div
+                        id="cookie-preferences"
+                        className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10"
+                    >
+                        <header>
+                            <h2 className="mb-0.5 inline-flex items-center gap-2 text-base font-medium">
+                                <Cookie className="size-4" aria-hidden="true" />
+                                Cookie preferences
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                Control optional analytics cookies for this
+                                browser
+                            </p>
+                        </header>
+
+                        <div className="rounded-lg border border-border/70 bg-background/70 p-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                                <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground">
+                                        Choose whether optional analytics
+                                        cookies are allowed. Essential cookies
+                                        remain enabled for security and login.
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Current choice:{' '}
+                                        <span className="font-medium text-foreground">
+                                            {cookieConsent?.choice ===
+                                            'accepted'
+                                                ? 'Accept all'
+                                                : cookieConsent?.choice ===
+                                                    'essential'
+                                                  ? 'Essential only'
+                                                  : 'Not set yet'}
+                                        </span>
+                                    </p>
+                                </div>
+
+                                <div className="inline-flex w-full gap-1 rounded-lg border border-brand/20 bg-brand/5 p-1 sm:w-auto sm:self-end dark:bg-brand/10">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            saveCookieConsent('essential')
+                                        }
+                                        className={cn(
+                                            'min-w-0 flex-1 rounded-md px-3.5 py-1.5 text-sm transition-colors sm:min-w-34 sm:flex-none',
+                                            cookieConsent?.choice ===
+                                                'essential'
+                                                ? 'bg-brand text-brand-foreground shadow-xs ring-1 ring-brand/45'
+                                                : 'text-muted-foreground hover:bg-brand/15 hover:text-foreground',
+                                        )}
+                                    >
+                                        Essential only
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            saveCookieConsent('accepted')
+                                        }
+                                        className={cn(
+                                            'min-w-0 flex-1 rounded-md px-3.5 py-1.5 text-sm transition-colors sm:min-w-34 sm:flex-none',
+                                            cookieConsent?.choice === 'accepted'
+                                                ? 'bg-brand text-brand-foreground shadow-xs ring-1 ring-brand/45'
+                                                : 'text-muted-foreground hover:bg-brand/15 hover:text-foreground',
+                                        )}
+                                    >
+                                        Accept all
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">

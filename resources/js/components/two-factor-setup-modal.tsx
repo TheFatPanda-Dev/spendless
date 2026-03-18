@@ -25,6 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
+import { getCsrfData } from '@/lib/csrf';
 import { confirm } from '@/routes/two-factor';
 
 function GridScanIcon() {
@@ -268,16 +269,6 @@ function TwoFactorPasswordStep({
         undefined,
     );
 
-    const getCookieValue = (name: string): string | undefined => {
-        const match = document.cookie.match(
-            new RegExp(
-                `(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`,
-            ),
-        );
-
-        return match ? decodeURIComponent(match[1]) : undefined;
-    };
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
@@ -288,10 +279,7 @@ function TwoFactorPasswordStep({
         setIsPreparingSetup(true);
         setPasswordError(undefined);
 
-        const csrfToken = document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content');
-        const xsrfToken = getCookieValue('XSRF-TOKEN');
+        const { csrfToken, xsrfToken } = getCsrfData();
 
         const response = await fetch('/user/confirm-password', {
             method: 'POST',

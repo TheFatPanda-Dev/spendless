@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
+import { getCsrfData } from '@/lib/csrf';
 import { login, logout } from '@/routes';
 
 const AUTO_LOGOUT_TIMEOUT_MS = 15 * 60 * 1000;
@@ -24,16 +25,6 @@ function getStoredLastActivity(): number | null {
 
 function storeLastActivity(timestamp: number): void {
     window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(timestamp));
-}
-
-function getCookieValue(name: string): string | undefined {
-    const match = document.cookie.match(
-        new RegExp(
-            `(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`,
-        ),
-    );
-
-    return match ? decodeURIComponent(match[1]) : undefined;
 }
 
 export function clearInactivityLogoutState(): void {
@@ -79,10 +70,7 @@ export function useInactivityLogout(
                 window.location.assign(login.url());
             };
 
-            const csrfToken = document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content');
-            const xsrfToken = getCookieValue('XSRF-TOKEN');
+            const { csrfToken, xsrfToken } = getCsrfData();
 
             void fetch(logout.url(), {
                 method: 'POST',

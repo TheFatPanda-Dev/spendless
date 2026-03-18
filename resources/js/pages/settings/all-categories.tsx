@@ -798,31 +798,29 @@ export default function AllCategories({
             .map((entry) => entry.category);
     }, [flattenedActiveCategories, parentQuery]);
 
-    useEffect(() => {
-        setExpandedIncomeIds((current) => {
-            const availableIds = new Set(incomeBranchIds);
+    const filteredExpandedIncomeIds = useMemo(() => {
+        const availableIds = new Set(incomeBranchIds);
 
-            return new Set([...current].filter((id) => availableIds.has(id)));
-        });
-    }, [incomeBranchIds]);
+        return new Set(
+            [...expandedIncomeIds].filter((id) => availableIds.has(id)),
+        );
+    }, [expandedIncomeIds, incomeBranchIds]);
 
-    useEffect(() => {
-        setExpandedExpenseIds((current) => {
-            const availableIds = new Set(expenseBranchIds);
+    const filteredExpandedExpenseIds = useMemo(() => {
+        const availableIds = new Set(expenseBranchIds);
 
-            return new Set([...current].filter((id) => availableIds.has(id)));
-        });
-    }, [expenseBranchIds]);
+        return new Set(
+            [...expandedExpenseIds].filter((id) => availableIds.has(id)),
+        );
+    }, [expandedExpenseIds, expenseBranchIds]);
 
-    useEffect(() => {
-        setExpandedParentIds((current) => {
-            const availableIds = new Set(
-                collectAllCategoryIds(activeCategoryTree),
-            );
+    const filteredExpandedParentIds = useMemo(() => {
+        const availableIds = new Set(collectAllCategoryIds(activeCategoryTree));
 
-            return new Set([...current].filter((id) => availableIds.has(id)));
-        });
-    }, [activeCategoryTree]);
+        return new Set(
+            [...expandedParentIds].filter((id) => availableIds.has(id)),
+        );
+    }, [activeCategoryTree, expandedParentIds]);
 
     useEffect(() => {
         if (!iconPickerOpen) {
@@ -988,7 +986,7 @@ export default function AllCategories({
                         </div>
                     </div>
 
-                    <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+                    <div className="min-w-0 space-y-6">
                         <Card className="relative min-w-0 overflow-visible border-brand/20 bg-linear-to-br from-background via-background to-brand/8 shadow-[0_24px_80px_-52px_rgba(16,185,129,0.22)] dark:bg-linear-to-br dark:from-brand/8 dark:via-card dark:to-card dark:shadow-[0_24px_80px_-48px_rgba(16,185,129,0.75)]">
                             <CardHeader className="border-b border-brand/10 pb-4">
                                 <CardTitle className="text-xl">
@@ -1376,7 +1374,7 @@ export default function AllCategories({
                                                                                     colorMap
                                                                                 }
                                                                                 expandedIds={
-                                                                                    expandedParentIds
+                                                                                    filteredExpandedParentIds
                                                                                 }
                                                                                 selectedParentId={
                                                                                     data.parent_id
@@ -1991,7 +1989,7 @@ export default function AllCategories({
                             </CardContent>
                         </Card>
 
-                        <div className="grid min-w-0 gap-6 xl:grid-cols-2">
+                        <div className="min-w-0 space-y-6">
                             <Card className="min-w-0 border-brand/20 bg-linear-to-br from-emerald-500/8 via-card to-card shadow-none">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -2009,7 +2007,7 @@ export default function AllCategories({
                                         <div className="rounded-2xl border border-dashed border-brand/20 bg-black/10 p-4 text-sm text-muted-foreground">
                                             No income categories yet. Create
                                             your first one from the panel on the
-                                            left.
+                                            top.
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
@@ -2045,7 +2043,9 @@ export default function AllCategories({
                                             <CategoryTree
                                                 categories={incomeCategories}
                                                 colorMap={colorMap}
-                                                expandedIds={expandedIncomeIds}
+                                                expandedIds={
+                                                    filteredExpandedIncomeIds
+                                                }
                                                 onToggle={toggleIncomeCategory}
                                                 onDelete={setDeleteCandidate}
                                                 deletingCategoryId={
@@ -2109,7 +2109,9 @@ export default function AllCategories({
                                             <CategoryTree
                                                 categories={expenseCategories}
                                                 colorMap={colorMap}
-                                                expandedIds={expandedExpenseIds}
+                                                expandedIds={
+                                                    filteredExpandedExpenseIds
+                                                }
                                                 onToggle={toggleExpenseCategory}
                                                 onDelete={setDeleteCandidate}
                                                 deletingCategoryId={

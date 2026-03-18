@@ -3,7 +3,7 @@ import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { useEffect, useState } from 'react';
 import {
     categoryIconNames,
-    
+
     isHexColor,
     normalizeHexColor
 } from '@/components/category-icon-utils';
@@ -91,8 +91,6 @@ export function CategoryIcon({
 
     useEffect(() => {
         if (!categoryIconNames.includes(name as (typeof categoryIconNames)[number])) {
-            setIconComponent(null);
-
             return;
         }
 

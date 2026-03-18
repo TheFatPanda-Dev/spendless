@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { getCsrfData } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import { redirect as githubSettingsRedirect } from '@/routes/settings/github';
 import { redirect as googleSettingsRedirect } from '@/routes/settings/google';
@@ -127,26 +128,6 @@ export default function Security({
         ],
         [newPasswordValue],
     );
-
-    const getCookieValue = (name: string): string | undefined => {
-        const match = document.cookie.match(
-            new RegExp(
-                `(?:^|; )${name.replace(/[-.$?*|{}()[\]\\/+^]/g, '\\$&')}=([^;]*)`,
-            ),
-        );
-
-        return match ? decodeURIComponent(match[1]) : undefined;
-    };
-
-    const getCsrfData = (): { csrfToken?: string; xsrfToken?: string } => {
-        const csrfToken =
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') ?? undefined;
-        const xsrfToken = getCookieValue('XSRF-TOKEN');
-
-        return { csrfToken, xsrfToken };
-    };
 
     const confirmPasswordForSensitiveAction = async (
         passwordToConfirm: string,

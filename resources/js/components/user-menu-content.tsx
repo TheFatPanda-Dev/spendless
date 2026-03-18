@@ -8,13 +8,8 @@ import { clearInactivityLogoutState } from '@/hooks/use-inactivity-logout';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
-import type { User } from '@/types';
 
-type Props = {
-    user: User;
-};
-
-export function UserMenuContent({ user }: Props) {
+export function UserMenuContent() {
     const cleanup = useMobileNavigation();
 
     const handleLogout = () => {

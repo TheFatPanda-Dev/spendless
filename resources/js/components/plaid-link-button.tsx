@@ -2,79 +2,19 @@ import { router } from '@inertiajs/react';
 import { Loader2, Link2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { getCsrfToken } from '@/lib/csrf';
 import {
     clearPlaidLinkSession,
     readPlaidLinkSession,
     writePlaidLinkSession,
 } from '@/lib/plaid-link-session';
+import { loadPlaidScript } from '@/lib/plaid-loader';
 
 type PlaidLinkButtonProps = {
     walletId: number;
     onConnected?: () => void;
     autoStart?: boolean;
 };
-
-type PlaidHandler = {
-    open: () => void;
-    destroy: () => void;
-};
-
-type PlaidCreateConfig = {
-    token: string;
-    receivedRedirectUri?: string;
-    onSuccess: (publicToken: string) => void;
-    onExit: () => void;
-};
-
-declare global {
-    interface Window {
-        Plaid?: {
-            create: (config: PlaidCreateConfig) => PlaidHandler;
-        };
-    }
-}
-
-function getCsrfToken(): string {
-    const token = document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content');
-
-    return token ?? '';
-}
-
-async function loadPlaidScript(): Promise<void> {
-    if (window.Plaid) {
-        return;
-    }
-
-    await new Promise<void>((resolve, reject) => {
-        const existingScript = document.querySelector(
-            'script[src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"]',
-        );
-
-        if (existingScript) {
-            existingScript.addEventListener('load', () => resolve(), {
-                once: true,
-            });
-            existingScript.addEventListener(
-                'error',
-                () => reject(new Error('Plaid Link failed to load.')),
-                { once: true },
-            );
-
-            return;
-        }
-
-        const script = document.createElement('script');
-
-        script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Plaid Link failed to load.'));
-
-        document.head.appendChild(script);
-    });
-}
 
 export default function PlaidLinkButton({
     walletId,
@@ -83,6 +23,7 @@ export default function PlaidLinkButton({
 }: PlaidLinkButtonProps) {
     const plaidSessionScope = `wallet-${walletId}`;
     const [isConnecting, setIsConnecting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const hasAutoStarted = useRef(false);
 
     const redirectUri = useMemo(() => {
@@ -99,6 +40,7 @@ export default function PlaidLinkButton({
 
     const handleConnect = useCallback(async () => {
         setIsConnecting(true);
+        setErrorMessage(null);
 
         try {
             await loadPlaidScript();
@@ -188,6 +130,9 @@ export default function PlaidLinkButton({
             handler.open();
         } catch {
             clearPlaidLinkSession(plaidSessionScope);
+            setErrorMessage(
+                'Plaid could not load. This is often caused by an ad/privacy blocker (ERR_BLOCKED_BY_CLIENT). Please allow cdn.plaid.com and try again.',
+            );
             setIsConnecting(false);
         }
     }, [onConnected, plaidSessionScope, redirectUri, walletId]);
@@ -202,18 +147,24 @@ export default function PlaidLinkButton({
     }, [autoStart, handleConnect]);
 
     return (
-        <Button onClick={handleConnect} disabled={isConnecting}>
-            {isConnecting ? (
-                <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Connecting...
-                </>
-            ) : (
-                <>
-                    <Link2 className="size-4" />
-                    Bank Connection
-                </>
-            )}
-        </Button>
+        <div className="space-y-2">
+            <Button onClick={handleConnect} disabled={isConnecting}>
+                {isConnecting ? (
+                    <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Connecting...
+                    </>
+                ) : (
+                    <>
+                        <Link2 className="size-4" />
+                        Bank Connection
+                    </>
+                )}
+            </Button>
+
+            {errorMessage ? (
+                <p className="text-xs text-destructive">{errorMessage}</p>
+            ) : null}
+        </div>
     );
 }

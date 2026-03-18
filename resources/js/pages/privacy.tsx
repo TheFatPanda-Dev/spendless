@@ -13,7 +13,7 @@ export default function Privacy() {
 
             <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.14),transparent_48%),radial-gradient(circle_at_90%_20%,rgba(45,212,191,0.12),transparent_36%)] text-foreground">
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
-                    <div className="rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/15 via-background to-brand/5 p-6 shadow-sm">
+                    <div className="rounded-2xl border border-brand/20 bg-linear-to-br from-brand/15 via-background to-brand/5 p-6 shadow-sm">
                         <div className="flex items-start justify-between gap-4">
                             <div className="space-y-2">
                                 <p className="inline-flex rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-medium tracking-wide text-brand">
@@ -32,23 +32,26 @@ export default function Privacy() {
                                 href={home()}
                                 className="inline-flex items-center gap-1.5 rounded-full border border-brand/25 bg-background/70 px-3 py-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand/10 hover:text-brand"
                             >
-                                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                                <ArrowLeft
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                />
                                 Back to home
                             </Link>
                         </div>
                     </div>
 
                     <div className="space-y-5 text-sm leading-6 text-muted-foreground">
-                        <p className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                             Last updated: 16 March 2026
                         </p>
 
                         <p className="rounded-2xl border border-border/60 bg-background/70 p-5">
-                            This Privacy Policy explains how {name} ("we",
-                            "us", "our") processes personal data when you use
-                            the application and related services. It is written
-                            with the EU General Data Protection Regulation
-                            (GDPR) and related EU privacy rules in mind.
+                            This Privacy Policy explains how {name} ("we", "us",
+                            "our") processes personal data when you use the
+                            application and related services. It is written with
+                            the EU General Data Protection Regulation (GDPR) and
+                            related EU privacy rules in mind.
                         </p>
 
                         <section className={sectionClass}>
@@ -112,7 +115,8 @@ export default function Privacy() {
                             <ul className="list-disc space-y-1 pl-5">
                                 <li>
                                     To provide the service and your account
-                                    features (contract performance, Art. 6(1)(b)).
+                                    features (contract performance, Art.
+                                    6(1)(b)).
                                 </li>
                                 <li>
                                     To sync linked bank accounts and display
@@ -130,9 +134,8 @@ export default function Privacy() {
                                 </li>
                                 <li>
                                     Where required, based on your consent (Art.
-                                    6(1)(a)), which you can withdraw at any
-                                    time without affecting prior lawful
-                                    processing.
+                                    6(1)(a)), which you can withdraw at any time
+                                    without affecting prior lawful processing.
                                 </li>
                             </ul>
                         </section>
@@ -211,10 +214,10 @@ export default function Privacy() {
                             <p>
                                 We use technical and organizational safeguards,
                                 including access controls, encryption for
-                                sensitive fields, monitoring, and least-privilege
-                                practices. No method of transmission or storage
-                                is fully risk-free, but we work to protect your
-                                data appropriately.
+                                sensitive fields, monitoring, and
+                                least-privilege practices. No method of
+                                transmission or storage is fully risk-free, but
+                                we work to protect your data appropriately.
                             </p>
                         </section>
 
@@ -230,8 +233,8 @@ export default function Privacy() {
                                 <li>Restrict or object to processing.</li>
                                 <li>Data portability.</li>
                                 <li>
-                                    Withdraw consent where processing is based on
-                                    consent.
+                                    Withdraw consent where processing is based
+                                    on consent.
                                 </li>
                                 <li>
                                     Lodge a complaint with your local data
@@ -262,8 +265,8 @@ export default function Privacy() {
                             <p>
                                 This service is not intended for children under
                                 the age required by applicable law. We do not
-                                knowingly process children&apos;s personal data for
-                                account use.
+                                knowingly process children&apos;s personal data
+                                for account use.
                             </p>
                         </section>
 
