@@ -1,8 +1,8 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Loader2 } from 'lucide-react';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { getCsrfToken } from '@/lib/csrf';
+import { buildAjaxHeaders } from '@/lib/csrf';
 import { formatLocalizedNumericDateFromDate } from '@/lib/date-filters';
 import {
     clearPlaidLinkSession,
@@ -75,12 +75,9 @@ export default function AddAccountPopup() {
             if (walletId === null || linkToken === null) {
                 const walletResponse = await fetch('/wallets', {
                     method: 'POST',
-                    headers: {
-                        Accept: 'application/json',
+                    headers: buildAjaxHeaders({
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
+                    }),
                     body: JSON.stringify({
                         name: `Bank Wallet ${formatLocalizedNumericDateFromDate(new Date(), numberLocale)}`,
                         type: 'bank',
@@ -104,12 +101,9 @@ export default function AddAccountPopup() {
                     `/wallets/${walletId}/bank-connections/plaid/link-token`,
                     {
                         method: 'POST',
-                        headers: {
-                            Accept: 'application/json',
+                        headers: buildAjaxHeaders({
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': getCsrfToken(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
+                        }),
                         body: JSON.stringify({
                             redirect_uri: redirectUri,
                         }),
@@ -145,12 +139,9 @@ export default function AddAccountPopup() {
                             `/wallets/${walletId}/bank-connections/plaid/exchange`,
                             {
                                 method: 'POST',
-                                headers: {
-                                    Accept: 'application/json',
+                                headers: buildAjaxHeaders({
                                     'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': getCsrfToken(),
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                },
+                                }),
                                 body: JSON.stringify({
                                     public_token: publicToken,
                                 }),

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ShieldCheck } from 'lucide-react';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check.js';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {

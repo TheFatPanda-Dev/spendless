@@ -1,4 +1,4 @@
-import { AlertCircleIcon } from 'lucide-react';
+import AlertCircleIcon from 'lucide-react/dist/esm/icons/alert-circle.js';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AlertError({

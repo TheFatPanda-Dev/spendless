@@ -1,5 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
-import { Eye, EyeOff, Github } from 'lucide-react';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off.js';
+import Eye from 'lucide-react/dist/esm/icons/eye.js';
+import Github from 'lucide-react/dist/esm/icons/github.js';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';

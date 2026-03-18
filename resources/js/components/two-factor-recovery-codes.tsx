@@ -1,5 +1,8 @@
 import { Form } from '@inertiajs/react';
-import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off.js';
+import Eye from 'lucide-react/dist/esm/icons/eye.js';
+import LockKeyhole from 'lucide-react/dist/esm/icons/lock-keyhole.js';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';
 import { Button } from '@/components/ui/button';

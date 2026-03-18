@@ -1,5 +1,7 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { Plus, RefreshCw, Wallet as WalletIcon } from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus.js';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
+import WalletIcon from 'lucide-react/dist/esm/icons/wallet.js';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';

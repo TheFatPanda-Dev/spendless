@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { buildAjaxHeaders } from '@/lib/csrf';
 
 type UseSyncAllConnectionsOptions = {
     only?: string[];
@@ -11,14 +12,6 @@ type SyncStatusResponse = {
     connected_connections: number;
     total_connections: number;
 };
-
-function getCsrfToken(): string {
-    const token = document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content');
-
-    return token ?? '';
-}
 
 export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}) {
     const [isSyncing, setIsSyncing] = useState(false);
@@ -39,10 +32,7 @@ export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}
         try {
             const response = await fetch('/wallets/sync-status', {
                 method: 'GET',
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
+                headers: buildAjaxHeaders(),
             });
 
             if (!response.ok) {
@@ -90,12 +80,9 @@ export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}
         try {
             const response = await fetch('/wallets/refresh-all', {
                 method: 'POST',
-                headers: {
-                    Accept: 'application/json',
+                headers: buildAjaxHeaders({
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
+                }),
                 body: JSON.stringify({}),
             });
 

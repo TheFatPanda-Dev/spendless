@@ -1,6 +1,7 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off.js';
+import Eye from 'lucide-react/dist/esm/icons/eye.js';
 import { useMemo, useRef, useState } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import Heading from '@/components/heading';

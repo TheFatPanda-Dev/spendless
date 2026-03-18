@@ -1,18 +1,16 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ArrowDownCircle,
-    ArrowUpCircle,
-    ChevronDown,
-    ChevronRight,
-    Layers3,
-    LoaderCircle,
-    Palette,
-    Pipette,
-    Search,
-    Sparkles,
-    Trash2,
-} from 'lucide-react';
+import ArrowDownCircle from 'lucide-react/dist/esm/icons/arrow-down-circle.js';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js';
+import ArrowUpCircle from 'lucide-react/dist/esm/icons/arrow-up-circle.js';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
+import Layers3 from 'lucide-react/dist/esm/icons/layers-3.js';
+import LoaderCircle from 'lucide-react/dist/esm/icons/loader-circle.js';
+import Palette from 'lucide-react/dist/esm/icons/palette.js';
+import Pipette from 'lucide-react/dist/esm/icons/pipette.js';
+import Search from 'lucide-react/dist/esm/icons/search.js';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles.js';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryIcon, CategoryColorSwatch } from '@/components/category-icon';
 import {

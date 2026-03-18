@@ -22,3 +22,17 @@ export function getCsrfData(): { csrfToken?: string; xsrfToken?: string } {
 
     return { csrfToken, xsrfToken };
 }
+
+export function buildAjaxHeaders(
+    extraHeaders: Record<string, string> = {},
+): Record<string, string> {
+    const { csrfToken, xsrfToken } = getCsrfData();
+
+    return {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+        ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+        ...extraHeaders,
+    };
+}

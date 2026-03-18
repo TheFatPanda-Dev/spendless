@@ -1,6 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { Cookie } from 'lucide-react';
+import Cookie from 'lucide-react/dist/esm/icons/cookie.js';
 import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import AppearanceTabs from '@/components/appearance-tabs';

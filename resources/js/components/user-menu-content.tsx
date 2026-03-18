@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import LogOut from 'lucide-react/dist/esm/icons/log-out.js';
+import Settings from 'lucide-react/dist/esm/icons/settings.js';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,

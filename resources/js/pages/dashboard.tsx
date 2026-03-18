@@ -1,13 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ArrowRight,
-    Building2,
-    CalendarDays,
-    ChevronDown,
-    Loader2,
-    RefreshCw,
-} from 'lucide-react';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right.js';
+import Building2 from 'lucide-react/dist/esm/icons/building-2.js';
+import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days.js';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import { useCallback, useState } from 'react';
 import AddNewWalletMenu from '@/components/add-new-wallet-menu';
 import { Button } from '@/components/ui/button';

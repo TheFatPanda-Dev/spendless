@@ -1,6 +1,8 @@
 import { Form } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { Check, Copy, ScanLine } from 'lucide-react';
+import Check from 'lucide-react/dist/esm/icons/check.js';
+import Copy from 'lucide-react/dist/esm/icons/copy.js';
+import ScanLine from 'lucide-react/dist/esm/icons/scan-line.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
@@ -25,7 +27,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
-import { getCsrfData } from '@/lib/csrf';
+import { buildAjaxHeaders } from '@/lib/csrf';
 import { confirm } from '@/routes/two-factor';
 
 function GridScanIcon() {
@@ -279,18 +281,12 @@ function TwoFactorPasswordStep({
         setIsPreparingSetup(true);
         setPasswordError(undefined);
 
-        const { csrfToken, xsrfToken } = getCsrfData();
-
         const response = await fetch('/user/confirm-password', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
+            headers: buildAjaxHeaders({
                 'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
-                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
-            },
+            }),
             body: JSON.stringify({ password }),
         });
 

@@ -1,16 +1,14 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ArrowRight,
-    ArrowDownCircle,
-    ArrowUpCircle,
-    CalendarDays,
-    ChevronDown,
-    ChevronRight,
-    Circle,
-    Landmark,
-    Search,
-} from 'lucide-react';
+import ArrowDownCircle from 'lucide-react/dist/esm/icons/arrow-down-circle.js';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right.js';
+import ArrowUpCircle from 'lucide-react/dist/esm/icons/arrow-up-circle.js';
+import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days.js';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
+import Circle from 'lucide-react/dist/esm/icons/circle.js';
+import Landmark from 'lucide-react/dist/esm/icons/landmark.js';
+import Search from 'lucide-react/dist/esm/icons/search.js';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryIcon } from '@/components/category-icon';
 import { resolveCategoryColorPresentation } from '@/components/category-icon-utils';

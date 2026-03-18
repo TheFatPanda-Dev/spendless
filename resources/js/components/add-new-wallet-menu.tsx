@@ -1,5 +1,5 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {

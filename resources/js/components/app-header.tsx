@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu } from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid.js';
+import Menu from 'lucide-react/dist/esm/icons/menu.js';
 import AppLogo from '@/components/app-logo';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Button } from '@/components/ui/button';

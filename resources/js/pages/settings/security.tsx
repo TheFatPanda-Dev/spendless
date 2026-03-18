@@ -1,6 +1,9 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, router } from '@inertiajs/react';
-import { Eye, EyeOff, ShieldBan, ShieldCheck } from 'lucide-react';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off.js';
+import Eye from 'lucide-react/dist/esm/icons/eye.js';
+import ShieldBan from 'lucide-react/dist/esm/icons/shield-ban.js';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check.js';
 import { useMemo, useState } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import DeleteUser from '@/components/delete-user';
@@ -27,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { getCsrfData } from '@/lib/csrf';
+import { buildAjaxHeaders, getCsrfData } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import { redirect as githubSettingsRedirect } from '@/routes/settings/github';
 import { redirect as googleSettingsRedirect } from '@/routes/settings/google';
@@ -132,7 +135,7 @@ export default function Security({
     const confirmPasswordForSensitiveAction = async (
         passwordToConfirm: string,
     ): Promise<string | null> => {
-        const { csrfToken, xsrfToken } = getCsrfData();
+        const { csrfToken } = getCsrfData();
         const payload = new URLSearchParams();
 
         payload.set('password', passwordToConfirm);
@@ -144,14 +147,10 @@ export default function Security({
         const response = await fetch('/user/confirm-password', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
+            headers: buildAjaxHeaders({
                 'Content-Type':
                     'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-Requested-With': 'XMLHttpRequest',
-                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
-                ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
-            },
+            }),
             body: payload.toString(),
         });
 
@@ -198,7 +197,7 @@ export default function Security({
             return;
         }
 
-        const { csrfToken, xsrfToken } = getCsrfData();
+        const { csrfToken } = getCsrfData();
         const payload = new URLSearchParams();
 
         payload.set('_method', 'DELETE');
@@ -211,14 +210,10 @@ export default function Security({
             const response = await fetch(disable.url(), {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
+                headers: buildAjaxHeaders({
                     'Content-Type':
                         'application/x-www-form-urlencoded; charset=UTF-8',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
-                    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
-                },
+                }),
                 body: payload.toString(),
             });
 

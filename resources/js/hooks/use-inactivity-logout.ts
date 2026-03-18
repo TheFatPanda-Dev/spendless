@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
-import { getCsrfData } from '@/lib/csrf';
+import { buildAjaxHeaders } from '@/lib/csrf';
 import { login, logout } from '@/routes';
 
 const AUTO_LOGOUT_TIMEOUT_MS = 15 * 60 * 1000;
@@ -70,17 +70,10 @@ export function useInactivityLogout(
                 window.location.assign(login.url());
             };
 
-            const { csrfToken, xsrfToken } = getCsrfData();
-
             void fetch(logout.url(), {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
-                    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
-                },
+                headers: buildAjaxHeaders(),
             })
                 .then((response) => {
                     if (response.status === 401 || response.status === 419) {

@@ -1,5 +1,8 @@
 import { Link } from '@inertiajs/react';
-import { Shield, Tags, UserCircle2, WalletCards } from 'lucide-react';
+import Shield from 'lucide-react/dist/esm/icons/shield.js';
+import Tags from 'lucide-react/dist/esm/icons/tags.js';
+import UserCircle2 from 'lucide-react/dist/esm/icons/user-circle-2.js';
+import WalletCards from 'lucide-react/dist/esm/icons/wallet-cards.js';
 import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';

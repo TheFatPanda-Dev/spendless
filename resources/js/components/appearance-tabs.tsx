@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import Monitor from 'lucide-react/dist/esm/icons/monitor.js';
+import Moon from 'lucide-react/dist/esm/icons/moon.js';
+import Sun from 'lucide-react/dist/esm/icons/sun.js';
 import type { HTMLAttributes } from 'react';
 import type { Appearance } from '@/hooks/use-appearance';
 import { useAppearance } from '@/hooks/use-appearance';

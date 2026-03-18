@@ -1,5 +1,8 @@
 import { Head, router } from '@inertiajs/react';
-import { ChevronDown, Landmark, RefreshCw, Trash2 } from 'lucide-react';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
+import Landmark from 'lucide-react/dist/esm/icons/landmark.js';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2.js';
 import { useMemo, useState } from 'react';
 import AddNewWalletMenu from '@/components/add-new-wallet-menu';
 import Heading from '@/components/heading';

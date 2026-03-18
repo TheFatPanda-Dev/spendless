@@ -1,4 +1,4 @@
-import { Layers3 } from 'lucide-react';
+import Layers3 from 'lucide-react/dist/esm/icons/layers-3.js';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { useEffect, useState } from 'react';
 import {

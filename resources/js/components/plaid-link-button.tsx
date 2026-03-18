@@ -1,8 +1,9 @@
 import { router } from '@inertiajs/react';
-import { Loader2, Link2 } from 'lucide-react';
+import Link2 from 'lucide-react/dist/esm/icons/link-2.js';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { getCsrfToken } from '@/lib/csrf';
+import { buildAjaxHeaders } from '@/lib/csrf';
 import {
     clearPlaidLinkSession,
     readPlaidLinkSession,
@@ -56,12 +57,9 @@ export default function PlaidLinkButton({
                     `/wallets/${walletId}/bank-connections/plaid/link-token`,
                     {
                         method: 'POST',
-                        headers: {
-                            Accept: 'application/json',
+                        headers: buildAjaxHeaders({
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': getCsrfToken(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
+                        }),
                         body: JSON.stringify({
                             redirect_uri: redirectUri,
                         }),
@@ -96,12 +94,9 @@ export default function PlaidLinkButton({
                             `/wallets/${walletId}/bank-connections/plaid/exchange`,
                             {
                                 method: 'POST',
-                                headers: {
-                                    Accept: 'application/json',
+                                headers: buildAjaxHeaders({
                                     'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': getCsrfToken(),
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                },
+                                }),
                                 body: JSON.stringify({
                                     public_token: publicToken,
                                 }),

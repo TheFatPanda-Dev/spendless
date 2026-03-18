@@ -1,5 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off.js';
+import Eye from 'lucide-react/dist/esm/icons/eye.js';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';

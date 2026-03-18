@@ -1,5 +1,6 @@
 import { Form, Head, router, usePage } from '@inertiajs/react';
-import { AlertCircle, Github } from 'lucide-react';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle.js';
+import Github from 'lucide-react/dist/esm/icons/github.js';
 import { useEffect, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
