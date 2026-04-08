@@ -594,6 +594,7 @@ export default function AccountShow({
     const [keywordFilter, setKeywordFilter] = useState('');
     const [activeTransactionId, setActiveTransactionId] = useState<number | null>(null);
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
+    const [editedMerchantName, setEditedMerchantName] = useState('');
     const [editedTransactionName, setEditedTransactionName] = useState('');
     const [selectedCategoryType, setSelectedCategoryType] = useState<CategoryType>('expense');
     const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
@@ -620,6 +621,12 @@ export default function AccountShow({
     const manualNativeDateInputRef = useRef<HTMLInputElement | null>(null);
     const [manualTransactionAmountInput, setManualTransactionAmountInput] =
         useState('');
+
+    const effectiveCounterpartyFilter =
+        counterpartyFilter === 'all' || counterparties.includes(counterpartyFilter)
+            ? counterpartyFilter
+            : 'all';
+
     const page = usePage();
     const numberLocale =
         typeof page.props.number_locale === 'string'
@@ -638,7 +645,7 @@ export default function AccountShow({
 
         return transactions.filter((transaction) => {
             const personValue = transaction.counterparty ?? transaction.merchant_name ?? 'Unknown';
-            const personMatch = counterpartyFilter === 'all' || personValue === counterpartyFilter;
+            const personMatch = effectiveCounterpartyFilter === 'all' || personValue === effectiveCounterpartyFilter;
             const keywordSource = [
                 transaction.name,
                 transaction.merchant_name,
@@ -653,7 +660,7 @@ export default function AccountShow({
 
             return personMatch && keywordMatch;
         });
-    }, [counterpartyFilter, keywordFilter, transactions]);
+    }, [effectiveCounterpartyFilter, keywordFilter, transactions]);
 
     const groupedTransactions = useMemo(() => {
         const grouped = new Map<string, Transaction[]>();
@@ -758,7 +765,11 @@ export default function AccountShow({
         activeTransaction !== null
         && editedTransactionName !== (activeTransaction.name ?? '');
 
-    const hasTransactionChanges = hasCategorySelectionChanged || hasTransactionNameChanged;
+    const hasMerchantNameChanged =
+        activeTransaction !== null
+        && editedMerchantName !== (activeTransaction.merchant_name ?? '');
+
+    const hasTransactionChanges = hasCategorySelectionChanged || hasMerchantNameChanged || hasTransactionNameChanged;
 
     const resetFilters = (): void => {
         setCounterpartyFilter('all');
@@ -774,6 +785,7 @@ export default function AccountShow({
 
         setActiveTransactionId(transaction.id);
         setSelectedCategoryId(transaction.category_id !== null ? String(transaction.category_id) : '');
+        setEditedMerchantName(transaction.merchant_name ?? '');
         setEditedTransactionName(transaction.name ?? '');
         setSelectedCategoryType(transaction.category_type);
         setIsCategoryPickerOpen(false);
@@ -789,6 +801,7 @@ export default function AccountShow({
 
         setActiveTransactionId(null);
         setSelectedCategoryId('');
+        setEditedMerchantName('');
         setEditedTransactionName('');
         setSelectedCategoryType('expense');
         setIsCategoryPickerOpen(false);
@@ -802,10 +815,16 @@ export default function AccountShow({
             return;
         }
 
-        const payload: { category_id?: number; name?: string | null } = {};
+        const payload: { category_id?: number; merchant_name?: string | null; name?: string | null } = {};
 
         if (hasCategorySelectionChanged && selectedCategoryId !== '') {
             payload.category_id = Number(selectedCategoryId);
+        }
+
+        if (hasMerchantNameChanged) {
+            const normalizedMerchantName = editedMerchantName.trim();
+
+            payload.merchant_name = normalizedMerchantName === '' ? null : normalizedMerchantName;
         }
 
         if (hasTransactionNameChanged) {
@@ -815,7 +834,7 @@ export default function AccountShow({
         }
 
         router.patch(
-            `/accounts/${account.id}/transactions/${activeTransaction.id}`,
+            `/accounts/${account.id}/transactions/${activeTransaction.id}?start_date=${filters.start_date}&end_date=${filters.end_date}`,
             payload,
             {
                 preserveScroll: true,
@@ -1043,7 +1062,7 @@ export default function AccountShow({
 
                     <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:flex-1 lg:justify-center">
                         <select
-                            value={counterpartyFilter}
+                            value={effectiveCounterpartyFilter}
                             onChange={(event) => setCounterpartyFilter(event.target.value)}
                             className={`h-9 w-full rounded-md border px-3 pr-10 text-sm sm:min-w-44 sm:w-auto ${accountControlClasses}`}
                         >
@@ -1063,7 +1082,7 @@ export default function AccountShow({
                                 placeholder="Search by Keyword"
                                 className={accountControlClasses + ' h-9 pl-9 pr-9'}
                             />
-                            {counterpartyFilter !== 'all' || keywordFilter !== '' ? (
+                            {effectiveCounterpartyFilter !== 'all' || keywordFilter !== '' ? (
                                 <button
                                     type="button"
                                     onClick={resetFilters}
@@ -1462,7 +1481,7 @@ export default function AccountShow({
 
                                                         <div className="min-w-0 text-left">
                                                             <p className="truncate text-sm font-medium text-foreground dark:text-slate-200">
-                                                                {transaction.merchant_name ?? transaction.name ?? 'Transaction'}
+                                                                    {transaction.merchant_name ?? 'No merchant details'}
                                                             </p>
                                                             <p className="mt-0.5 truncate text-xs text-muted-foreground dark:text-slate-500">
                                                                 {transaction.counterparty ?? transaction.name ?? '---'}
@@ -1517,9 +1536,12 @@ export default function AccountShow({
                                                                             </div>
 
                                                                             <div className="flex min-w-0 items-center lg:px-3">
-                                                                                <p className="truncate text-sm font-medium text-foreground dark:text-slate-100">
-                                                                                    {transaction.merchant_name ?? 'No merchant details'}
-                                                                                </p>
+                                                                                <Input
+                                                                                    value={editedMerchantName}
+                                                                                    onChange={(event) => setEditedMerchantName(event.target.value)}
+                                                                                    placeholder="Merchant"
+                                                                                    className={transactionEditorFieldClasses}
+                                                                                />
                                                                             </div>
 
                                                                             <div className="min-w-0 lg:px-3">
@@ -1629,7 +1651,7 @@ export default function AccountShow({
                                                                 </td>
                                                                 <td className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}>
                                                                     <p className="truncate text-sm font-medium text-foreground dark:text-slate-200">
-                                                                        {transaction.merchant_name ?? transaction.name ?? 'Transaction'}
+                                                                        {transaction.merchant_name ?? 'No merchant details'}
                                                                     </p>
                                                                 </td>
                                                                 <td className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}>
@@ -1680,9 +1702,12 @@ export default function AccountShow({
                                                                                 </div>
 
                                                                                 <div className="flex min-w-0 items-center lg:px-3">
-                                                                                    <p className="truncate text-sm font-medium text-foreground dark:text-slate-100">
-                                                                                        {transaction.merchant_name ?? 'No merchant details'}
-                                                                                    </p>
+                                                                                    <Input
+                                                                                        value={editedMerchantName}
+                                                                                        onChange={(event) => setEditedMerchantName(event.target.value)}
+                                                                                        placeholder="Merchant"
+                                                                                        className={transactionEditorFieldClasses}
+                                                                                    />
                                                                                 </div>
 
                                                                                 <div className="min-w-0 lg:px-3">

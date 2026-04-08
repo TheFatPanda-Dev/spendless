@@ -90,7 +90,7 @@ class WalletBankConnectionController extends Controller
             'status' => 'syncing',
         ]);
 
-        SyncPlaidConnectionJob::dispatch($bankConnection->id, 'manual_single', false);
+        SyncPlaidConnectionJob::dispatch($bankConnection->id, 'manual_single', true);
 
         return response()->json([
             'queued' => true,

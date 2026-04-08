@@ -346,7 +346,7 @@ class PlaidIntegrationTest extends TestCase
             SyncPlaidConnectionJob::class,
             fn (SyncPlaidConnectionJob $job): bool => $job->bankConnectionId === $connection->id
                 && $job->reason === 'manual_all'
-                && $job->triggerRefresh === false,
+                && $job->triggerRefresh === true,
         );
     }
 
@@ -392,7 +392,9 @@ class PlaidIntegrationTest extends TestCase
             ->assertOk();
 
         Queue::assertPushed(SyncPlaidConnectionJob::class, function (SyncPlaidConnectionJob $job) use ($connection): bool {
-            return $job->bankConnectionId === $connection->id;
+            return $job->bankConnectionId === $connection->id
+                && $job->reason === 'manual_single'
+                && $job->triggerRefresh === true;
         });
     }
 

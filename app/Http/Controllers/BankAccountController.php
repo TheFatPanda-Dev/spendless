@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -121,21 +122,35 @@ class BankAccountController extends Controller
         $updates = [];
 
         if ($request->exists('category_id')) {
-            $categoryId = $request->integer('category_id');
+            $categoryId = $request->validated('category_id');
+
+            if (! is_int($categoryId) && $categoryId !== null) {
+                throw ValidationException::withMessages([
+                    'category_id' => 'The selected category is invalid.',
+                ]);
+            }
 
             $updates['category_id'] = $categoryId;
-            $updates['category_manually_set'] = $categoryId !== 0;
+            $updates['category_manually_set'] = $categoryId !== null;
         }
 
         if ($request->exists('name')) {
             $updates['name'] = $request->validated('name');
         }
 
+        if ($request->exists('merchant_name')) {
+            $updates['merchant_name'] = $request->validated('merchant_name');
+        }
+
         if ($updates !== []) {
             $bankTransaction->forceFill($updates)->save();
         }
 
-        return back()->with('success', 'Transaction updated.');
+        return to_route('accounts.show', [
+            'bankAccount' => $bankAccount,
+            'start_date' => (string) $request->query('start_date', now()->startOfMonth()->toDateString()),
+            'end_date' => (string) $request->query('end_date', now()->endOfMonth()->toDateString()),
+        ])->with('success', 'Transaction updated.');
     }
 
     public function storeManualTransaction(

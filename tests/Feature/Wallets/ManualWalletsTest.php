@@ -155,7 +155,11 @@ class ManualWalletsTest extends TestCase
         $this->assertSame(87.5, (float) ($account->balances_encrypted['current'] ?? 0));
 
         $this->actingAs($user)
-            ->get(route('accounts.show', $account))
+            ->get(route('accounts.show', [
+                'bankAccount' => $account,
+                'start_date' => '2026-03-01',
+                'end_date' => '2026-03-31',
+            ]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('accounts/show')

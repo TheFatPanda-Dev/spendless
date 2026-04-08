@@ -260,7 +260,7 @@ class PlaidTransactionsService
             ->pluck('id');
 
         foreach ($connectionIds as $connectionId) {
-            SyncPlaidConnectionJob::dispatch((int) $connectionId, 'manual_all', false);
+            SyncPlaidConnectionJob::dispatch((int) $connectionId, 'manual_all', true);
         }
 
         return $connectionIds->count();

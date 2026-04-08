@@ -84,7 +84,11 @@ class BankAccountTransactionsTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('accounts.show', $account))
+            ->get(route('accounts.show', [
+                'bankAccount' => $account,
+                'start_date' => '2026-03-01',
+                'end_date' => '2026-03-31',
+            ]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('accounts/show')
@@ -185,7 +189,11 @@ class BankAccountTransactionsTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('accounts.show', $account))
+            ->get(route('accounts.show', [
+                'bankAccount' => $account,
+                'start_date' => '2026-03-01',
+                'end_date' => '2026-03-31',
+            ]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('accounts/show')
@@ -273,6 +281,106 @@ class BankAccountTransactionsTest extends TestCase
             'category_id' => null,
             'category_manually_set' => false,
         ]);
+    }
+
+    public function test_user_can_update_transaction_merchant_without_changing_category_assignment(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->createPlaidAccount($user);
+
+        $transaction = BankTransaction::query()->create([
+            'bank_connection_id' => $account->bank_connection_id,
+            'bank_account_id' => $account->id,
+            'external_uid' => 'txn-merchant-1',
+            'plaid_transaction_id' => 'txn-merchant-1',
+            'merchant_name' => 'Old Merchant',
+            'name' => 'Card payment',
+            'amount' => 9.20,
+            'currency' => 'EUR',
+            'iso_currency_code' => 'EUR',
+            'booked_at' => '2026-03-10',
+            'date' => '2026-03-10',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('accounts.transactions.update', [$account, $transaction]), [
+                'merchant_name' => 'New Merchant',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('bank_transactions', [
+            'id' => $transaction->id,
+            'merchant_name' => 'New Merchant',
+            'category_id' => null,
+            'category_manually_set' => false,
+        ]);
+    }
+
+    public function test_user_can_clear_transaction_merchant_name(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->createPlaidAccount($user);
+
+        $transaction = BankTransaction::query()->create([
+            'bank_connection_id' => $account->bank_connection_id,
+            'bank_account_id' => $account->id,
+            'external_uid' => 'txn-merchant-clear-1',
+            'plaid_transaction_id' => 'txn-merchant-clear-1',
+            'merchant_name' => 'Should be removed',
+            'name' => 'Card payment',
+            'amount' => 9.20,
+            'currency' => 'EUR',
+            'iso_currency_code' => 'EUR',
+            'booked_at' => '2026-03-10',
+            'date' => '2026-03-10',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('accounts.transactions.update', [$account, $transaction]), [
+                'merchant_name' => '   ',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('bank_transactions', [
+            'id' => $transaction->id,
+            'merchant_name' => null,
+            'name' => 'Card payment',
+        ]);
+    }
+
+    public function test_transaction_update_redirect_keeps_requested_date_range(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->createPlaidAccount($user);
+
+        $transaction = BankTransaction::query()->create([
+            'bank_connection_id' => $account->bank_connection_id,
+            'bank_account_id' => $account->id,
+            'external_uid' => 'txn-redirect-range-1',
+            'plaid_transaction_id' => 'txn-redirect-range-1',
+            'merchant_name' => 'Merchant',
+            'name' => 'Old name',
+            'amount' => 5.00,
+            'currency' => 'EUR',
+            'iso_currency_code' => 'EUR',
+            'booked_at' => '2026-03-10',
+            'date' => '2026-03-10',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('accounts.transactions.update', [
+                'bankAccount' => $account,
+                'bankTransaction' => $transaction,
+                'start_date' => '2026-03-01',
+                'end_date' => '2026-03-31',
+            ]), [
+                'name' => 'Updated name',
+            ])
+            ->assertRedirect(route('accounts.show', [
+                'bankAccount' => $account,
+                'start_date' => '2026-03-01',
+                'end_date' => '2026-03-31',
+            ]));
     }
 
     private function createPlaidAccount(User $user): BankAccount
