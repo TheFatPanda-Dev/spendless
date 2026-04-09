@@ -30,7 +30,7 @@ class GoogleAuthController extends Controller
             session()->put('oauth_register_intent_google', true);
         }
 
-        $callbackUrl = url('/auth/google/callback');
+        $callbackUrl = (string) config('services.google.redirect', route('google.callback', absolute: true));
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
 
@@ -48,7 +48,7 @@ class GoogleAuthController extends Controller
     {
         $usePopup = $request->boolean('popup') || (bool) $request->session()->pull('oauth_popup_google', false);
         $registerIntent = (bool) $request->session()->pull('oauth_register_intent_google', false);
-        $callbackUrl = url('/auth/google/callback');
+        $callbackUrl = (string) config('services.google.redirect', route('google.callback', absolute: true));
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
@@ -207,7 +207,7 @@ class GoogleAuthController extends Controller
     {
         session()->put('oauth_link_intent', 'google');
 
-        $callbackUrl = route('google.callback', absolute: true);
+        $callbackUrl = (string) config('services.google.redirect', route('google.callback', absolute: true));
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');
 
@@ -223,7 +223,7 @@ class GoogleAuthController extends Controller
      */
     public function linkCallback(): RedirectResponse
     {
-        $callbackUrl = route('google.callback', absolute: true);
+        $callbackUrl = (string) config('services.google.redirect', route('google.callback', absolute: true));
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('google');

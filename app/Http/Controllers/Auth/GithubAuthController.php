@@ -30,7 +30,7 @@ class GithubAuthController extends Controller
             session()->put('oauth_register_intent_github', true);
         }
 
-        $callbackUrl = url('/auth/github/callback');
+        $callbackUrl = (string) config('services.github.redirect', route('github.callback', absolute: true));
 
         $driver = app('Laravel\\Socialite\\Contracts\\Factory')
             ->driver('github')
@@ -50,7 +50,7 @@ class GithubAuthController extends Controller
     {
         $usePopup = $request->boolean('popup') || (bool) $request->session()->pull('oauth_popup_github', false);
         $registerIntent = (bool) $request->session()->pull('oauth_register_intent_github', false);
-        $callbackUrl = url('/auth/github/callback');
+        $callbackUrl = (string) config('services.github.redirect', route('github.callback', absolute: true));
 
         try {
             $driver = app('Laravel\\Socialite\\Contracts\\Factory')->driver('github');
