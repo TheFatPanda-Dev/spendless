@@ -40,7 +40,6 @@ class BankAccountController extends Controller
             'connection',
             'transactions' => fn ($query) => $query
                 ->with('assignedCategory')
-                ->whereNull('removed_at')
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->latest('date')
                 ->limit(200),
@@ -72,11 +71,10 @@ class BankAccountController extends Controller
                         ? 'manual'
                         : ($resolvedCategory instanceof Category ? 'automatic' : 'fallback'),
                     'category_type' => $displayCategoryType,
-                    'provider_category' => $this->formatProviderCategory($transaction),
                     'amount' => $displayCategoryType === 'income'
                         ? abs((float) $transaction->amount)
                         : -abs((float) $transaction->amount),
-                    'currency' => $transaction->iso_currency_code ?: $transaction->currency,
+                    'currency' => $transaction->currency,
                     'date' => $transaction->date?->toDateString(),
                     'pending' => $transaction->pending,
                 ];
@@ -90,10 +88,12 @@ class BankAccountController extends Controller
                 'name' => $bankAccount->name,
                 'official_name' => $bankAccount->official_name,
                 'institution_name' => $bankAccount->connection?->institution_name,
+                'institution_logo' => $bankAccount->connection?->institution_logo,
                 'provider' => $bankAccount->connection?->provider,
-                'is_manual' => $bankAccount->connection?->provider === 'manual',
-                'mask' => $bankAccount->mask_encrypted ? str_pad(substr((string) $bankAccount->mask_encrypted, -4), 4, '*', STR_PAD_LEFT) : null,
-                'currency' => $bankAccount->currency_code ?: $bankAccount->currency,
+                'is_manual' => (bool) $bankAccount->connection?->isManual(),
+                'connection' => $bankAccount->connection?->toStatusArray(),
+                'mask' => $bankAccount->maskForDisplay(),
+                'currency' => $bankAccount->currency,
                 'balances' => $bankAccount->balances_encrypted,
                 'last_synced_at' => $bankAccount->last_synced_at?->toIso8601String(),
             ],
@@ -160,7 +160,7 @@ class BankAccountController extends Controller
     ): RedirectResponse {
         $this->ensureAccountIsAccessible($request, $bankAccount);
 
-        abort_unless($bankAccount->connection?->provider === 'manual', 403);
+        abort_unless((bool) $bankAccount->connection?->isManual(), 403);
 
         $category = Category::query()
             ->where('user_id', $request->user()->id)
@@ -233,23 +233,5 @@ class BankAccountController extends Controller
         }
 
         return implode(' / ', $segments);
-    }
-
-    private function formatProviderCategory(BankTransaction $transaction): ?string
-    {
-        $detailedPersonalFinanceCategory = data_get($transaction->personal_finance_category, 'detailed');
-
-        if (is_string($detailedPersonalFinanceCategory) && $detailedPersonalFinanceCategory !== '') {
-            return (string) str($detailedPersonalFinanceCategory)
-                ->replace('_', ' ')
-                ->lower()
-                ->title();
-        }
-
-        if (is_array($transaction->category) && $transaction->category !== []) {
-            return implode(' / ', array_filter($transaction->category, fn ($value): bool => is_string($value) && $value !== ''));
-        }
-
-        return null;
     }
 }

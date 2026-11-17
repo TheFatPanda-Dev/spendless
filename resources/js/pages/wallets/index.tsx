@@ -1,26 +1,20 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import Plus from 'lucide-react/dist/esm/icons/plus.js';
+import { Head, Link, usePage } from '@inertiajs/react';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import WalletIcon from 'lucide-react/dist/esm/icons/wallet.js';
 import { useState } from 'react';
+import AddNewWalletMenu from '@/components/add-new-wallet-menu';
+import BankAlertsBanner from '@/components/bank-alerts-banner';
+import BankLogo from '@/components/bank-logo';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-refresh';
+import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
-import { walletCurrencyOptions } from '@/lib/currency-options';
+import { openBankPopup } from '@/lib/bank-popup';
+import { bankStatusLabel, bankStatusVariant } from '@/lib/bank-status';
 import { formatLocalizedDateTime } from '@/lib/date-filters';
-import type { BreadcrumbItem } from '@/types';
+import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type WalletSummary = {
     id: number;
@@ -30,13 +24,7 @@ type WalletSummary = {
     last_synced_at: string | null;
     connections_count: number;
     accounts_count: number;
-    connections: Array<{
-        id: number;
-        status: string;
-        institution_name: string | null;
-        last_synced_at: string | null;
-        error_message: string | null;
-    }>;
+    connections: BankConnectionStatus[];
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -50,28 +38,6 @@ function formatDate(value: string | null, locale: string): string {
     return formatLocalizedDateTime(value, locale);
 }
 
-function statusVariant(
-    status: string,
-): 'default' | 'secondary' | 'destructive' | 'outline' {
-    if (status === 'connected') {
-        return 'default';
-    }
-
-    if (status === 'syncing') {
-        return 'secondary';
-    }
-
-    if (
-        status === 'needs_reauth' ||
-        status === 'error' ||
-        status === 'sync_failed'
-    ) {
-        return 'destructive';
-    }
-
-    return 'outline';
-}
-
 export default function WalletsIndex({
     wallets,
 }: {
@@ -82,21 +48,20 @@ export default function WalletsIndex({
         typeof page.props.number_locale === 'string'
             ? page.props.number_locale
             : 'en-GB';
-    const currentUrl = page.url;
-    const query = currentUrl.includes('?') ? currentUrl.split('?')[1] : '';
-    const params = new URLSearchParams(query);
-    const requestedType = params.get('type');
-    const initialType =
-        requestedType === 'stock' ||
-        requestedType === 'bank'
-            ? requestedType
-            : 'general';
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const { data, setData, post, processing, reset } = useForm({
-        name: '',
-        type: initialType,
-        currency: 'EUR',
-    });
+    const [connectError, setConnectError] = useState<string | null>(null);
+
+    useBankAccountLinkedRefresh({ only: ['wallets', 'bankAlerts'] });
+
+    const {
+        isSyncing,
+        successMessage,
+        errorMessage,
+        startSyncAll,
+        clearSuccessMessage,
+        clearErrorMessage,
+    } = useSyncAllConnections({ only: ['wallets', 'bankAlerts'] });
+
+    const hasBankWallets = wallets.some((wallet) => wallet.type !== 'cash');
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -106,138 +71,65 @@ export default function WalletsIndex({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Heading
                         title="Wallets"
-                        description="Create multiple wallets and attach one or more Plaid bank connections to each wallet."
+                        description="Your connected banks and cash wallets. Banks sync automatically four times a day."
                     />
 
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() =>
-                                router.post(
-                                    '/wallets/refresh-all',
-                                    {},
-                                    { preserveScroll: true },
+                        {hasBankWallets ? (
+                            <Button
+                                variant="outline"
+                                onClick={() => void startSyncAll()}
+                                disabled={isSyncing}
+                            >
+                                <RefreshCw
+                                    className={`size-4 ${isSyncing ? 'animate-spin' : ''}`}
+                                />
+                                Sync All
+                            </Button>
+                        ) : null}
+
+                        <AddNewWalletMenu
+                            onConnectBank={() =>
+                                setConnectError(
+                                    openBankPopup()
+                                        ? null
+                                        : 'Popup was blocked. Please allow popups for this site and try again.',
                                 )
                             }
-                        >
-                            <RefreshCw className="size-4" />
-                            Refresh All Data
-                        </Button>
-
-                        <Dialog
-                            open={isCreateOpen}
-                            onOpenChange={setIsCreateOpen}
-                        >
-                            <DialogTrigger asChild>
-                                <Button>
-                                    <Plus className="size-4" />
-                                    Create New Wallet
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Create wallet</DialogTitle>
-                                    <DialogDescription>
-                                        Wallets group your connected
-                                        institutions and transactions.
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <div className="space-y-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">
-                                            Wallet name
-                                        </Label>
-                                        <Input
-                                            id="name"
-                                            value={data.name}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'name',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="Main Wallet"
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="type">Type</Label>
-                                        <select
-                                            id="type"
-                                            value={data.type}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'type',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                                        >
-                                            <option value="general">
-                                                General
-                                            </option>
-                                            <option value="stock">Stock</option>
-                                            <option value="bank">Bank</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="currency">
-                                            Currency
-                                        </Label>
-                                        <select
-                                            id="currency"
-                                            value={data.currency}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'currency',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                                        >
-                                            {walletCurrencyOptions.map((currencyOption) => (
-                                                <option
-                                                    key={currencyOption.code}
-                                                    value={currencyOption.code}
-                                                >
-                                                    {currencyOption.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <DialogFooter>
-                                    <Button
-                                        variant="outline"
-                                        type="button"
-                                        onClick={() => {
-                                            setIsCreateOpen(false);
-                                            reset();
-                                        }}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        disabled={processing}
-                                        onClick={() =>
-                                            post('/wallets', {
-                                                onSuccess: () => {
-                                                    setIsCreateOpen(false);
-                                                    reset();
-                                                },
-                                            })
-                                        }
-                                    >
-                                        Create Wallet
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        />
                     </div>
                 </div>
+
+                <BankAlertsBanner />
+
+                {(connectError ?? errorMessage) ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        <span>{connectError ?? errorMessage}</span>
+                        <button
+                            type="button"
+                            className="text-xs font-semibold"
+                            onClick={() => {
+                                setConnectError(null);
+                                clearErrorMessage();
+                            }}
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                ) : null}
+
+                {successMessage ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-300/60 bg-emerald-100/60 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <span>{successMessage}</span>
+                        <button
+                            type="button"
+                            className="text-xs font-semibold"
+                            onClick={clearSuccessMessage}
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                ) : null}
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {wallets.map((wallet) => (
@@ -255,7 +147,18 @@ export default function WalletsIndex({
                                         {wallet.type} · {wallet.currency}
                                     </p>
                                 </div>
-                                <WalletIcon className="size-5 text-brand" />
+                                {wallet.connections[0]?.institution_logo ? (
+                                    <BankLogo
+                                        src={
+                                            wallet.connections[0]
+                                                .institution_logo
+                                        }
+                                        name={wallet.name}
+                                        className="size-8"
+                                    />
+                                ) : (
+                                    <WalletIcon className="size-5 text-brand" />
+                                )}
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
@@ -288,7 +191,9 @@ export default function WalletsIndex({
                             ) : null}
 
                             <div className="mt-3 flex flex-wrap gap-1.5">
-                                {wallet.connections.length === 0 ? (
+                                {wallet.type === 'cash' ? (
+                                    <Badge variant="outline">Cash wallet</Badge>
+                                ) : wallet.connections.length === 0 ? (
                                     <Badge variant="outline">
                                         No bank connections
                                     </Badge>
@@ -298,15 +203,14 @@ export default function WalletsIndex({
                                         .map((connection) => (
                                             <Badge
                                                 key={connection.id}
-                                                variant={statusVariant(
+                                                variant={bankStatusVariant(
                                                     connection.status,
                                                 )}
                                                 className="max-w-full truncate"
                                             >
-                                                {(connection.institution_name ??
-                                                    'Institution') +
-                                                    ' · ' +
-                                                    connection.status}
+                                                {bankStatusLabel(
+                                                    connection.status,
+                                                )}
                                             </Badge>
                                         ))
                                 )}
@@ -316,8 +220,8 @@ export default function WalletsIndex({
 
                     {wallets.length === 0 ? (
                         <div className="col-span-full rounded-xl border border-dashed border-border bg-card p-8 text-center text-muted-foreground">
-                            No wallets yet. Create your first wallet to start
-                            connecting banks.
+                            No wallets yet. Use Add New Wallet to connect your
+                            bank or add a cash wallet.
                         </div>
                     ) : null}
                 </div>

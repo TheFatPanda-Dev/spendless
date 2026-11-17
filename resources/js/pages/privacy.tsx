@@ -145,17 +145,21 @@ export default function Privacy() {
                                 4. Banking integrations and open banking
                             </h2>
                             <p>
-                                If you connect financial accounts, we use
-                                third-party banking providers (such as Plaid and
-                                Enable Banking) to access account and
-                                transaction data on your behalf. We only process
-                                data needed to provide {name} features.
+                                If you connect financial accounts, we use the
+                                licensed open-banking provider Enable Banking to
+                                read account balances and transactions on your
+                                behalf, with your explicit consent given at your
+                                bank. Access is read-only, limited in time (at
+                                most 180 days) and can be revoked at any time.
+                                We only process data needed to provide {name}
+                                features.
                             </p>
                             <p>
                                 Connection tokens and sensitive integration
                                 fields are stored with encryption at rest where
                                 supported by the platform. You can disconnect a
-                                linked account in app settings.
+                                bank on its wallet page, which also ends the
+                                access at your bank.
                             </p>
                         </section>
 

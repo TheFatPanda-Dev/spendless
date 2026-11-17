@@ -19,7 +19,7 @@ class BankAccountTransactionsTest extends TestCase
     public function test_account_page_displays_inferred_and_fallback_categories(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $vehicles = Category::query()->create([
             'user_id' => $user->id,
@@ -52,35 +52,22 @@ class BankAccountTransactionsTest extends TestCase
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'fuel-transaction',
-            'plaid_transaction_id' => 'fuel-transaction',
             'merchant_name' => 'Shell Petrol Station',
             'name' => 'Fuel purchase',
-            'amount' => 72.85,
+            'amount' => -72.85,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
-            'category' => ['Transportation', 'Fuel'],
-            'personal_finance_category' => [
-                'primary' => 'TRANSPORTATION',
-                'detailed' => 'TRANSPORTATION_GAS',
-            ],
         ]);
 
         BankTransaction::query()->create([
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'unknown-transaction',
-            'plaid_transaction_id' => 'unknown-transaction',
             'merchant_name' => 'Mystery Merchant',
             'name' => 'Card payment',
-            'amount' => 19.45,
+            'amount' => -19.45,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
-            'category' => [],
-            'personal_finance_category' => [],
         ]);
 
         $this->actingAs($user)
@@ -112,7 +99,7 @@ class BankAccountTransactionsTest extends TestCase
     public function test_user_can_update_transaction_category(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $groceries = Category::query()->create([
             'user_id' => $user->id,
@@ -127,12 +114,9 @@ class BankAccountTransactionsTest extends TestCase
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-1',
-            'plaid_transaction_id' => 'txn-1',
             'name' => 'Weekly shop',
-            'amount' => 40.25,
+            'amount' => -40.25,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -152,7 +136,7 @@ class BankAccountTransactionsTest extends TestCase
     public function test_user_can_assign_income_category_to_transaction_and_page_reflects_it(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $salary = Category::query()->create([
             'user_id' => $user->id,
@@ -167,12 +151,9 @@ class BankAccountTransactionsTest extends TestCase
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-income-1',
-            'plaid_transaction_id' => 'txn-income-1',
             'name' => 'Transfer adjustment',
-            'amount' => 40.25,
+            'amount' => -40.25,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -212,7 +193,7 @@ class BankAccountTransactionsTest extends TestCase
     {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $otherUsersCategory = Category::query()->create([
             'user_id' => $otherUser->id,
@@ -227,12 +208,9 @@ class BankAccountTransactionsTest extends TestCase
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-2',
-            'plaid_transaction_id' => 'txn-2',
             'name' => 'Weekly shop',
-            'amount' => 40.25,
+            'amount' => -40.25,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -253,19 +231,16 @@ class BankAccountTransactionsTest extends TestCase
     public function test_user_can_update_transaction_text_without_changing_category_assignment(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $transaction = BankTransaction::query()->create([
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-note-1',
-            'plaid_transaction_id' => 'txn-note-1',
             'merchant_name' => 'Local Cafe',
             'name' => 'Old transaction text',
-            'amount' => 12.40,
+            'amount' => -12.40,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -286,19 +261,16 @@ class BankAccountTransactionsTest extends TestCase
     public function test_user_can_update_transaction_merchant_without_changing_category_assignment(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $transaction = BankTransaction::query()->create([
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-merchant-1',
-            'plaid_transaction_id' => 'txn-merchant-1',
             'merchant_name' => 'Old Merchant',
             'name' => 'Card payment',
-            'amount' => 9.20,
+            'amount' => -9.20,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -319,19 +291,16 @@ class BankAccountTransactionsTest extends TestCase
     public function test_user_can_clear_transaction_merchant_name(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $transaction = BankTransaction::query()->create([
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-merchant-clear-1',
-            'plaid_transaction_id' => 'txn-merchant-clear-1',
             'merchant_name' => 'Should be removed',
             'name' => 'Card payment',
-            'amount' => 9.20,
+            'amount' => -9.20,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -351,19 +320,16 @@ class BankAccountTransactionsTest extends TestCase
     public function test_transaction_update_redirect_keeps_requested_date_range(): void
     {
         $user = User::factory()->create();
-        $account = $this->createPlaidAccount($user);
+        $account = $this->createBankAccount($user);
 
         $transaction = BankTransaction::query()->create([
             'bank_connection_id' => $account->bank_connection_id,
             'bank_account_id' => $account->id,
             'external_uid' => 'txn-redirect-range-1',
-            'plaid_transaction_id' => 'txn-redirect-range-1',
             'merchant_name' => 'Merchant',
             'name' => 'Old name',
-            'amount' => 5.00,
+            'amount' => -5.00,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => '2026-03-10',
             'date' => '2026-03-10',
         ]);
 
@@ -383,7 +349,7 @@ class BankAccountTransactionsTest extends TestCase
             ]));
     }
 
-    private function createPlaidAccount(User $user): BankAccount
+    private function createBankAccount(User $user): BankAccount
     {
         $wallet = Wallet::query()->create([
             'user_id' => $user->id,
@@ -395,13 +361,10 @@ class BankAccountTransactionsTest extends TestCase
         $connection = BankConnection::query()->create([
             'wallet_id' => $wallet->id,
             'user_id' => $user->id,
-            'provider' => 'plaid',
-            'plaid_item_id_hash' => hash('sha256', 'item-'.$user->id),
-            'plaid_item_id_encrypted' => 'item-'.$user->id,
-            'plaid_access_token_encrypted' => 'access-'.$user->id,
-            'institution_name' => 'Plaid Test Bank',
-            'aspsp_name' => 'Plaid Test Bank',
-            'aspsp_country' => 'US',
+            'provider' => 'enable_banking',
+            'institution_name' => 'Test Bank',
+            'aspsp_name' => 'Test Bank',
+            'aspsp_country' => 'SI',
             'state' => 'state-'.$user->id,
             'status' => 'connected',
             'authorized_at' => now(),
@@ -410,11 +373,9 @@ class BankAccountTransactionsTest extends TestCase
         return BankAccount::query()->create([
             'bank_connection_id' => $connection->id,
             'external_uid' => 'account-'.$user->id,
-            'plaid_account_id' => 'account-'.$user->id,
             'name' => 'Checking',
             'display_name' => 'Everyday Checking',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => ['current' => 1000, 'available' => 950],
             'is_active' => true,
         ]);

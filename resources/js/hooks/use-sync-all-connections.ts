@@ -13,7 +13,9 @@ type SyncStatusResponse = {
     total_connections: number;
 };
 
-export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}) {
+export function useSyncAllConnections(
+    options: UseSyncAllConnectionsOptions = {},
+) {
     const [isSyncing, setIsSyncing] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -53,7 +55,9 @@ export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}
             setIsSyncing(false);
 
             if (completedOnceRef.current) {
-                setSuccessMessage('Sync completed. Latest transactions were fetched.');
+                setSuccessMessage(
+                    'Sync completed. Latest transactions were fetched.',
+                );
                 router.reload({
                     ...(options.only ? { only: options.only } : {}),
                 });
@@ -103,6 +107,46 @@ export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}
         }
     }, [isSyncing, pollSyncStatus, stopPolling]);
 
+    const startSyncConnection = useCallback(
+        async (connectionId: number): Promise<void> => {
+            if (isSyncing) {
+                return;
+            }
+
+            setErrorMessage(null);
+            setSuccessMessage(null);
+
+            try {
+                const response = await fetch(
+                    `/bank-connections/${connectionId}/refresh`,
+                    {
+                        method: 'POST',
+                        headers: buildAjaxHeaders({
+                            'Content-Type': 'application/json',
+                        }),
+                        body: JSON.stringify({}),
+                    },
+                );
+
+                if (!response.ok) {
+                    throw new Error('Unable to start sync.');
+                }
+
+                completedOnceRef.current = true;
+                setIsSyncing(true);
+                stopPolling();
+                timerRef.current = window.setTimeout(() => {
+                    void pollSyncStatus();
+                }, 500);
+            } catch {
+                setIsSyncing(false);
+                completedOnceRef.current = false;
+                setErrorMessage('Could not start syncing this bank.');
+            }
+        },
+        [isSyncing, pollSyncStatus, stopPolling],
+    );
+
     useEffect(() => {
         return () => {
             stopPolling();
@@ -114,6 +158,7 @@ export function useSyncAllConnections(options: UseSyncAllConnectionsOptions = {}
         successMessage,
         errorMessage,
         startSyncAll,
+        startSyncConnection,
         clearSuccessMessage: () => setSuccessMessage(null),
         clearErrorMessage: () => setErrorMessage(null),
     };

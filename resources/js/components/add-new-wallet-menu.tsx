@@ -1,4 +1,4 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -41,11 +41,12 @@ export default function AddNewWalletMenu({
             : 'en-GB';
     const focusClasses =
         'border-input bg-background focus-visible:border-[#39ff14] focus-visible:ring-2 focus-visible:ring-[#39ff14]/35 focus-visible:ring-offset-0';
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        name: '',
-        currency: 'EUR',
-        starting_balance: '',
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            name: '',
+            currency: 'EUR',
+            starting_balance: '',
+        });
     const startingBalancePlaceholder = useMemo(
         () => formatLocalizedDecimal('0', numberLocale),
         [numberLocale],
@@ -99,16 +100,6 @@ export default function AddNewWalletMenu({
                     >
                         Add cash wallet
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link
-                            href="/wallets?type=stock"
-                            prefetch
-                            className="w-full cursor-pointer"
-                            onClick={() => setOpen(false)}
-                        >
-                            Add stock wallet
-                        </Link>
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -128,45 +119,60 @@ export default function AddNewWalletMenu({
                     <DialogHeader>
                         <DialogTitle>Create cash wallet</DialogTitle>
                         <DialogDescription>
-                            Add a manual wallet with its own currency and optional starting balance.
+                            Add a manual wallet with its own currency and
+                            optional starting balance.
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="manual-wallet-name">Wallet name</Label>
+                            <Label htmlFor="manual-wallet-name">
+                                Wallet name
+                            </Label>
                             <Input
                                 id="manual-wallet-name"
                                 value={data.name}
-                                onChange={(event) => setData('name', event.target.value)}
+                                onChange={(event) =>
+                                    setData('name', event.target.value)
+                                }
                                 placeholder="Cash Wallet"
                                 className={focusClasses}
                             />
                             {errors.name ? (
-                                <p className="text-xs text-destructive">{errors.name}</p>
+                                <p className="text-xs text-destructive">
+                                    {errors.name}
+                                </p>
                             ) : null}
                         </div>
 
                         <div className="grid gap-2 sm:grid-cols-2">
                             <div className="grid gap-2">
-                                <Label htmlFor="manual-wallet-currency">Currency</Label>
+                                <Label htmlFor="manual-wallet-currency">
+                                    Currency
+                                </Label>
                                 <select
                                     id="manual-wallet-currency"
                                     value={data.currency}
-                                    onChange={(event) => setData('currency', event.target.value)}
+                                    onChange={(event) =>
+                                        setData('currency', event.target.value)
+                                    }
                                     className={`h-10 rounded-md border px-3 text-sm ${focusClasses}`}
                                 >
-                                    {walletCurrencyOptions.map((currencyOption) => (
-                                        <option
-                                            key={currencyOption.code}
-                                            value={currencyOption.code}
-                                        >
-                                            {currencyOption.label}
-                                        </option>
-                                    ))}
+                                    {walletCurrencyOptions.map(
+                                        (currencyOption) => (
+                                            <option
+                                                key={currencyOption.code}
+                                                value={currencyOption.code}
+                                            >
+                                                {currencyOption.label}
+                                            </option>
+                                        ),
+                                    )}
                                 </select>
                                 {errors.currency ? (
-                                    <p className="text-xs text-destructive">{errors.currency}</p>
+                                    <p className="text-xs text-destructive">
+                                        {errors.currency}
+                                    </p>
                                 ) : null}
                             </div>
 
@@ -218,10 +224,18 @@ export default function AddNewWalletMenu({
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" type="button" onClick={closeManualDialog}>
+                        <Button
+                            variant="outline"
+                            type="button"
+                            onClick={closeManualDialog}
+                        >
                             Cancel
                         </Button>
-                        <Button type="button" disabled={processing} onClick={submitManualWallet}>
+                        <Button
+                            type="button"
+                            disabled={processing}
+                            onClick={submitManualWallet}
+                        >
                             {processing ? 'Creating...' : 'Create'}
                         </Button>
                     </DialogFooter>

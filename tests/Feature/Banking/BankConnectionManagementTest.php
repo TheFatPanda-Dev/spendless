@@ -20,14 +20,14 @@ class BankConnectionManagementTest extends TestCase
             'aspsp_name' => 'Mock ASPSP',
             'aspsp_country' => 'SI',
             'state' => 'delete-own-state',
-            'status' => 'active',
+            'status' => 'connected',
             'session_id' => 'session-delete-own',
         ]);
 
         $response = $this->actingAs($user)->delete(route('banking.destroy', $connection));
 
-        $response->assertRedirect(route('dashboard', absolute: false));
-        $response->assertSessionHas('success', 'Bank connection deleted.');
+        $response->assertRedirect(route('wallets.index', absolute: false));
+        $response->assertSessionHas('success', 'Bank disconnected and its data deleted.');
         $this->assertDatabaseMissing('bank_connections', ['id' => $connection->id]);
     }
 
@@ -41,7 +41,7 @@ class BankConnectionManagementTest extends TestCase
             'aspsp_name' => 'Mock ASPSP',
             'aspsp_country' => 'SI',
             'state' => 'delete-other-state',
-            'status' => 'active',
+            'status' => 'connected',
             'session_id' => 'session-delete-other',
         ]);
 

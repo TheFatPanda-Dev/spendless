@@ -4,9 +4,11 @@ namespace App\Actions\Fortify;
 
 use App\Actions\Categories\CreateDefaultMainCategories;
 use App\Concerns\PasswordValidationRules;
+use App\Models\AppSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -24,6 +26,12 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        if (! AppSetting::registrationOpen()) {
+            throw ValidationException::withMessages([
+                'email' => 'New sign-ups are currently closed.',
+            ]);
+        }
+
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],

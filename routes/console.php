@@ -1,34 +1,26 @@
 <?php
 
-use App\Jobs\SyncEnableBankingConnectionJob;
-use App\Jobs\SyncPlaidConnectionJob;
-use App\Models\BankConnection;
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Models\BankSyncRun;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+| Everything here is driven by ONE cron entry (see docs/DEPLOY-NEOSERV.md):
+|   * * * * * cd /path/to/spendless && php artisan schedule:run >> /dev/null 2>&1
+*/
 
-Schedule::call(function (): void {
-    BankConnection::query()
-        ->where('status', 'active')
-        ->where(function ($query): void {
-            $query->whereNull('next_sync_at')
-                ->orWhere('next_sync_at', '<=', now());
-        })
-        ->orderBy('next_sync_at')
-        ->limit(25)
-        ->pluck('id')
-        ->each(fn (int $connectionId) => SyncEnableBankingConnectionJob::dispatch($connectionId));
-})->everyFiveMinutes();
+// Lets the admin page confirm the cron job is running.
+Schedule::call(fn () => Cache::forever('scheduler:last_run_at', now()->toIso8601String()))
+    ->name('scheduler-heartbeat')
+    ->everyMinute();
 
-Schedule::call(function (): void {
-    BankConnection::query()
-        ->where('provider', 'plaid')
-        ->whereIn('status', ['connected', 'sync_failed'])
-        ->orderBy('last_synced_at')
-        ->pluck('id')
-        ->each(fn (int $connectionId): mixed => SyncPlaidConnectionJob::dispatch($connectionId, 'scheduled', true));
-})->everyFourHours();
+Schedule::command('banking:dispatch-due-syncs')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('banking:send-access-reminders')->dailyAt('09:00')->withoutOverlapping();
+Schedule::command('model:prune', ['--model' => [BankSyncRun::class]])->daily();
+Schedule::command('queue:prune-failed', ['--hours' => 24 * 30])->daily();
+
+// Shared hosting can't keep a queue worker running, so start a short-lived one every
+// minute. Keep this last: it blocks this schedule:run for up to 50 seconds.
+Schedule::command('queue:work', ['--stop-when-empty', '--max-time' => 50, '--tries' => 1])
+    ->everyMinute()
+    ->withoutOverlapping(5);

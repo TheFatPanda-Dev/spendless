@@ -2,81 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CreateLinkTokenRequest;
-use App\Http\Requests\ExchangePublicTokenRequest;
-use App\Jobs\RefreshAllPlaidConnectionsJob;
-use App\Jobs\SyncPlaidConnectionJob;
+use App\Jobs\SyncEnableBankingConnectionJob;
 use App\Models\BankConnection;
-use App\Models\Wallet;
 use App\Services\Banking\BankActivityLogger;
-use App\Services\Plaid\PlaidTransactionsService;
+use App\Services\EnableBanking\PsuHeaders;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * "Sync all" / "Sync now". The user is present, so the bank is told so via PSU headers
+ * and these refreshes don't use up the 4 unattended syncs a day.
+ */
 class WalletBankConnectionController extends Controller
 {
-    public function createLinkToken(
-        CreateLinkTokenRequest $request,
-        Wallet $wallet,
-        PlaidTransactionsService $transactionsService,
-    ): JsonResponse {
-        Gate::authorize('view', $wallet);
-
-        $linkToken = $transactionsService->createLinkToken(
-            $request->user(),
-            $wallet,
-            $request->validated('redirect_uri'),
-        );
-
-        return response()->json([
-            'link_token' => $linkToken,
-        ]);
-    }
-
-    public function exchangePublicToken(
-        ExchangePublicTokenRequest $request,
-        Wallet $wallet,
-        PlaidTransactionsService $transactionsService,
-        BankActivityLogger $activityLogger,
-    ): JsonResponse {
-        Gate::authorize('view', $wallet);
-
-        $connection = $transactionsService->exchangePublicToken(
-            $request->validated('public_token'),
-            $wallet,
-            $request->user(),
-        );
-
-        $activityLogger->log($request->user(), 'account_added', [
-            'connection_id' => $connection->id,
-            'wallet_id' => $wallet->id,
-            'accounts_count' => $connection->accounts()->count(),
-            'institution_name' => $connection->institution_name,
-        ]);
-
-        return response()->json([
-            'connection_id' => $connection->id,
-            'status' => $connection->status,
-        ], Response::HTTP_CREATED);
-    }
+    /** Ignore repeated clicks: a connection synced this recently is skipped. */
+    private const COOLDOWN_SECONDS = 60;
 
     public function refreshAll(Request $request, BankActivityLogger $activityLogger): JsonResponse
     {
-        $request->user()
+        $connections = $request->user()
             ->bankConnections()
-            ->where('provider', 'plaid')
-            ->whereIn('status', ['connected', 'sync_failed'])
-            ->update(['status' => 'syncing']);
+            ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+            ->whereIn('status', [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED])
+            ->get();
 
-        $activityLogger->log($request->user(), 'sync_all_requested');
+        $queued = $connections->filter(fn (BankConnection $connection): bool => $this->queueSync($request, $connection));
 
-        RefreshAllPlaidConnectionsJob::dispatch($request->user()->id);
+        $activityLogger->log($request->user(), 'sync_all_requested', ['connections' => $queued->count()]);
 
         return response()->json([
-            'queued' => true,
-            'message' => 'Refresh for all linked Plaid connections has been queued.',
+            'queued' => $queued->count(),
+            'message' => $queued->isEmpty()
+                ? 'Everything is already up to date.'
+                : 'Syncing your banks…',
         ]);
     }
 
@@ -84,17 +45,34 @@ class WalletBankConnectionController extends Controller
     {
         Gate::authorize('update', $bankConnection);
 
-        abort_unless($bankConnection->provider === 'plaid', Response::HTTP_UNPROCESSABLE_ENTITY);
+        abort_unless(
+            $bankConnection->provider === BankConnection::PROVIDER_ENABLE_BANKING
+                && in_array($bankConnection->status, [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED], true),
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+        );
 
-        $bankConnection->update([
-            'status' => 'syncing',
-        ]);
-
-        SyncPlaidConnectionJob::dispatch($bankConnection->id, 'manual_single', true);
+        $queued = $this->queueSync($request, $bankConnection);
 
         return response()->json([
-            'queued' => true,
-            'message' => 'Refresh for this connection has been queued.',
+            'queued' => $queued ? 1 : 0,
+            'message' => $queued ? 'Syncing…' : 'This bank was synced a moment ago.',
         ]);
+    }
+
+    private function queueSync(Request $request, BankConnection $connection): bool
+    {
+        if ($connection->last_synced_at?->isAfter(now()->subSeconds(self::COOLDOWN_SECONDS))) {
+            return false;
+        }
+
+        $connection->forceFill(['status' => BankConnection::STATUS_SYNCING])->save();
+
+        SyncEnableBankingConnectionJob::dispatchAfterResponse(
+            $connection->id,
+            'manual',
+            PsuHeaders::fromRequest($request, Arr::wrap(Arr::get($connection->metadata, 'required_psu_headers', []))),
+        );
+
+        return true;
     }
 }

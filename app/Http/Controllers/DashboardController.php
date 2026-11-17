@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Transactions\ResolveBankTransactionCategory;
 use App\Models\BankAccount;
+use App\Models\BankConnection;
 use App\Models\BankTransaction;
 use App\Services\Currency\FreeCurrencyApi;
 use App\Support\Localization\NumberLocaleOptions;
@@ -24,16 +25,20 @@ class DashboardController extends Controller
         $startDate = Carbon::parse((string) $request->query('start_date', now()->startOfMonth()->toDateString()))->startOfDay();
         $endDate = Carbon::parse((string) $request->query('end_date', now()->endOfMonth()->toDateString()))->endOfDay();
 
+        $connectionIds = $request->user()
+            ->bankConnections()
+            ->where('status', '!=', BankConnection::STATUS_PENDING)
+            ->pluck('id');
+
         $accounts = BankAccount::query()
             ->where('is_active', true)
-            ->whereHas('connection', fn ($query) => $query
-                ->where('user_id', $request->user()->id))
-            ->with('connection')
+            ->whereIn('bank_connection_id', $connectionIds)
+            ->with('connection:id,institution_name,institution_logo,provider,status')
             ->orderByRaw("COALESCE(display_name, name, official_name, '') asc")
             ->get()
             ->map(function (BankAccount $account): array {
                 $balances = is_array($account->balances_encrypted) ? $account->balances_encrypted : [];
-                $currency = (string) ($account->currency_code ?: $account->currency ?: 'EUR');
+                $currency = (string) ($account->currency ?: 'EUR');
 
                 return [
                     'id' => $account->id,
@@ -41,7 +46,9 @@ class DashboardController extends Controller
                     'name' => $account->name,
                     'official_name' => $account->official_name,
                     'institution_name' => $account->connection?->institution_name,
-                    'mask' => $account->mask_encrypted ? str_pad(substr((string) $account->mask_encrypted, -4), 4, '*', STR_PAD_LEFT) : null,
+                    'institution_logo' => $account->connection?->institution_logo,
+                    'connection_status' => $account->connection?->status,
+                    'mask' => $account->maskForDisplay(),
                     'type' => $account->type,
                     'subtype' => $account->subtype,
                     'currency' => $currency,
@@ -52,27 +59,19 @@ class DashboardController extends Controller
             })
             ->values();
 
-        $baseTransactionQuery = BankTransaction::query()
-            ->whereNull('removed_at')
+        $periodTransactions = BankTransaction::query()
+            ->whereIn('bank_connection_id', $connectionIds)
             ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->whereHas('connection', fn ($query) => $query
-                ->where('user_id', $request->user()->id));
-
-        $periodTransactions = (clone $baseTransactionQuery)
             ->with('assignedCategory')
             ->select([
                 'id',
                 'category_id',
                 'amount',
                 'currency',
-                'iso_currency_code',
-                'unofficial_currency_code',
                 'merchant_name',
                 'payee',
                 'name',
                 'description',
-                'category',
-                'personal_finance_category',
             ])
             ->get();
 
@@ -83,12 +82,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         foreach ($periodTransactions as $transaction) {
-            $currency = strtoupper((string) (
-                $transaction->iso_currency_code
-                ?: $transaction->currency
-                ?: $transaction->unofficial_currency_code
-                ?: 'EUR'
-            ));
+            $currency = strtoupper((string) ($transaction->currency ?: 'EUR'));
 
             $resolvedCategory = $transaction->assignedCategory
                 ?? ($this->resolveBankTransactionCategory)($transaction, $user);

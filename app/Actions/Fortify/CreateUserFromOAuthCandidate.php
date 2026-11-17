@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Actions\Categories\CreateDefaultMainCategories;
+use App\Models\AppSetting;
 use App\Models\User;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -40,6 +41,10 @@ class CreateUserFromOAuthCandidate
             ->first();
 
         if (! $user) {
+            if (! AppSetting::registrationOpen()) {
+                throw new InvalidArgumentException('New sign-ups are currently closed.');
+            }
+
             $user = User::create([
                 'name' => $name !== '' ? $name : Str::title($providerLabel.' User'),
                 'email' => $email,

@@ -59,7 +59,6 @@ type Transaction = {
     category_color: string;
     category_source: 'manual' | 'automatic' | 'fallback';
     category_type: 'expense' | 'income';
-    provider_category: string | null;
     amount: number;
     currency: string | null;
     date: string | null;
@@ -142,13 +141,17 @@ function buildCategoryTree(options: CategoryOption[]): CategoryTreeNode[] {
         let currentPath = '';
 
         segments.forEach((segment, index) => {
-            currentPath = currentPath === '' ? segment : `${currentPath} / ${segment}`;
+            currentPath =
+                currentPath === '' ? segment : `${currentPath} / ${segment}`;
 
             let node = level.find((entry) => entry.path === currentPath);
 
             if (!node) {
                 node = {
-                    id: index === segments.length - 1 ? option.id : -(currentPath.length + index + 1),
+                    id:
+                        index === segments.length - 1
+                            ? option.id
+                            : -(currentPath.length + index + 1),
                     name: segment,
                     path: currentPath,
                     icon: option.icon,
@@ -315,13 +318,17 @@ function TransactionCategoryEditor({
         if (!isCategoryPickerOpen) return;
 
         function handleClickOutside(event: MouseEvent) {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(event.target as Node)
+            ) {
                 onTogglePicker();
             }
         }
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
     }, [isCategoryPickerOpen, onTogglePicker]);
 
     return (
@@ -354,17 +361,21 @@ function TransactionCategoryEditor({
                                         Choose category type
                                     </p>
                                     <p className="mt-1 text-xs text-muted-foreground dark:text-slate-500">
-                                        Pick Expense or Income first, then choose a category.
+                                        Pick Expense or Income first, then
+                                        choose a category.
                                     </p>
                                 </div>
 
-                                <CategoryTypeSwitcher activeType={activeType} onSelect={onTypeChange} />
+                                <CategoryTypeSwitcher
+                                    activeType={activeType}
+                                    onSelect={onTypeChange}
+                                />
                             </div>
                         ) : (
                             <>
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
-                                        <p className="text-sm font-semibold capitalize text-foreground dark:text-slate-100">
+                                        <p className="text-sm font-semibold text-foreground capitalize dark:text-slate-100">
                                             {activeType} categories
                                         </p>
                                         <p className="mt-1 text-xs text-muted-foreground dark:text-slate-500">
@@ -375,7 +386,7 @@ function TransactionCategoryEditor({
                                     <button
                                         type="button"
                                         onClick={onTogglePicker}
-                                        className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:text-foreground dark:text-slate-500 dark:hover:text-slate-100"
+                                        className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase transition hover:text-foreground dark:text-slate-500 dark:hover:text-slate-100"
                                     >
                                         Back
                                     </button>
@@ -385,7 +396,9 @@ function TransactionCategoryEditor({
                                     <Search className="pointer-events-none absolute top-3 left-3 size-4 text-slate-500" />
                                     <Input
                                         value={categorySearchQuery}
-                                        onChange={(event) => onSearchChange(event.target.value)}
+                                        onChange={(event) =>
+                                            onSearchChange(event.target.value)
+                                        }
                                         placeholder={`Search ${activeType} categories`}
                                         className="border-brand/15 bg-white pl-9 text-foreground placeholder:text-slate-500 dark:border-white/10 dark:bg-[#16201c] dark:text-slate-100"
                                     />
@@ -394,43 +407,65 @@ function TransactionCategoryEditor({
                                 <div className="mt-3 max-h-60 overflow-y-auto pr-1 lg:max-h-64">
                                     {categorySearchQuery.trim() !== '' ? (
                                         <div className="space-y-1.5">
-                                            {filteredCategorySearchResults.length > 0 ? (
-                                                filteredCategorySearchResults.map((option) => {
-                                                    const isSelectedOption = selectedCategoryId === String(option.id);
-                                                    const optionPresentation = resolveCategoryColorPresentation(
-                                                        option.color,
-                                                        categoryColorMap,
-                                                    );
+                                            {filteredCategorySearchResults.length >
+                                            0 ? (
+                                                filteredCategorySearchResults.map(
+                                                    (option) => {
+                                                        const isSelectedOption =
+                                                            selectedCategoryId ===
+                                                            String(option.id);
+                                                        const optionPresentation =
+                                                            resolveCategoryColorPresentation(
+                                                                option.color,
+                                                                categoryColorMap,
+                                                            );
 
-                                                    return (
-                                                        <button
-                                                            key={option.id}
-                                                            type="button"
-                                                            onClick={() => onSelectCategory(String(option.id))}
-                                                            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm transition ${
-                                                                isSelectedOption
-                                                                    ? 'border-brand/25 bg-brand/12 text-slate-50'
-                                                                    : categoryPickerOptionIdleClasses
-                                                            }`}
-                                                        >
-                                                            <CategoryIcon
-                                                                name={option.icon}
-                                                                variant="badge"
-                                                                presentation={optionPresentation}
-                                                                className="size-9 rounded-2xl"
-                                                                iconSize={18}
-                                                            />
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="truncate font-medium text-foreground dark:text-slate-100">
-                                                                    {option.name}
-                                                                </p>
-                                                                <p className="truncate text-xs text-muted-foreground dark:text-slate-500">
-                                                                    {formatCategoryPathLabel(option.path)}
-                                                                </p>
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                })
+                                                        return (
+                                                            <button
+                                                                key={option.id}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    onSelectCategory(
+                                                                        String(
+                                                                            option.id,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                                className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm transition ${
+                                                                    isSelectedOption
+                                                                        ? 'border-brand/25 bg-brand/12 text-slate-50'
+                                                                        : categoryPickerOptionIdleClasses
+                                                                }`}
+                                                            >
+                                                                <CategoryIcon
+                                                                    name={
+                                                                        option.icon
+                                                                    }
+                                                                    variant="badge"
+                                                                    presentation={
+                                                                        optionPresentation
+                                                                    }
+                                                                    className="size-9 rounded-2xl"
+                                                                    iconSize={
+                                                                        18
+                                                                    }
+                                                                />
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="truncate font-medium text-foreground dark:text-slate-100">
+                                                                        {
+                                                                            option.name
+                                                                        }
+                                                                    </p>
+                                                                    <p className="truncate text-xs text-muted-foreground dark:text-slate-500">
+                                                                        {formatCategoryPathLabel(
+                                                                            option.path,
+                                                                        )}
+                                                                    </p>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    },
+                                                )
                                             ) : (
                                                 <div className="rounded-2xl border border-dashed border-white/8 px-3 py-5 text-center text-sm text-slate-500">
                                                     No categories found.
@@ -440,8 +475,12 @@ function TransactionCategoryEditor({
                                     ) : (
                                         <CategoryPickerTree
                                             nodes={activeCategoryTree}
-                                            expandedPaths={expandedCategoryPaths}
-                                            selectedCategoryId={selectedCategoryId}
+                                            expandedPaths={
+                                                expandedCategoryPaths
+                                            }
+                                            selectedCategoryId={
+                                                selectedCategoryId
+                                            }
                                             colorMap={categoryColorMap}
                                             onToggle={onTogglePath}
                                             onSelect={onSelectCategory}
@@ -583,7 +622,11 @@ export default function AccountShow({
             Array.from(
                 new Set(
                     transactions
-                        .map((transaction) => transaction.counterparty ?? transaction.merchant_name)
+                        .map(
+                            (transaction) =>
+                                transaction.counterparty ??
+                                transaction.merchant_name,
+                        )
                         .filter((value): value is string => Boolean(value)),
                 ),
             ).sort(),
@@ -592,16 +635,22 @@ export default function AccountShow({
 
     const [counterpartyFilter, setCounterpartyFilter] = useState('all');
     const [keywordFilter, setKeywordFilter] = useState('');
-    const [activeTransactionId, setActiveTransactionId] = useState<number | null>(null);
+    const [activeTransactionId, setActiveTransactionId] = useState<
+        number | null
+    >(null);
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const [editedMerchantName, setEditedMerchantName] = useState('');
     const [editedTransactionName, setEditedTransactionName] = useState('');
-    const [selectedCategoryType, setSelectedCategoryType] = useState<CategoryType>('expense');
+    const [selectedCategoryType, setSelectedCategoryType] =
+        useState<CategoryType>('expense');
     const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
     const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
-    const [categoryPickerView, setCategoryPickerView] = useState<CategoryPickerView>('type');
+    const [categoryPickerView, setCategoryPickerView] =
+        useState<CategoryPickerView>('type');
     const [categorySearchQuery, setCategorySearchQuery] = useState('');
-    const [expandedCategoryPaths, setExpandedCategoryPaths] = useState<Set<string>>(new Set());
+    const [expandedCategoryPaths, setExpandedCategoryPaths] = useState<
+        Set<string>
+    >(new Set());
     const previousMonthRange = shiftMonthRange(filters.start_date, -1);
     const nextMonthRange = shiftMonthRange(filters.start_date, 1);
     const [showManualTransactionForm, setShowManualTransactionForm] =
@@ -623,7 +672,8 @@ export default function AccountShow({
         useState('');
 
     const effectiveCounterpartyFilter =
-        counterpartyFilter === 'all' || counterparties.includes(counterpartyFilter)
+        counterpartyFilter === 'all' ||
+        counterparties.includes(counterpartyFilter)
             ? counterpartyFilter
             : 'all';
 
@@ -644,19 +694,24 @@ export default function AccountShow({
         const keyword = keywordFilter.trim().toLowerCase();
 
         return transactions.filter((transaction) => {
-            const personValue = transaction.counterparty ?? transaction.merchant_name ?? 'Unknown';
-            const personMatch = effectiveCounterpartyFilter === 'all' || personValue === effectiveCounterpartyFilter;
+            const personValue =
+                transaction.counterparty ??
+                transaction.merchant_name ??
+                'Unknown';
+            const personMatch =
+                effectiveCounterpartyFilter === 'all' ||
+                personValue === effectiveCounterpartyFilter;
             const keywordSource = [
                 transaction.name,
                 transaction.merchant_name,
                 transaction.counterparty,
                 transaction.category,
-                transaction.provider_category,
             ]
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase();
-            const keywordMatch = keyword.length === 0 || keywordSource.includes(keyword);
+            const keywordMatch =
+                keyword.length === 0 || keywordSource.includes(keyword);
 
             return personMatch && keywordMatch;
         });
@@ -677,7 +732,10 @@ export default function AccountShow({
     }, [filteredTransactions]);
 
     const activeTransaction = useMemo(
-        () => transactions.find((transaction) => transaction.id === activeTransactionId) ?? null,
+        () =>
+            transactions.find(
+                (transaction) => transaction.id === activeTransactionId,
+            ) ?? null,
         [activeTransactionId, transactions],
     );
 
@@ -723,8 +781,8 @@ export default function AccountShow({
 
         return manualCategoryOptions.filter((option) => {
             return (
-                option.name.toLowerCase().includes(query)
-                || option.path.toLowerCase().includes(query)
+                option.name.toLowerCase().includes(query) ||
+                option.path.toLowerCase().includes(query)
             );
         });
     }, [manualCategoryOptions, manualCategorySearchQuery]);
@@ -740,7 +798,10 @@ export default function AccountShow({
     }, [manualTransactionForm.data.date, numberLocale]);
 
     const selectedCategoryOption = useMemo(
-        () => activeCategoryOptions.find((option) => String(option.id) === selectedCategoryId) ?? null,
+        () =>
+            activeCategoryOptions.find(
+                (option) => String(option.id) === selectedCategoryId,
+            ) ?? null,
         [activeCategoryOptions, selectedCategoryId],
     );
 
@@ -752,24 +813,32 @@ export default function AccountShow({
         }
 
         return activeCategoryOptions.filter((option) => {
-            return option.name.toLowerCase().includes(query)
-                || option.path.toLowerCase().includes(query);
+            return (
+                option.name.toLowerCase().includes(query) ||
+                option.path.toLowerCase().includes(query)
+            );
         });
     }, [activeCategoryOptions, categorySearchQuery]);
 
     const hasCategorySelectionChanged =
-        activeTransaction !== null
-        && selectedCategoryId !== (activeTransaction.category_id !== null ? String(activeTransaction.category_id) : '');
+        activeTransaction !== null &&
+        selectedCategoryId !==
+            (activeTransaction.category_id !== null
+                ? String(activeTransaction.category_id)
+                : '');
 
     const hasTransactionNameChanged =
-        activeTransaction !== null
-        && editedTransactionName !== (activeTransaction.name ?? '');
+        activeTransaction !== null &&
+        editedTransactionName !== (activeTransaction.name ?? '');
 
     const hasMerchantNameChanged =
-        activeTransaction !== null
-        && editedMerchantName !== (activeTransaction.merchant_name ?? '');
+        activeTransaction !== null &&
+        editedMerchantName !== (activeTransaction.merchant_name ?? '');
 
-    const hasTransactionChanges = hasCategorySelectionChanged || hasMerchantNameChanged || hasTransactionNameChanged;
+    const hasTransactionChanges =
+        hasCategorySelectionChanged ||
+        hasMerchantNameChanged ||
+        hasTransactionNameChanged;
 
     const resetFilters = (): void => {
         setCounterpartyFilter('all');
@@ -784,7 +853,11 @@ export default function AccountShow({
         }
 
         setActiveTransactionId(transaction.id);
-        setSelectedCategoryId(transaction.category_id !== null ? String(transaction.category_id) : '');
+        setSelectedCategoryId(
+            transaction.category_id !== null
+                ? String(transaction.category_id)
+                : '',
+        );
         setEditedMerchantName(transaction.merchant_name ?? '');
         setEditedTransactionName(transaction.name ?? '');
         setSelectedCategoryType(transaction.category_type);
@@ -815,7 +888,11 @@ export default function AccountShow({
             return;
         }
 
-        const payload: { category_id?: number; merchant_name?: string | null; name?: string | null } = {};
+        const payload: {
+            category_id?: number;
+            merchant_name?: string | null;
+            name?: string | null;
+        } = {};
 
         if (hasCategorySelectionChanged && selectedCategoryId !== '') {
             payload.category_id = Number(selectedCategoryId);
@@ -824,7 +901,8 @@ export default function AccountShow({
         if (hasMerchantNameChanged) {
             const normalizedMerchantName = editedMerchantName.trim();
 
-            payload.merchant_name = normalizedMerchantName === '' ? null : normalizedMerchantName;
+            payload.merchant_name =
+                normalizedMerchantName === '' ? null : normalizedMerchantName;
         }
 
         if (hasTransactionNameChanged) {
@@ -1005,7 +1083,10 @@ export default function AccountShow({
                     <CardContent className="flex flex-wrap items-start justify-between gap-4 px-4">
                         <div>
                             <p className="text-lg font-semibold text-foreground">
-                                {account.display_name ?? account.name ?? account.official_name ?? 'Bank account'}
+                                {account.display_name ??
+                                    account.name ??
+                                    account.official_name ??
+                                    'Bank account'}
                             </p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 <Landmark className="mr-1 inline size-4 text-brand" />
@@ -1017,19 +1098,27 @@ export default function AccountShow({
                             </p>
                             {!isManualAccount ? (
                                 <p className="mt-2 text-xs text-muted-foreground">
-                                    Last synced: {formatLocalizedDateTime(account.last_synced_at, numberLocale)}
+                                    Last synced:{' '}
+                                    {formatLocalizedDateTime(
+                                        account.last_synced_at,
+                                        numberLocale,
+                                    )}
                                 </p>
                             ) : null}
                         </div>
 
                         <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Current balance</p>
+                            <p className="text-sm text-muted-foreground">
+                                Current balance
+                            </p>
                             <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
                                 {formatCurrency(currentBalance, currency)}
                             </p>
-                            {!isManualAccount && typeof availableBalance === 'number' ? (
+                            {!isManualAccount &&
+                            typeof availableBalance === 'number' ? (
                                 <p className="text-xs text-muted-foreground">
-                                    Available: {formatCurrency(availableBalance, currency)}
+                                    Available:{' '}
+                                    {formatCurrency(availableBalance, currency)}
                                 </p>
                             ) : null}
                         </div>
@@ -1043,8 +1132,8 @@ export default function AccountShow({
                             <Button
                                 type="button"
                                 disabled={
-                                    showManualTransactionForm
-                                    || manualTransactionForm.processing
+                                    showManualTransactionForm ||
+                                    manualTransactionForm.processing
                                 }
                                 className={`font-semibold transition-colors disabled:pointer-events-none ${
                                     showManualTransactionForm
@@ -1063,8 +1152,10 @@ export default function AccountShow({
                     <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:flex-1 lg:justify-center">
                         <select
                             value={effectiveCounterpartyFilter}
-                            onChange={(event) => setCounterpartyFilter(event.target.value)}
-                            className={`h-9 w-full rounded-md border px-3 pr-10 text-sm sm:min-w-44 sm:w-auto ${accountControlClasses}`}
+                            onChange={(event) =>
+                                setCounterpartyFilter(event.target.value)
+                            }
+                            className={`h-9 w-full rounded-md border px-3 pr-10 text-sm sm:w-auto sm:min-w-44 ${accountControlClasses}`}
                         >
                             <option value="all">Filter by Merchants</option>
                             {counterparties.map((name) => (
@@ -1074,15 +1165,20 @@ export default function AccountShow({
                             ))}
                         </select>
 
-                        <div className="relative w-full sm:min-w-56 sm:flex-1 sm:max-w-md">
+                        <div className="relative w-full sm:max-w-md sm:min-w-56 sm:flex-1">
                             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={keywordFilter}
-                                onChange={(event) => setKeywordFilter(event.target.value)}
+                                onChange={(event) =>
+                                    setKeywordFilter(event.target.value)
+                                }
                                 placeholder="Search by Keyword"
-                                className={accountControlClasses + ' h-9 pl-9 pr-9'}
+                                className={
+                                    accountControlClasses + ' h-9 pr-9 pl-9'
+                                }
                             />
-                            {effectiveCounterpartyFilter !== 'all' || keywordFilter !== '' ? (
+                            {effectiveCounterpartyFilter !== 'all' ||
+                            keywordFilter !== '' ? (
                                 <button
                                     type="button"
                                     onClick={resetFilters}
@@ -1103,7 +1199,8 @@ export default function AccountShow({
                                 router.get(
                                     `/accounts/${account.id}`,
                                     {
-                                        start_date: previousMonthRange.startDate,
+                                        start_date:
+                                            previousMonthRange.startDate,
                                         end_date: previousMonthRange.endDate,
                                     },
                                     {
@@ -1112,7 +1209,11 @@ export default function AccountShow({
                                         preserveUrl: true,
                                         replace: true,
                                         showProgress: false,
-                                        only: ['account', 'filters', 'transactions'],
+                                        only: [
+                                            'account',
+                                            'filters',
+                                            'transactions',
+                                        ],
                                     },
                                 );
                             }}
@@ -1120,10 +1221,20 @@ export default function AccountShow({
                             <ArrowLeft className="size-4" />
                         </Button>
 
-                        <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${accountControlClasses}`}>
+                        <div
+                            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${accountControlClasses}`}
+                        >
                             <CalendarDays className="size-4 text-muted-foreground" />
                             <span>
-                                {formatDisplayDate(filters.start_date, numberLocale)} - {formatDisplayDate(filters.end_date, numberLocale)}
+                                {formatDisplayDate(
+                                    filters.start_date,
+                                    numberLocale,
+                                )}{' '}
+                                -{' '}
+                                {formatDisplayDate(
+                                    filters.end_date,
+                                    numberLocale,
+                                )}
                             </span>
                         </div>
 
@@ -1144,7 +1255,11 @@ export default function AccountShow({
                                         preserveUrl: true,
                                         replace: true,
                                         showProgress: false,
-                                        only: ['account', 'filters', 'transactions'],
+                                        only: [
+                                            'account',
+                                            'filters',
+                                            'transactions',
+                                        ],
                                     },
                                 );
                             }}
@@ -1179,29 +1294,58 @@ export default function AccountShow({
                                                 Category
                                             </label>
                                             <TransactionCategoryEditor
-                                                activeType={manualSelectedCategoryType}
-                                                pickerView={manualCategoryPickerView}
-                                                onTypeChange={selectManualCategoryType}
+                                                activeType={
+                                                    manualSelectedCategoryType
+                                                }
+                                                pickerView={
+                                                    manualCategoryPickerView
+                                                }
+                                                onTypeChange={
+                                                    selectManualCategoryType
+                                                }
                                                 selectedLabel={
                                                     manualSelectedCategoryOption
                                                         ? formatCategoryPathLabel(
-                                                            manualSelectedCategoryOption.path,
-                                                        )
+                                                              manualSelectedCategoryOption.path,
+                                                          )
                                                         : 'Choose category'
                                                 }
-                                                isCategoryPickerOpen={isManualCategoryPickerOpen}
-                                                onTogglePicker={toggleManualCategoryPicker}
-                                                categorySearchQuery={manualCategorySearchQuery}
-                                                onSearchChange={setManualCategorySearchQuery}
-                                                filteredCategorySearchResults={manualFilteredCategorySearchResults}
-                                                selectedCategoryId={manualSelectedCategoryId}
-                                                categoryColorMap={categoryColorMap}
-                                                activeCategoryTree={manualCategoryTree}
-                                                expandedCategoryPaths={manualExpandedCategoryPaths}
-                                                onTogglePath={toggleManualCategoryPath}
-                                                onSelectCategory={selectManualCategory}
+                                                isCategoryPickerOpen={
+                                                    isManualCategoryPickerOpen
+                                                }
+                                                onTogglePicker={
+                                                    toggleManualCategoryPicker
+                                                }
+                                                categorySearchQuery={
+                                                    manualCategorySearchQuery
+                                                }
+                                                onSearchChange={
+                                                    setManualCategorySearchQuery
+                                                }
+                                                filteredCategorySearchResults={
+                                                    manualFilteredCategorySearchResults
+                                                }
+                                                selectedCategoryId={
+                                                    manualSelectedCategoryId
+                                                }
+                                                categoryColorMap={
+                                                    categoryColorMap
+                                                }
+                                                activeCategoryTree={
+                                                    manualCategoryTree
+                                                }
+                                                expandedCategoryPaths={
+                                                    manualExpandedCategoryPaths
+                                                }
+                                                onTogglePath={
+                                                    toggleManualCategoryPath
+                                                }
+                                                onSelectCategory={
+                                                    selectManualCategory
+                                                }
                                             />
-                                            {manualTransactionForm.errors.category_id ? (
+                                            {manualTransactionForm.errors
+                                                .category_id ? (
                                                 <p className="text-xs text-destructive">
                                                     {
                                                         manualTransactionForm
@@ -1224,14 +1368,21 @@ export default function AccountShow({
                                                     type="text"
                                                     readOnly
                                                     value={manualDateDisplay}
-                                                    onClick={openManualDatePicker}
+                                                    onClick={
+                                                        openManualDatePicker
+                                                    }
                                                     className={`${manualTransactionFocusClasses} cursor-pointer pr-10`}
                                                 />
 
                                                 <input
-                                                    ref={manualNativeDateInputRef}
+                                                    ref={
+                                                        manualNativeDateInputRef
+                                                    }
                                                     type="date"
-                                                    value={manualTransactionForm.data.date}
+                                                    value={
+                                                        manualTransactionForm
+                                                            .data.date
+                                                    }
                                                     onChange={(event) =>
                                                         manualTransactionForm.setData(
                                                             'date',
@@ -1245,16 +1396,22 @@ export default function AccountShow({
 
                                                 <button
                                                     type="button"
-                                                    onClick={openManualDatePicker}
+                                                    onClick={
+                                                        openManualDatePicker
+                                                    }
                                                     className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                                                     aria-label="Open date picker"
                                                 >
                                                     <CalendarDays className="size-4" />
                                                 </button>
                                             </div>
-                                            {manualTransactionForm.errors.date ? (
+                                            {manualTransactionForm.errors
+                                                .date ? (
                                                 <p className="text-xs text-destructive">
-                                                    {manualTransactionForm.errors.date}
+                                                    {
+                                                        manualTransactionForm
+                                                            .errors.date
+                                                    }
                                                 </p>
                                             ) : null}
                                         </div>
@@ -1268,7 +1425,10 @@ export default function AccountShow({
                                             </label>
                                             <Input
                                                 id="manual-transaction-merchant"
-                                                value={manualTransactionForm.data.merchant_name}
+                                                value={
+                                                    manualTransactionForm.data
+                                                        .merchant_name
+                                                }
                                                 onChange={(event) =>
                                                     manualTransactionForm.setData(
                                                         'merchant_name',
@@ -1276,13 +1436,17 @@ export default function AccountShow({
                                                     )
                                                 }
                                                 placeholder="Merchant name"
-                                                className={manualTransactionFocusClasses}
+                                                className={
+                                                    manualTransactionFocusClasses
+                                                }
                                             />
-                                            {manualTransactionForm.errors.merchant_name ? (
+                                            {manualTransactionForm.errors
+                                                .merchant_name ? (
                                                 <p className="text-xs text-destructive">
                                                     {
                                                         manualTransactionForm
-                                                            .errors.merchant_name
+                                                            .errors
+                                                            .merchant_name
                                                     }
                                                 </p>
                                             ) : null}
@@ -1297,7 +1461,10 @@ export default function AccountShow({
                                             </label>
                                             <Input
                                                 id="manual-transaction-name"
-                                                value={manualTransactionForm.data.transaction_name}
+                                                value={
+                                                    manualTransactionForm.data
+                                                        .transaction_name
+                                                }
                                                 onChange={(event) =>
                                                     manualTransactionForm.setData(
                                                         'transaction_name',
@@ -1305,13 +1472,17 @@ export default function AccountShow({
                                                     )
                                                 }
                                                 placeholder="Transaction name"
-                                                className={manualTransactionFocusClasses}
+                                                className={
+                                                    manualTransactionFocusClasses
+                                                }
                                             />
-                                            {manualTransactionForm.errors.transaction_name ? (
+                                            {manualTransactionForm.errors
+                                                .transaction_name ? (
                                                 <p className="text-xs text-destructive">
                                                     {
                                                         manualTransactionForm
-                                                            .errors.transaction_name
+                                                            .errors
+                                                            .transaction_name
                                                     }
                                                 </p>
                                             ) : null}
@@ -1328,7 +1499,9 @@ export default function AccountShow({
                                                 id="manual-transaction-amount"
                                                 type="text"
                                                 inputMode="decimal"
-                                                value={manualTransactionAmountInput}
+                                                value={
+                                                    manualTransactionAmountInput
+                                                }
                                                 onChange={(event) => {
                                                     const nextValue =
                                                         event.target.value;
@@ -1365,9 +1538,12 @@ export default function AccountShow({
                                                     '0',
                                                     numberLocale,
                                                 )}
-                                                className={manualTransactionFocusClasses}
+                                                className={
+                                                    manualTransactionFocusClasses
+                                                }
                                             />
-                                            {manualTransactionForm.errors.amount ? (
+                                            {manualTransactionForm.errors
+                                                .amount ? (
                                                 <p className="text-xs text-destructive">
                                                     {
                                                         manualTransactionForm
@@ -1381,7 +1557,9 @@ export default function AccountShow({
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className={accountControlClasses}
+                                                className={
+                                                    accountControlClasses
+                                                }
                                                 onClick={() => {
                                                     resetManualTransactionForm();
                                                 }}
@@ -1390,11 +1568,13 @@ export default function AccountShow({
                                             </Button>
                                             <Button
                                                 type="button"
-                                                onClick={submitManualTransaction}
+                                                onClick={
+                                                    submitManualTransaction
+                                                }
                                                 disabled={
                                                     manualTransactionForm.processing
                                                 }
-                                                className="bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:opacity-100 disabled:bg-brand/65 disabled:text-white!"
+                                                className="bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:bg-brand/65 disabled:text-white! disabled:opacity-100"
                                             >
                                                 {manualTransactionForm.processing
                                                     ? 'Saving...'
@@ -1408,11 +1588,14 @@ export default function AccountShow({
                     </div>
                 ) : null}
 
-                <Card className={`relative w-full overflow-visible py-0 ${accountPanelClasses}`}>
+                <Card
+                    className={`relative w-full overflow-visible py-0 ${accountPanelClasses}`}
+                >
                     <div className="divide-y divide-brand/10 dark:divide-white/6">
                         {groupedTransactions.map(([day, dayTransactions]) => {
                             const dayTotal = dayTransactions.reduce(
-                                (carry, transaction) => carry + transaction.amount,
+                                (carry, transaction) =>
+                                    carry + transaction.amount,
                                 0,
                             );
 
@@ -1420,14 +1603,19 @@ export default function AccountShow({
                                 <section key={day} className="px-4 py-4">
                                     <div className="mb-3 flex items-center justify-between border-b border-brand/10 pb-3 dark:border-white/8">
                                         <h3 className="text-xl font-semibold tracking-tight text-foreground dark:text-slate-100">
-                                            {day === 'Unknown date' ? day : formatDayLabel(day, numberLocale)}
+                                            {day === 'Unknown date'
+                                                ? day
+                                                : formatDayLabel(
+                                                      day,
+                                                      numberLocale,
+                                                  )}
                                         </h3>
                                         <p
                                             className={`text-lg font-semibold ${
                                                 dayTotal > 0
-                                                                                                        ? 'text-emerald-400'
-                                                                                                        : dayTotal < 0
-                                                                                                            ? 'text-rose-400'
+                                                    ? 'text-emerald-400'
+                                                    : dayTotal < 0
+                                                      ? 'text-rose-400'
                                                       : 'text-muted-foreground dark:text-slate-500'
                                             }`}
                                         >
@@ -1437,17 +1625,20 @@ export default function AccountShow({
 
                                     <div className="space-y-1.5 lg:hidden">
                                         {dayTransactions.map((transaction) => {
-                                            const isActive = activeTransactionId === transaction.id;
+                                            const isActive =
+                                                activeTransactionId ===
+                                                transaction.id;
                                             const amountClass =
                                                 transaction.amount > 0
                                                     ? 'text-emerald-400'
                                                     : transaction.amount < 0
                                                       ? 'text-rose-400'
                                                       : 'text-slate-400';
-                                            const categoryPresentation = resolveCategoryColorPresentation(
-                                                transaction.category_color,
-                                                categoryColorMap,
-                                            );
+                                            const categoryPresentation =
+                                                resolveCategoryColorPresentation(
+                                                    transaction.category_color,
+                                                    categoryColorMap,
+                                                );
 
                                             return (
                                                 <div
@@ -1460,44 +1651,62 @@ export default function AccountShow({
                                                 >
                                                     <button
                                                         type="button"
-                                                        onClick={() => openTransactionEditor(transaction)}
+                                                        onClick={() =>
+                                                            openTransactionEditor(
+                                                                transaction,
+                                                            )
+                                                        }
                                                         className="grid w-full gap-2.5 px-3 py-2.5 text-left sm:px-4"
                                                     >
                                                         <div className="flex min-w-0 items-center gap-3">
                                                             <CategoryIcon
-                                                                name={transaction.category_icon}
+                                                                name={
+                                                                    transaction.category_icon
+                                                                }
                                                                 variant="badge"
-                                                                presentation={categoryPresentation}
+                                                                presentation={
+                                                                    categoryPresentation
+                                                                }
                                                                 className="size-10 rounded-2xl"
                                                                 iconSize={16}
                                                             />
 
                                                             <div className="min-w-0">
                                                                 <p className="truncate text-sm font-medium text-foreground dark:text-slate-100">
-                                                                    {getCategoryLeafLabel(transaction.category)}
+                                                                    {getCategoryLeafLabel(
+                                                                        transaction.category,
+                                                                    )}
                                                                 </p>
                                                             </div>
                                                         </div>
 
                                                         <div className="min-w-0 text-left">
                                                             <p className="truncate text-sm font-medium text-foreground dark:text-slate-200">
-                                                                    {transaction.merchant_name ?? 'No merchant details'}
+                                                                {transaction.merchant_name ??
+                                                                    'No merchant details'}
                                                             </p>
                                                             <p className="mt-0.5 truncate text-xs text-muted-foreground dark:text-slate-500">
-                                                                {transaction.counterparty ?? transaction.name ?? '---'}
+                                                                {transaction.counterparty ??
+                                                                    transaction.name ??
+                                                                    '---'}
                                                             </p>
                                                         </div>
 
                                                         <div className="flex min-w-0 items-center justify-end gap-3 text-right">
-                                                            <p className={`text-sm font-semibold ${amountClass}`}>
+                                                            <p
+                                                                className={`text-sm font-semibold ${amountClass}`}
+                                                            >
                                                                 {formatCurrency(
                                                                     transaction.amount,
-                                                                    transaction.currency ?? currency,
+                                                                    transaction.currency ??
+                                                                        currency,
                                                                 )}
                                                             </p>
                                                             <ChevronRight
                                                                 className={`size-4 text-muted-foreground transition-transform dark:text-slate-500 ${
-                                                                    isActive ? 'rotate-90 text-brand' : ''
+                                                                    isActive
+                                                                        ? 'rotate-90 text-brand'
+                                                                        : ''
                                                                 }`}
                                                             />
                                                         </div>
@@ -1512,44 +1721,106 @@ export default function AccountShow({
                                                     >
                                                         <div className="min-h-0">
                                                             {isActive ? (
-                                                                <div className="border-t border-brand/10 px-3 pb-3 dark:border-white/8 sm:px-4 sm:pb-4">
-                                                                    <div className={transactionEditorCardClasses}>
+                                                                <div className="border-t border-brand/10 px-3 pb-3 sm:px-4 sm:pb-4 dark:border-white/8">
+                                                                    <div
+                                                                        className={
+                                                                            transactionEditorCardClasses
+                                                                        }
+                                                                    >
                                                                         <div className="grid gap-2 lg:grid-cols-[30%_30%_24%_16%] lg:items-center lg:gap-0">
                                                                             <div className="min-w-0">
                                                                                 <TransactionCategoryEditor
-                                                                                    activeType={selectedCategoryType}
-                                                                                    pickerView={categoryPickerView}
-                                                                                    onTypeChange={selectCategoryType}
-                                                                                    selectedLabel={selectedCategoryOption ? formatCategoryPathLabel(selectedCategoryOption.path) : 'Choose category'}
-                                                                                    isCategoryPickerOpen={isCategoryPickerOpen}
-                                                                                    onTogglePicker={toggleCategoryPicker}
-                                                                                    categorySearchQuery={categorySearchQuery}
-                                                                                    onSearchChange={setCategorySearchQuery}
-                                                                                    filteredCategorySearchResults={filteredCategorySearchResults}
-                                                                                    selectedCategoryId={selectedCategoryId}
-                                                                                    categoryColorMap={categoryColorMap}
-                                                                                    activeCategoryTree={activeCategoryTree}
-                                                                                    expandedCategoryPaths={expandedCategoryPaths}
-                                                                                    onTogglePath={toggleCategoryPath}
-                                                                                    onSelectCategory={selectCategory}
+                                                                                    activeType={
+                                                                                        selectedCategoryType
+                                                                                    }
+                                                                                    pickerView={
+                                                                                        categoryPickerView
+                                                                                    }
+                                                                                    onTypeChange={
+                                                                                        selectCategoryType
+                                                                                    }
+                                                                                    selectedLabel={
+                                                                                        selectedCategoryOption
+                                                                                            ? formatCategoryPathLabel(
+                                                                                                  selectedCategoryOption.path,
+                                                                                              )
+                                                                                            : 'Choose category'
+                                                                                    }
+                                                                                    isCategoryPickerOpen={
+                                                                                        isCategoryPickerOpen
+                                                                                    }
+                                                                                    onTogglePicker={
+                                                                                        toggleCategoryPicker
+                                                                                    }
+                                                                                    categorySearchQuery={
+                                                                                        categorySearchQuery
+                                                                                    }
+                                                                                    onSearchChange={
+                                                                                        setCategorySearchQuery
+                                                                                    }
+                                                                                    filteredCategorySearchResults={
+                                                                                        filteredCategorySearchResults
+                                                                                    }
+                                                                                    selectedCategoryId={
+                                                                                        selectedCategoryId
+                                                                                    }
+                                                                                    categoryColorMap={
+                                                                                        categoryColorMap
+                                                                                    }
+                                                                                    activeCategoryTree={
+                                                                                        activeCategoryTree
+                                                                                    }
+                                                                                    expandedCategoryPaths={
+                                                                                        expandedCategoryPaths
+                                                                                    }
+                                                                                    onTogglePath={
+                                                                                        toggleCategoryPath
+                                                                                    }
+                                                                                    onSelectCategory={
+                                                                                        selectCategory
+                                                                                    }
                                                                                 />
                                                                             </div>
 
                                                                             <div className="flex min-w-0 items-center lg:px-3">
                                                                                 <Input
-                                                                                    value={editedMerchantName}
-                                                                                    onChange={(event) => setEditedMerchantName(event.target.value)}
+                                                                                    value={
+                                                                                        editedMerchantName
+                                                                                    }
+                                                                                    onChange={(
+                                                                                        event,
+                                                                                    ) =>
+                                                                                        setEditedMerchantName(
+                                                                                            event
+                                                                                                .target
+                                                                                                .value,
+                                                                                        )
+                                                                                    }
                                                                                     placeholder="Merchant"
-                                                                                    className={transactionEditorFieldClasses}
+                                                                                    className={
+                                                                                        transactionEditorFieldClasses
+                                                                                    }
                                                                                 />
                                                                             </div>
 
                                                                             <div className="min-w-0 lg:px-3">
                                                                                 <Input
-                                                                                    value={editedTransactionName}
-                                                                                    onChange={(event) => setEditedTransactionName(event.target.value)}
+                                                                                    value={
+                                                                                        editedTransactionName
+                                                                                    }
+                                                                                    onChange={(
+                                                                                        event,
+                                                                                    ) =>
+                                                                                        setEditedTransactionName(
+                                                                                            event
+                                                                                                .target
+                                                                                                .value,
+                                                                                        )
+                                                                                    }
                                                                                     placeholder="Transaction"
-                                                                                    className={transactionEditorFieldClasses}
+                                                                                    className={
+                                                                                        transactionEditorFieldClasses
+                                                                                    }
                                                                                 />
                                                                             </div>
 
@@ -1557,22 +1828,30 @@ export default function AccountShow({
                                                                                 <Button
                                                                                     type="button"
                                                                                     variant="outline"
-                                                                                    onClick={closeTransactionEditor}
-                                                                                    disabled={isUpdatingCategory}
+                                                                                    onClick={
+                                                                                        closeTransactionEditor
+                                                                                    }
+                                                                                    disabled={
+                                                                                        isUpdatingCategory
+                                                                                    }
                                                                                     className={`w-24 ${transactionEditorButtonClasses}`}
                                                                                 >
                                                                                     Cancel
                                                                                 </Button>
                                                                                 <Button
                                                                                     type="button"
-                                                                                    onClick={updateTransaction}
-                                                                                    className="w-24 bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:opacity-100 disabled:bg-brand/65 disabled:text-white!"
+                                                                                    onClick={
+                                                                                        updateTransaction
+                                                                                    }
+                                                                                    className="w-24 bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:bg-brand/65 disabled:text-white! disabled:opacity-100"
                                                                                     disabled={
-                                                                                        isUpdatingCategory
-                                                                                        || !hasTransactionChanges
+                                                                                        isUpdatingCategory ||
+                                                                                        !hasTransactionChanges
                                                                                     }
                                                                                 >
-                                                                                    {isUpdatingCategory ? 'Saving...' : 'Save'}
+                                                                                    {isUpdatingCategory
+                                                                                        ? 'Saving...'
+                                                                                        : 'Save'}
                                                                                 </Button>
                                                                             </div>
                                                                         </div>
@@ -1595,160 +1874,294 @@ export default function AccountShow({
                                                 <col className="w-[16%]" />
                                             </colgroup>
                                             <thead>
-                                                <tr className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-500">
-                                                    <th className="px-3 pb-2 text-left">Category</th>
-                                                    <th className="px-3 pb-2 text-left">Merchant</th>
-                                                    <th className="px-3 pb-2 text-left">Transaction</th>
-                                                    <th className="px-3 pb-2 text-right">Amount</th>
+                                                <tr className="text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase dark:text-slate-500">
+                                                    <th className="px-3 pb-2 text-left">
+                                                        Category
+                                                    </th>
+                                                    <th className="px-3 pb-2 text-left">
+                                                        Merchant
+                                                    </th>
+                                                    <th className="px-3 pb-2 text-left">
+                                                        Transaction
+                                                    </th>
+                                                    <th className="px-3 pb-2 text-right">
+                                                        Amount
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {dayTransactions.map((transaction) => {
-                                                    const isActive = activeTransactionId === transaction.id;
-                                                    const amountClass =
-                                                        transaction.amount > 0
-                                                            ? 'text-emerald-400'
-                                                            : transaction.amount < 0
-                                                              ? 'text-rose-400'
-                                                              : 'text-slate-400';
-                                                    const categoryPresentation = resolveCategoryColorPresentation(
-                                                        transaction.category_color,
-                                                        categoryColorMap,
-                                                    );
+                                                {dayTransactions.map(
+                                                    (transaction) => {
+                                                        const isActive =
+                                                            activeTransactionId ===
+                                                            transaction.id;
+                                                        const amountClass =
+                                                            transaction.amount >
+                                                            0
+                                                                ? 'text-emerald-400'
+                                                                : transaction.amount <
+                                                                    0
+                                                                  ? 'text-rose-400'
+                                                                  : 'text-slate-400';
+                                                        const categoryPresentation =
+                                                            resolveCategoryColorPresentation(
+                                                                transaction.category_color,
+                                                                categoryColorMap,
+                                                            );
 
-                                                    return (
-                                                        <Fragment key={transaction.id}>
-                                                            <tr
-                                                                onClick={() => openTransactionEditor(transaction)}
-                                                                onKeyDown={(event) => {
-                                                                    if (event.key === 'Enter' || event.key === ' ') {
-                                                                        event.preventDefault();
-                                                                        openTransactionEditor(transaction);
-                                                                    }
-                                                                }}
-                                                                tabIndex={0}
-                                                                role="button"
-                                                                aria-expanded={isActive}
-                                                                className={`cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-brand/40 ${
-                                                                    isActive
-                                                                        ? 'rounded-3xl bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(240,249,245,0.96))] shadow-[0_26px_70px_-42px_rgba(16,185,129,0.22)] dark:bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(11,16,21,0.95))] dark:shadow-[0_26px_70px_-42px_rgba(16,185,129,0.55)]'
-                                                                        : 'bg-white/42 hover:bg-white/82 dark:bg-white/2 dark:hover:bg-white/3'
-                                                                }`}
+                                                        return (
+                                                            <Fragment
+                                                                key={
+                                                                    transaction.id
+                                                                }
                                                             >
-                                                                <td className={`rounded-l-3xl border-y border-l px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}>
-                                                                    <div className="flex min-w-0 items-center gap-3">
-                                                                        <CategoryIcon
-                                                                            name={transaction.category_icon}
-                                                                            variant="badge"
-                                                                            presentation={categoryPresentation}
-                                                                            className="size-10 rounded-2xl"
-                                                                            iconSize={16}
-                                                                        />
-                                                                        <p className="truncate text-sm font-medium text-foreground dark:text-slate-100">
-                                                                            {getCategoryLeafLabel(transaction.category)}
+                                                                <tr
+                                                                    onClick={() =>
+                                                                        openTransactionEditor(
+                                                                            transaction,
+                                                                        )
+                                                                    }
+                                                                    onKeyDown={(
+                                                                        event,
+                                                                    ) => {
+                                                                        if (
+                                                                            event.key ===
+                                                                                'Enter' ||
+                                                                            event.key ===
+                                                                                ' '
+                                                                        ) {
+                                                                            event.preventDefault();
+                                                                            openTransactionEditor(
+                                                                                transaction,
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                    tabIndex={0}
+                                                                    role="button"
+                                                                    aria-expanded={
+                                                                        isActive
+                                                                    }
+                                                                    className={`cursor-pointer transition outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
+                                                                        isActive
+                                                                            ? 'rounded-3xl bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(240,249,245,0.96))] shadow-[0_26px_70px_-42px_rgba(16,185,129,0.22)] dark:bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(11,16,21,0.95))] dark:shadow-[0_26px_70px_-42px_rgba(16,185,129,0.55)]'
+                                                                            : 'bg-white/42 hover:bg-white/82 dark:bg-white/2 dark:hover:bg-white/3'
+                                                                    }`}
+                                                                >
+                                                                    <td
+                                                                        className={`rounded-l-3xl border-y border-l px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}
+                                                                    >
+                                                                        <div className="flex min-w-0 items-center gap-3">
+                                                                            <CategoryIcon
+                                                                                name={
+                                                                                    transaction.category_icon
+                                                                                }
+                                                                                variant="badge"
+                                                                                presentation={
+                                                                                    categoryPresentation
+                                                                                }
+                                                                                className="size-10 rounded-2xl"
+                                                                                iconSize={
+                                                                                    16
+                                                                                }
+                                                                            />
+                                                                            <p className="truncate text-sm font-medium text-foreground dark:text-slate-100">
+                                                                                {getCategoryLeafLabel(
+                                                                                    transaction.category,
+                                                                                )}
+                                                                            </p>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td
+                                                                        className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}
+                                                                    >
+                                                                        <p className="truncate text-sm font-medium text-foreground dark:text-slate-200">
+                                                                            {transaction.merchant_name ??
+                                                                                'No merchant details'}
                                                                         </p>
-                                                                    </div>
-                                                                </td>
-                                                                <td className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}>
-                                                                    <p className="truncate text-sm font-medium text-foreground dark:text-slate-200">
-                                                                        {transaction.merchant_name ?? 'No merchant details'}
-                                                                    </p>
-                                                                </td>
-                                                                <td className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}>
-                                                                    <p className="truncate text-sm font-medium text-muted-foreground dark:text-slate-500">
-                                                                        {transaction.counterparty ?? transaction.name ?? '---'}
-                                                                    </p>
-                                                                </td>
-                                                                <td className={`rounded-r-3xl border-y border-r px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}>
-                                                                    <div className="flex items-center justify-end gap-3 text-right">
-                                                                        <p className={`text-sm font-semibold ${amountClass}`}>
-                                                                            {formatCurrency(
-                                                                                transaction.amount,
-                                                                                transaction.currency ?? currency,
-                                                                            )}
+                                                                    </td>
+                                                                    <td
+                                                                        className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}
+                                                                    >
+                                                                        <p className="truncate text-sm font-medium text-muted-foreground dark:text-slate-500">
+                                                                            {transaction.counterparty ??
+                                                                                transaction.name ??
+                                                                                '---'}
                                                                         </p>
-                                                                        <ChevronRight
-                                                                            className={`size-4 text-muted-foreground transition-transform dark:text-slate-500 ${
-                                                                                isActive ? 'rotate-90 text-brand' : ''
-                                                                            }`}
-                                                                        />
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-
-                                                            {isActive ? (
-                                                                <tr>
-                                                                    <td colSpan={4} className="px-0 pt-0 pb-2">
-                                                                        <div className={transactionEditorCardClasses.replace('mt-3', 'mt-2')}>
-                                                                                <div className="grid gap-2 lg:grid-cols-[30%_30%_24%_16%] lg:items-center lg:gap-0">
-                                                                                    <div className="min-w-0">
-                                                                                    <TransactionCategoryEditor
-                                                                                        activeType={selectedCategoryType}
-                                                                                        pickerView={categoryPickerView}
-                                                                                        onTypeChange={selectCategoryType}
-                                                                                        selectedLabel={selectedCategoryOption ? formatCategoryPathLabel(selectedCategoryOption.path) : 'Choose category'}
-                                                                                        isCategoryPickerOpen={isCategoryPickerOpen}
-                                                                                        onTogglePicker={toggleCategoryPicker}
-                                                                                        categorySearchQuery={categorySearchQuery}
-                                                                                        onSearchChange={setCategorySearchQuery}
-                                                                                        filteredCategorySearchResults={filteredCategorySearchResults}
-                                                                                        selectedCategoryId={selectedCategoryId}
-                                                                                        categoryColorMap={categoryColorMap}
-                                                                                        activeCategoryTree={activeCategoryTree}
-                                                                                        expandedCategoryPaths={expandedCategoryPaths}
-                                                                                        onTogglePath={toggleCategoryPath}
-                                                                                        onSelectCategory={selectCategory}
-                                                                                    />
-                                                                                </div>
-
-                                                                                <div className="flex min-w-0 items-center lg:px-3">
-                                                                                    <Input
-                                                                                        value={editedMerchantName}
-                                                                                        onChange={(event) => setEditedMerchantName(event.target.value)}
-                                                                                        placeholder="Merchant"
-                                                                                        className={transactionEditorFieldClasses}
-                                                                                    />
-                                                                                </div>
-
-                                                                                <div className="min-w-0 lg:px-3">
-                                                                                    <Input
-                                                                                        value={editedTransactionName}
-                                                                                        onChange={(event) => setEditedTransactionName(event.target.value)}
-                                                                                        placeholder="Transaction"
-                                                                                        className={transactionEditorFieldClasses}
-                                                                                    />
-                                                                                </div>
-
-                                                                                <div className="flex w-full justify-end gap-2 lg:flex-nowrap lg:px-3">
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="outline"
-                                                                                        onClick={closeTransactionEditor}
-                                                                                        disabled={isUpdatingCategory}
-                                                                                        className={`w-24 ${transactionEditorButtonClasses}`}
-                                                                                    >
-                                                                                        Cancel
-                                                                                    </Button>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        onClick={updateTransaction}
-                                                                                        className="w-24 bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:opacity-100 disabled:bg-brand/65 disabled:text-white!"
-                                                                                        disabled={
-                                                                                            isUpdatingCategory
-                                                                                            || !hasTransactionChanges
-                                                                                        }
-                                                                                    >
-                                                                                        {isUpdatingCategory ? 'Saving...' : 'Save'}
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </div>
+                                                                    </td>
+                                                                    <td
+                                                                        className={`rounded-r-3xl border-y border-r px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}
+                                                                    >
+                                                                        <div className="flex items-center justify-end gap-3 text-right">
+                                                                            <p
+                                                                                className={`text-sm font-semibold ${amountClass}`}
+                                                                            >
+                                                                                {formatCurrency(
+                                                                                    transaction.amount,
+                                                                                    transaction.currency ??
+                                                                                        currency,
+                                                                                )}
+                                                                            </p>
+                                                                            <ChevronRight
+                                                                                className={`size-4 text-muted-foreground transition-transform dark:text-slate-500 ${
+                                                                                    isActive
+                                                                                        ? 'rotate-90 text-brand'
+                                                                                        : ''
+                                                                                }`}
+                                                                            />
                                                                         </div>
                                                                     </td>
                                                                 </tr>
-                                                            ) : null}
-                                                        </Fragment>
-                                                    );
-                                                })}
+
+                                                                {isActive ? (
+                                                                    <tr>
+                                                                        <td
+                                                                            colSpan={
+                                                                                4
+                                                                            }
+                                                                            className="px-0 pt-0 pb-2"
+                                                                        >
+                                                                            <div
+                                                                                className={transactionEditorCardClasses.replace(
+                                                                                    'mt-3',
+                                                                                    'mt-2',
+                                                                                )}
+                                                                            >
+                                                                                <div className="grid gap-2 lg:grid-cols-[30%_30%_24%_16%] lg:items-center lg:gap-0">
+                                                                                    <div className="min-w-0">
+                                                                                        <TransactionCategoryEditor
+                                                                                            activeType={
+                                                                                                selectedCategoryType
+                                                                                            }
+                                                                                            pickerView={
+                                                                                                categoryPickerView
+                                                                                            }
+                                                                                            onTypeChange={
+                                                                                                selectCategoryType
+                                                                                            }
+                                                                                            selectedLabel={
+                                                                                                selectedCategoryOption
+                                                                                                    ? formatCategoryPathLabel(
+                                                                                                          selectedCategoryOption.path,
+                                                                                                      )
+                                                                                                    : 'Choose category'
+                                                                                            }
+                                                                                            isCategoryPickerOpen={
+                                                                                                isCategoryPickerOpen
+                                                                                            }
+                                                                                            onTogglePicker={
+                                                                                                toggleCategoryPicker
+                                                                                            }
+                                                                                            categorySearchQuery={
+                                                                                                categorySearchQuery
+                                                                                            }
+                                                                                            onSearchChange={
+                                                                                                setCategorySearchQuery
+                                                                                            }
+                                                                                            filteredCategorySearchResults={
+                                                                                                filteredCategorySearchResults
+                                                                                            }
+                                                                                            selectedCategoryId={
+                                                                                                selectedCategoryId
+                                                                                            }
+                                                                                            categoryColorMap={
+                                                                                                categoryColorMap
+                                                                                            }
+                                                                                            activeCategoryTree={
+                                                                                                activeCategoryTree
+                                                                                            }
+                                                                                            expandedCategoryPaths={
+                                                                                                expandedCategoryPaths
+                                                                                            }
+                                                                                            onTogglePath={
+                                                                                                toggleCategoryPath
+                                                                                            }
+                                                                                            onSelectCategory={
+                                                                                                selectCategory
+                                                                                            }
+                                                                                        />
+                                                                                    </div>
+
+                                                                                    <div className="flex min-w-0 items-center lg:px-3">
+                                                                                        <Input
+                                                                                            value={
+                                                                                                editedMerchantName
+                                                                                            }
+                                                                                            onChange={(
+                                                                                                event,
+                                                                                            ) =>
+                                                                                                setEditedMerchantName(
+                                                                                                    event
+                                                                                                        .target
+                                                                                                        .value,
+                                                                                                )
+                                                                                            }
+                                                                                            placeholder="Merchant"
+                                                                                            className={
+                                                                                                transactionEditorFieldClasses
+                                                                                            }
+                                                                                        />
+                                                                                    </div>
+
+                                                                                    <div className="min-w-0 lg:px-3">
+                                                                                        <Input
+                                                                                            value={
+                                                                                                editedTransactionName
+                                                                                            }
+                                                                                            onChange={(
+                                                                                                event,
+                                                                                            ) =>
+                                                                                                setEditedTransactionName(
+                                                                                                    event
+                                                                                                        .target
+                                                                                                        .value,
+                                                                                                )
+                                                                                            }
+                                                                                            placeholder="Transaction"
+                                                                                            className={
+                                                                                                transactionEditorFieldClasses
+                                                                                            }
+                                                                                        />
+                                                                                    </div>
+
+                                                                                    <div className="flex w-full justify-end gap-2 lg:flex-nowrap lg:px-3">
+                                                                                        <Button
+                                                                                            type="button"
+                                                                                            variant="outline"
+                                                                                            onClick={
+                                                                                                closeTransactionEditor
+                                                                                            }
+                                                                                            disabled={
+                                                                                                isUpdatingCategory
+                                                                                            }
+                                                                                            className={`w-24 ${transactionEditorButtonClasses}`}
+                                                                                        >
+                                                                                            Cancel
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            type="button"
+                                                                                            onClick={
+                                                                                                updateTransaction
+                                                                                            }
+                                                                                            className="w-24 bg-brand text-white! shadow-sm hover:bg-brand/90 disabled:bg-brand/65 disabled:text-white! disabled:opacity-100"
+                                                                                            disabled={
+                                                                                                isUpdatingCategory ||
+                                                                                                !hasTransactionChanges
+                                                                                            }
+                                                                                        >
+                                                                                            {isUpdatingCategory
+                                                                                                ? 'Saving...'
+                                                                                                : 'Save'}
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                ) : null}
+                                                            </Fragment>
+                                                        );
+                                                    },
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>

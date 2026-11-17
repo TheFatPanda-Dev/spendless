@@ -47,12 +47,7 @@ class ResolveBankTransactionCategoryTest extends TestCase
         $transaction = new BankTransaction([
             'merchant_name' => 'Shell Petrol Station',
             'name' => 'Fuel purchase',
-            'amount' => 55.90,
-            'category' => ['Transportation', 'Fuel'],
-            'personal_finance_category' => [
-                'primary' => 'TRANSPORTATION',
-                'detailed' => 'TRANSPORTATION_GAS',
-            ],
+            'amount' => -55.90,
         ]);
 
         $resolvedCategory = app(ResolveBankTransactionCategory::class)($transaction, $user);
@@ -77,9 +72,7 @@ class ResolveBankTransactionCategoryTest extends TestCase
         $transaction = new BankTransaction([
             'merchant_name' => 'Unknown Merchant',
             'name' => 'Card payment',
-            'amount' => 12.30,
-            'category' => [],
-            'personal_finance_category' => [],
+            'amount' => -12.30,
         ]);
 
         $resolvedCategory = app(ResolveBankTransactionCategory::class)($transaction, $user);

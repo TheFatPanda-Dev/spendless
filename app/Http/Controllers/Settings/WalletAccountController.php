@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateBankAccountDisplayNameRequest;
 use App\Http\Requests\Settings\UpdateBaseCurrencyPreferenceRequest;
@@ -9,6 +10,7 @@ use App\Http\Requests\Settings\UpdateNumberLocalePreferenceRequest;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
 use App\Services\Banking\BankActivityLogger;
+use App\Services\EnableBanking\EnableBankingClient;
 use App\Support\Currency\BaseCurrencyOptions;
 use App\Support\Localization\NumberLocaleOptions;
 use Illuminate\Http\RedirectResponse;
@@ -24,8 +26,7 @@ class WalletAccountController extends Controller
         $user = $request->user();
 
         $accounts = BankAccount::query()
-            ->whereHas('connection', fn ($query) => $query
-                ->where('user_id', $user->id))
+            ->whereIn('bank_connection_id', $user->bankConnections()->where('status', '!=', BankConnection::STATUS_PENDING)->select('id'))
             ->with(['connection', 'connection.wallet'])
             ->orderByRaw("COALESCE(display_name, name, official_name, '') asc")
             ->get()
@@ -35,9 +36,12 @@ class WalletAccountController extends Controller
                 'name' => $account->name,
                 'official_name' => $account->official_name,
                 'institution_name' => $account->connection?->institution_name,
+                'institution_logo' => $account->connection?->institution_logo,
                 'wallet_name' => $account->connection?->wallet?->name,
-                'mask' => $account->mask_encrypted ? str_pad(substr((string) $account->mask_encrypted, -4), 4, '*', STR_PAD_LEFT) : null,
-                'currency' => $account->currency_code ?: $account->currency,
+                'mask' => $account->maskForDisplay(),
+                'currency' => $account->currency,
+                'is_active' => $account->is_active,
+                'connection' => $account->connection?->toStatusArray(),
             ])
             ->values();
 
@@ -107,6 +111,7 @@ class WalletAccountController extends Controller
         Request $request,
         BankAccount $bankAccount,
         BankActivityLogger $activityLogger,
+        EnableBankingClient $enableBankingClient,
     ): RedirectResponse {
         abort_unless(
             $bankAccount->connection !== null
@@ -116,6 +121,12 @@ class WalletAccountController extends Controller
 
         $accountName = $bankAccount->display_name ?: $bankAccount->name;
         $connectionId = $bankAccount->bank_connection_id;
+        $connection = $bankAccount->connection;
+
+        if ($connection->accounts()->count() === 1) {
+            // Last account of a bank connection: also end the consent at the bank.
+            EnableBankingConnectionController::closeBankSession($enableBankingClient, $connection);
+        }
 
         DB::transaction(function () use ($bankAccount): void {
             $connection = $bankAccount->connection;

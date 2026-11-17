@@ -59,15 +59,9 @@ class UpdateBaseCurrencyPreferenceRequest extends FormRequest
         }
 
         $accountCurrencies = BankAccount::query()
-            ->whereHas('connection', fn ($query) => $query
-                ->where('user_id', $user->id))
-            ->pluck('currency_code')
-            ->merge(
-                BankAccount::query()
-                    ->whereHas('connection', fn ($query) => $query
-                        ->where('user_id', $user->id))
-                    ->pluck('currency'),
-            )
+            ->whereIn('bank_connection_id', $user->bankConnections()->select('id'))
+            ->distinct()
+            ->pluck('currency')
             ->filter()
             ->map(fn (mixed $currency): string => strtoupper((string) $currency))
             ->unique()

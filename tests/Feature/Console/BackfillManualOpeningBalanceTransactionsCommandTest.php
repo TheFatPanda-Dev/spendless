@@ -53,7 +53,6 @@ class BackfillManualOpeningBalanceTransactionsCommandTest extends TestCase
             'type' => 'cash',
             'subtype' => 'manual',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => [
                 'current' => $balance,
                 'available' => $balance,
@@ -90,7 +89,7 @@ class BackfillManualOpeningBalanceTransactionsCommandTest extends TestCase
         $eligible = $this->createAccount($user, 250.75, 'cash', 'manual');
         $zeroBalance = $this->createAccount($user, 0.0, 'cash', 'manual');
         $alreadyHasTransaction = $this->createAccount($user, 88.10, 'cash', 'manual');
-        $plaid = $this->createAccount($user, 40.0, 'cash', 'plaid');
+        $bank = $this->createAccount($user, 40.0, 'cash', 'enable_banking');
         $stockWallet = $this->createAccount($user, 60.0, 'stock', 'manual');
 
         BankTransaction::query()->create([
@@ -100,8 +99,6 @@ class BackfillManualOpeningBalanceTransactionsCommandTest extends TestCase
             'name' => 'Existing transaction',
             'amount' => -5.00,
             'currency' => 'EUR',
-            'iso_currency_code' => 'EUR',
-            'booked_at' => now()->toDateString(),
             'date' => now()->toDateString(),
             'pending' => false,
             'description' => null,
@@ -124,8 +121,8 @@ class BackfillManualOpeningBalanceTransactionsCommandTest extends TestCase
             'external_uid' => 'manual-opening-balance-backfill-'.$zeroBalance['account']->id,
         ]);
         $this->assertDatabaseMissing('bank_transactions', [
-            'bank_account_id' => $plaid['account']->id,
-            'external_uid' => 'manual-opening-balance-backfill-'.$plaid['account']->id,
+            'bank_account_id' => $bank['account']->id,
+            'external_uid' => 'manual-opening-balance-backfill-'.$bank['account']->id,
         ]);
         $this->assertDatabaseMissing('bank_transactions', [
             'bank_account_id' => $stockWallet['account']->id,

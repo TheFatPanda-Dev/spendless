@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BankSyncRun extends Model
 {
-    use HasFactory;
+    use HasFactory, Prunable;
 
     protected $fillable = [
         'bank_connection_id',
@@ -35,5 +37,13 @@ class BankSyncRun extends Model
     public function bankConnection(): BelongsTo
     {
         return $this->belongsTo(BankConnection::class);
+    }
+
+    /**
+     * Keep a month of sync history for the wallet and admin pages.
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', now()->subDays(30));
     }
 }

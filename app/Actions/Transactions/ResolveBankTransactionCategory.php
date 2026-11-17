@@ -21,27 +21,27 @@ class ResolveBankTransactionCategory
     private const KEYWORD_RULES = [
         'expense' => [
             [
-                'keywords' => ['fuel', 'gas station', 'gasoline', 'petrol', 'diesel', 'shell', 'esso', 'chevron', 'bp'],
+                'keywords' => ['fuel', 'gas station', 'gasoline', 'petrol', 'diesel', 'shell', 'esso', 'chevron', 'bp', 'omv', 'mol', 'texaco', 'bencin', 'gorivo'],
                 'preferred' => ['Fuel', 'Car', 'Cars', 'Vehicle', 'Vehicles', 'Transportation'],
             ],
             [
-                'keywords' => ['grocery', 'groceries', 'supermarket', 'market', 'aldi', 'lidl', 'tesco', 'spar'],
+                'keywords' => ['grocery', 'groceries', 'supermarket', 'market', 'aldi', 'lidl', 'tesco', 'spar', 'mercator', 'hofer', 'tus', 'eurospin', 'jager', 'sainsbury', 'sainsburys', 'asda', 'morrisons', 'waitrose', 'co op', 'ocado'],
                 'preferred' => ['Groceries'],
             ],
             [
-                'keywords' => ['restaurant', 'cafe', 'coffee', 'bar', 'pub', 'food', 'takeaway', 'delivery'],
+                'keywords' => ['restaurant', 'cafe', 'coffee', 'bar', 'pub', 'food', 'takeaway', 'delivery', 'mcdonalds', 'wolt', 'glovo', 'deliveroo', 'just eat', 'restavracija', 'gostilna', 'kavarna', 'pizzeria'],
                 'preferred' => ['Food & Drink'],
             ],
             [
-                'keywords' => ['uber', 'lyft', 'taxi', 'bus', 'train', 'tram', 'metro', 'toll', 'parking', 'transport'],
+                'keywords' => ['uber', 'lyft', 'bolt', 'taxi', 'bus', 'train', 'tram', 'metro', 'toll', 'parking', 'transport', 'tfl', 'trainline', 'national rail', 'dars', 'vinjeta', 'parkirnina', 'arriva', 'lpp'],
                 'preferred' => ['Transportation', 'Car', 'Cars', 'Vehicle', 'Vehicles', 'Travel & Vacation'],
             ],
             [
-                'keywords' => ['rent', 'mortgage', 'landlord', 'apartment', 'lease'],
+                'keywords' => ['rent', 'mortgage', 'landlord', 'apartment', 'lease', 'najemnina', 'council tax', 'elektro', 'energetika', 'british gas', 'octopus energy'],
                 'preferred' => ['Housing'],
             ],
             [
-                'keywords' => ['pharmacy', 'doctor', 'hospital', 'dentist', 'wellness', 'medical'],
+                'keywords' => ['pharmacy', 'doctor', 'hospital', 'dentist', 'wellness', 'medical', 'lekarna', 'boots', 'zzzs'],
                 'preferred' => ['Health & Wellness'],
             ],
             [
@@ -55,7 +55,7 @@ class ResolveBankTransactionCategory
         ],
         'income' => [
             [
-                'keywords' => ['salary', 'payroll', 'wage', 'paycheck'],
+                'keywords' => ['salary', 'payroll', 'wage', 'paycheck', 'placa', 'plača', 'regres'],
                 'preferred' => ['Wages & Salary'],
             ],
             [
@@ -63,7 +63,7 @@ class ResolveBankTransactionCategory
                 'preferred' => ['Refunds & Reimbursements', 'Tax Refunds'],
             ],
             [
-                'keywords' => ['interest'],
+                'keywords' => ['interest', 'obresti'],
                 'preferred' => ['Interest Income'],
             ],
             [
@@ -81,6 +81,11 @@ class ResolveBankTransactionCategory
      * @var array<string, Collection<int, Category>>
      */
     private array $categoriesByUserAndType = [];
+
+    /**
+     * @var array<int, int>
+     */
+    private array $depthByCategoryId = [];
 
     public function __invoke(BankTransaction $transaction, User $user): ?Category
     {
@@ -116,20 +121,12 @@ class ResolveBankTransactionCategory
         );
     }
 
+    /**
+     * Amounts are signed: money in is positive, money out is negative.
+     */
     public static function resolveTransactionType(BankTransaction $transaction): string
     {
-        if (Str::startsWith((string) $transaction->external_uid, 'manual-opening-balance-')) {
-            return (float) $transaction->amount < 0 ? 'expense' : 'income';
-        }
-
-        $primary = Str::lower((string) data_get($transaction->personal_finance_category, 'primary', ''));
-        $detailed = Str::lower((string) data_get($transaction->personal_finance_category, 'detailed', ''));
-
-        if (Str::contains($primary, 'income') || Str::contains($detailed, 'income')) {
-            return 'income';
-        }
-
-        return (float) $transaction->amount < 0 ? 'income' : 'expense';
+        return (float) $transaction->amount < 0 ? 'expense' : 'income';
     }
 
     private function categoriesFor(User $user, string $type): Collection
@@ -154,30 +151,10 @@ class ResolveBankTransactionCategory
             $transaction->payee,
             $transaction->name,
             $transaction->description,
-            ...$this->flattenTextValues($transaction->category),
-            ...$this->flattenTextValues($transaction->personal_finance_category),
         ])
             ->filter(fn ($value): bool => is_string($value) && trim($value) !== '')
             ->map(fn (string $value): string => $this->normalizeText($value))
             ->implode(' ');
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function flattenTextValues(mixed $value): array
-    {
-        if (is_string($value)) {
-            return [$value];
-        }
-
-        if (! is_array($value)) {
-            return [];
-        }
-
-        return collect($value)
-            ->flatMap(fn (mixed $item): array => $this->flattenTextValues($item))
-            ->all();
     }
 
     /**
@@ -258,6 +235,10 @@ class ResolveBankTransactionCategory
      */
     private function categoryDepth(Category $category, Collection $categories): int
     {
+        if (array_key_exists($category->id, $this->depthByCategoryId)) {
+            return $this->depthByCategoryId[$category->id];
+        }
+
         $depth = 0;
         $categoriesById = $categories->keyBy('id');
         $currentParentId = $category->parent_id;
@@ -270,7 +251,7 @@ class ResolveBankTransactionCategory
                 : null;
         }
 
-        return $depth;
+        return $this->depthByCategoryId[$category->id] = $depth;
     }
 
     private function normalizeText(string $value): string

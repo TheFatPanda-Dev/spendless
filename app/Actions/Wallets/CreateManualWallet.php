@@ -29,12 +29,12 @@ class CreateManualWallet
             $connection = BankConnection::query()->create([
                 'wallet_id' => $wallet->id,
                 'user_id' => $user->id,
-                'provider' => 'manual',
+                'provider' => BankConnection::PROVIDER_MANUAL,
                 'institution_name' => 'Manual wallet',
                 'aspsp_name' => 'Manual wallet',
                 'aspsp_country' => 'ZZ',
                 'state' => (string) Str::uuid(),
-                'status' => 'connected',
+                'status' => BankConnection::STATUS_CONNECTED,
                 'authorized_at' => now(),
                 'last_synced_at' => now(),
             ]);
@@ -49,7 +49,6 @@ class CreateManualWallet
                 'type' => 'cash',
                 'subtype' => 'manual',
                 'currency' => $attributes['currency'],
-                'currency_code' => $attributes['currency'],
                 'balances_encrypted' => [
                     'current' => $startingBalance,
                     'available' => $startingBalance,
@@ -68,8 +67,6 @@ class CreateManualWallet
                     'name' => 'Opening balance',
                     'amount' => $startingBalance,
                     'currency' => $attributes['currency'],
-                    'iso_currency_code' => $attributes['currency'],
-                    'booked_at' => $openedOn,
                     'date' => $openedOn,
                     'pending' => false,
                     'description' => 'Opening balance',

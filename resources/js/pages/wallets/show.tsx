@@ -1,14 +1,20 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import Link2 from 'lucide-react/dist/esm/icons/link-2.js';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
+import Unplug from 'lucide-react/dist/esm/icons/unplug.js';
 import WalletIcon from 'lucide-react/dist/esm/icons/wallet.js';
+import { useState } from 'react';
+import BankAlertsBanner from '@/components/bank-alerts-banner';
+import BankLogo from '@/components/bank-logo';
 import Heading from '@/components/heading';
-import PlaidLinkButton from '@/components/plaid-link-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-refresh';
+import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
+import { openBankPopup } from '@/lib/bank-popup';
+import { bankStatusLabel, bankStatusVariant } from '@/lib/bank-status';
 import { formatDisplayDate, formatLocalizedDateTime } from '@/lib/date-filters';
-import type { BreadcrumbItem } from '@/types';
+import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type SyncRun = {
     id: number;
@@ -40,6 +46,7 @@ type Account = {
     type: string | null;
     subtype: string | null;
     currency: string | null;
+    is_active: boolean;
     balances: {
         available?: number | null;
         current?: number | null;
@@ -47,13 +54,7 @@ type Account = {
     last_synced_at: string | null;
 };
 
-type Connection = {
-    id: number;
-    status: string;
-    institution_name: string | null;
-    last_synced_at: string | null;
-    last_webhook_at: string | null;
-    error_message: string | null;
+type Connection = BankConnectionStatus & {
     accounts: Account[];
     transactions: Transaction[];
     sync_runs: SyncRun[];
@@ -72,26 +73,18 @@ function formatDate(value: string | null, locale: string): string {
     return formatLocalizedDateTime(value, locale);
 }
 
-function statusVariant(
+function runStatusVariant(
     status: string,
 ): 'default' | 'secondary' | 'destructive' | 'outline' {
-    if (status === 'connected') {
+    if (status === 'succeeded') {
         return 'default';
     }
 
-    if (status === 'syncing') {
-        return 'secondary';
-    }
-
-    if (
-        status === 'needs_reauth' ||
-        status === 'error' ||
-        status === 'sync_failed'
-    ) {
+    if (status === 'failed') {
         return 'destructive';
     }
 
-    return 'outline';
+    return 'secondary';
 }
 
 export default function WalletShow({ wallet }: { wallet: Wallet }) {
@@ -100,9 +93,34 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
         typeof page.props.number_locale === 'string'
             ? page.props.number_locale
             : 'en-GB';
-    const query = page.url.includes('?') ? page.url.split('?')[1] : '';
-    const params = new URLSearchParams(query);
-    const autoConnect = params.get('auto_connect') === '1';
+    const isCashWallet = wallet.type === 'cash';
+    const [popupBlocked, setPopupBlocked] = useState(false);
+
+    useBankAccountLinkedRefresh({ only: ['wallet', 'bankAlerts'] });
+
+    const {
+        isSyncing,
+        successMessage,
+        errorMessage,
+        startSyncAll,
+        startSyncConnection,
+        clearSuccessMessage,
+        clearErrorMessage,
+    } = useSyncAllConnections({ only: ['wallet', 'bankAlerts'] });
+
+    const disconnect = (connection: Connection): void => {
+        const name = connection.institution_name ?? 'this bank';
+
+        if (
+            !window.confirm(
+                `Disconnect ${name}? Its accounts and all their transactions will be deleted from SpendLess, and access at the bank is ended.`,
+            )
+        ) {
+            return;
+        }
+
+        router.delete(`/banking/connections/${connection.id}`);
+    };
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -125,7 +143,11 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                         <div>
                             <Heading
                                 title={wallet.name}
-                                description="Manage linked banks, accounts, and transactions for this wallet."
+                                description={
+                                    isCashWallet
+                                        ? 'A cash wallet you keep up to date yourself.'
+                                        : 'Linked bank, its accounts and recent transactions.'
+                                }
                             />
                             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                                 <WalletIcon className="size-4 text-brand" />
@@ -147,28 +169,55 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        {!isCashWallet && wallet.connections.length > 1 ? (
                             <Button
                                 variant="outline"
-                                onClick={() =>
-                                    router.post(
-                                        '/wallets/refresh-all',
-                                        {},
-                                        { preserveScroll: true },
-                                    )
-                                }
+                                onClick={() => void startSyncAll()}
+                                disabled={isSyncing}
                             >
-                                <RefreshCw className="size-4" />
-                                Refresh All Data
+                                <RefreshCw
+                                    className={`size-4 ${isSyncing ? 'animate-spin' : ''}`}
+                                />
+                                Sync All
                             </Button>
-
-                            <PlaidLinkButton
-                                walletId={wallet.id}
-                                autoStart={autoConnect}
-                            />
-                        </div>
+                        ) : null}
                     </div>
                 </div>
+
+                <BankAlertsBanner />
+
+                {errorMessage || popupBlocked ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        <span>
+                            {popupBlocked
+                                ? 'Popup was blocked. Please allow popups for this site and try again.'
+                                : errorMessage}
+                        </span>
+                        <button
+                            type="button"
+                            className="text-xs font-semibold"
+                            onClick={() => {
+                                setPopupBlocked(false);
+                                clearErrorMessage();
+                            }}
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                ) : null}
+
+                {successMessage ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-300/60 bg-emerald-100/60 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <span>{successMessage}</span>
+                        <button
+                            type="button"
+                            className="text-xs font-semibold"
+                            onClick={clearSuccessMessage}
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                ) : null}
 
                 <div className="space-y-4">
                     {wallet.connections.map((connection) => (
@@ -178,38 +227,67 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                         >
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="space-y-1">
-                                    <p className="text-base font-semibold">
-                                        <Link2 className="mr-1 inline size-4 text-brand" />
+                                    <p className="flex items-center gap-2 text-base font-semibold">
+                                        <BankLogo
+                                            src={connection.institution_logo}
+                                            name={
+                                                connection.institution_name ??
+                                                'Bank'
+                                            }
+                                            className="size-7"
+                                        />
                                         {connection.institution_name ??
                                             'Linked Institution'}
                                     </p>
-                                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                        <Badge
-                                            variant={statusVariant(
-                                                connection.status,
-                                            )}
-                                        >
-                                            {connection.status}
-                                        </Badge>
-                                        {wallet.type !== 'cash' ? (
-                                            <>
+                                    {!isCashWallet ? (
+                                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                            <Badge
+                                                variant={bankStatusVariant(
+                                                    connection.status,
+                                                )}
+                                            >
+                                                {bankStatusLabel(
+                                                    connection.status,
+                                                )}
+                                            </Badge>
+                                            <span>
+                                                Last synced:{' '}
+                                                {formatDate(
+                                                    connection.last_synced_at,
+                                                    numberLocale,
+                                                )}
+                                            </span>
+                                            {connection.next_sync_at &&
+                                            connection.status !==
+                                                'needs_reauth' ? (
                                                 <span>
-                                                    Last synced:{' '}
+                                                    Next:{' '}
                                                     {formatDate(
-                                                        connection.last_synced_at,
+                                                        connection.next_sync_at,
                                                         numberLocale,
                                                     )}
                                                 </span>
-                                                <span>
-                                                    Webhook:{' '}
-                                                    {formatDate(
-                                                        connection.last_webhook_at,
+                                            ) : null}
+                                            {connection.consent_valid_until ? (
+                                                <span
+                                                    className={
+                                                        connection.consent_expires_soon
+                                                            ? 'font-medium text-amber-700 dark:text-amber-300'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    Access until{' '}
+                                                    {formatDisplayDate(
+                                                        connection.consent_valid_until.slice(
+                                                            0,
+                                                            10,
+                                                        ),
                                                         numberLocale,
                                                     )}
                                                 </span>
-                                            </>
-                                        ) : null}
-                                    </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                     {connection.error_message ? (
                                         <p className="text-sm text-destructive">
                                             {connection.error_message}
@@ -217,19 +295,55 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                     ) : null}
                                 </div>
 
-                                <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                        router.post(
-                                            `/bank-connections/${connection.id}/refresh`,
-                                            {},
-                                            { preserveScroll: true },
-                                        )
-                                    }
-                                >
-                                    <RefreshCw className="size-4" />
-                                    Refresh Data
-                                </Button>
+                                {!isCashWallet ? (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {connection.status === 'needs_reauth' ||
+                                        connection.consent_expires_soon ? (
+                                            <Button
+                                                onClick={() =>
+                                                    setPopupBlocked(
+                                                        !openBankPopup(
+                                                            connection.id,
+                                                        ),
+                                                    )
+                                                }
+                                            >
+                                                Reconnect
+                                            </Button>
+                                        ) : null}
+                                        {connection.status !==
+                                        'needs_reauth' ? (
+                                            <Button
+                                                variant="outline"
+                                                disabled={
+                                                    isSyncing ||
+                                                    connection.status ===
+                                                        'syncing'
+                                                }
+                                                onClick={() =>
+                                                    void startSyncConnection(
+                                                        connection.id,
+                                                    )
+                                                }
+                                            >
+                                                <RefreshCw
+                                                    className={`size-4 ${isSyncing || connection.status === 'syncing' ? 'animate-spin' : ''}`}
+                                                />
+                                                Sync now
+                                            </Button>
+                                        ) : null}
+                                        <Button
+                                            variant="outline"
+                                            className="text-destructive hover:text-destructive"
+                                            onClick={() =>
+                                                disconnect(connection)
+                                            }
+                                        >
+                                            <Unplug className="size-4" />
+                                            Disconnect
+                                        </Button>
+                                    </div>
+                                ) : null}
                             </div>
 
                             <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
@@ -255,6 +369,15 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                     {account.name ??
                                                                         'Account'}
                                                                 </p>
+                                                                {!account.is_active ? (
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        No
+                                                                        longer
+                                                                        shared
+                                                                        by the
+                                                                        bank
+                                                                    </p>
+                                                                ) : null}
                                                                 <p className="text-xs text-muted-foreground">
                                                                     {account.official_name ??
                                                                         account.type ??
@@ -275,7 +398,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                     {account.currency ??
                                                                         wallet.currency}
                                                                 </p>
-                                                                {wallet.type !== 'cash' ? (
+                                                                {wallet.type !==
+                                                                'cash' ? (
                                                                     <p className="text-xs text-muted-foreground">
                                                                         Synced{' '}
                                                                         {formatDate(
@@ -320,9 +444,9 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                 <p className="text-xs text-muted-foreground">
                                                                     {transaction.date
                                                                         ? formatDisplayDate(
-                                                                            transaction.date,
-                                                                            numberLocale,
-                                                                        )
+                                                                              transaction.date,
+                                                                              numberLocale,
+                                                                          )
                                                                         : 'Unknown date'}
                                                                 </p>
                                                             </div>
@@ -369,7 +493,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
                                                         <Badge
-                                                            variant={statusVariant(
+                                                            variant={runStatusVariant(
                                                                 run.status,
                                                             )}
                                                         >
@@ -387,9 +511,10 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                     </span>
                                                 </div>
                                                 <p className="mt-1 text-xs text-muted-foreground">
-                                                    +{run.added_count} / ~
-                                                    {run.modified_count} / -
-                                                    {run.removed_count}
+                                                    {run.added_count} new ·{' '}
+                                                    {run.modified_count} updated
+                                                    · {run.removed_count}{' '}
+                                                    removed
                                                 </p>
                                                 {run.error_message ? (
                                                     <p className="mt-1 text-xs text-destructive">
@@ -406,8 +531,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
 
                     {wallet.connections.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
-                            This wallet has no bank connections yet. Click Bank
-                            Connection to start Plaid Link.
+                            This wallet has no bank connections. Connect a bank
+                            from the dashboard or the Wallets page.
                         </div>
                     ) : null}
                 </div>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Settings\AdminController;
 use App\Http\Controllers\Settings\AllCategoriesController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -48,6 +49,15 @@ Route::get('settings/profile/email/confirm/{user}', [ProfileController::class, '
     ->name('profile.email.confirm');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::middleware('can:admin')->prefix('settings/admin')->name('settings.admin.')->group(function (): void {
+        Route::get('/', [AdminController::class, 'edit'])->name('edit');
+        Route::patch('registration', [AdminController::class, 'updateRegistration'])->name('registration');
+        Route::patch('users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+        Route::delete('users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
+        Route::post('failed-jobs/retry', [AdminController::class, 'retryFailedJobs'])->name('failed-jobs.retry');
+        Route::delete('failed-jobs', [AdminController::class, 'clearFailedJobs'])->name('failed-jobs.clear');
+    });
+
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('user-password.edit');

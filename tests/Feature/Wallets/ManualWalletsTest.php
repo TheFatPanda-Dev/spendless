@@ -36,7 +36,7 @@ class ManualWalletsTest extends TestCase
         $this->assertNotNull($account);
         $this->assertSame('manual', $account->connection?->provider);
         $this->assertSame('cash', $account->connection?->wallet?->type);
-        $this->assertSame('GBP', $account->currency_code);
+        $this->assertSame('GBP', $account->currency);
         $this->assertSame(250.75, (float) ($account->balances_encrypted['current'] ?? 0));
 
         $openingBalanceTransaction = $account->transactions()->first();

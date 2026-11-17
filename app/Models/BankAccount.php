@@ -14,19 +14,16 @@ class BankAccount extends Model
     protected $fillable = [
         'bank_connection_id',
         'external_uid',
-        'plaid_account_id',
+        'identification_hash',
         'name',
         'display_name',
         'official_name',
         'mask_encrypted',
         'type',
         'subtype',
-        'iban',
         'currency',
-        'currency_code',
         'is_active',
         'balances_encrypted',
-        'raw_payload',
         'raw_encrypted',
         'last_synced_at',
     ];
@@ -34,7 +31,6 @@ class BankAccount extends Model
     protected function casts(): array
     {
         return [
-            'raw_payload' => 'array',
             'mask_encrypted' => 'encrypted',
             'balances_encrypted' => 'encrypted:array',
             'raw_encrypted' => 'encrypted:array',
@@ -51,5 +47,15 @@ class BankAccount extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(BankTransaction::class);
+    }
+
+    /**
+     * Last four characters of the account number, padded for display ("**1234").
+     */
+    public function maskForDisplay(): ?string
+    {
+        $mask = (string) $this->mask_encrypted;
+
+        return $mask === '' ? null : str_pad(substr($mask, -4), 4, '*', STR_PAD_LEFT);
     }
 }

@@ -15,7 +15,7 @@ class StartEnableBankingConnectionRequest extends FormRequest
     {
         return [
             'aspsp_name' => ['required', 'string', 'max:120'],
-            'aspsp_country' => ['required', 'string', 'size:2'],
+            'aspsp_country' => ['required', 'string', 'size:2', 'in:'.implode(',', (array) config('services.enable_banking.countries', ['SI']))],
             'psu_type' => ['required', 'string', 'in:personal,business'],
         ];
     }
@@ -23,7 +23,7 @@ class StartEnableBankingConnectionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'aspsp_country' => strtoupper((string) $this->input('aspsp_country', (string) config('services.enable_banking.country', 'SI'))),
+            'aspsp_country' => strtoupper((string) $this->input('aspsp_country', (string) (config('services.enable_banking.countries')[0] ?? 'SI'))),
             'psu_type' => (string) $this->input('psu_type', 'personal'),
         ]);
     }

@@ -16,45 +16,23 @@ class BankTransaction extends Model
         'category_id',
         'category_manually_set',
         'external_uid',
-        'plaid_transaction_id',
-        'plaid_pending_transaction_id',
-        'account_owner',
         'merchant_name',
         'payee',
         'name',
-        'booked_at',
         'amount',
         'currency',
-        'iso_currency_code',
-        'unofficial_currency_code',
         'date',
-        'authorized_date',
         'pending',
-        'category',
-        'personal_finance_category',
-        'payment_channel',
-        'location_encrypted',
         'description',
-        'raw_payload',
-        'raw_encrypted',
-        'removed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'booked_at' => 'date',
             'date' => 'date',
-            'authorized_date' => 'date',
             'amount' => 'decimal:2',
             'pending' => 'boolean',
             'category_manually_set' => 'boolean',
-            'category' => 'array',
-            'personal_finance_category' => 'array',
-            'location_encrypted' => 'encrypted:array',
-            'raw_payload' => 'array',
-            'raw_encrypted' => 'encrypted:array',
-            'removed_at' => 'datetime',
         ];
     }
 

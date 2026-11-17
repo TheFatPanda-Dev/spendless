@@ -27,3 +27,4 @@ yarn-error.log
 /.vscode
 /.zed
 scripts/rsync-build.sh
+.env.before_lerd

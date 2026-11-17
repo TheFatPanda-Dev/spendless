@@ -8,17 +8,18 @@ import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import { useCallback, useState } from 'react';
 import AddNewWalletMenu from '@/components/add-new-wallet-menu';
+import BankAlertsBanner from '@/components/bank-alerts-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { usePlaidAccountLinkedRefresh } from '@/hooks/use-plaid-account-linked-refresh';
+import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-refresh';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
+import { openBankPopup } from '@/lib/bank-popup';
 import {
     buildDashboardHref,
     formatDisplayDate,
     shiftMonthRange,
 } from '@/lib/date-filters';
-import { openCenteredPopup } from '@/lib/popup';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
@@ -218,8 +219,14 @@ export default function Dashboard({
         eurPerUnit,
     );
 
-    const { isRefreshing } = usePlaidAccountLinkedRefresh({
-        only: ['accounts', 'summary'],
+    const { isRefreshing } = useBankAccountLinkedRefresh({
+        only: [
+            'accounts',
+            'summary',
+            'period_breakdown',
+            'exchange_rates',
+            'bankAlerts',
+        ],
         onLinked: () => {
             setShowPendingNewAccount(true);
         },
@@ -235,29 +242,22 @@ export default function Dashboard({
         startSyncAll,
         clearSuccessMessage,
         clearErrorMessage,
-    } = useSyncAllConnections({ only: ['accounts', 'summary'] });
+    } = useSyncAllConnections({
+        only: [
+            'accounts',
+            'summary',
+            'period_breakdown',
+            'exchange_rates',
+            'bankAlerts',
+        ],
+    });
 
     const handleConnectBank = useCallback((): void => {
-        setConnectError(null);
-
-        const popup = openCenteredPopup(
-            '/wallets/add-account',
-            'plaid-add-account',
-            {
-                width: 520,
-                height: 760,
-            },
+        setConnectError(
+            openBankPopup()
+                ? null
+                : 'Popup was blocked. Please allow popups for this site and try again.',
         );
-
-        if (!popup) {
-            setConnectError(
-                'Popup was blocked. Please allow popups for this site and try again.',
-            );
-
-            return;
-        }
-
-        popup.focus();
     }, []);
 
     return (
@@ -270,12 +270,16 @@ export default function Dashboard({
                 <div className="pointer-events-none absolute inset-x-[18%] top-12 h-40 bg-[radial-gradient(circle,rgba(16,185,129,0.08),transparent_68%)] blur-2xl dark:bg-[radial-gradient(circle,rgba(16,185,129,0.06),transparent_70%)]" />
 
                 <section className="relative animate-in duration-500 fade-in-0 slide-in-from-top-2">
+                    <div className="mb-4 empty:hidden">
+                        <BankAlertsBanner />
+                    </div>
+
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             Accounts
                         </h2>
 
-                        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-1 sm:auto-cols-max sm:grid-flow-col sm:items-center">
+                        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:grid-cols-1 sm:items-center">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -291,7 +295,9 @@ export default function Dashboard({
                                 Sync All
                             </Button>
 
-                            <AddNewWalletMenu onConnectBank={handleConnectBank} />
+                            <AddNewWalletMenu
+                                onConnectBank={handleConnectBank}
+                            />
                         </div>
                     </div>
 
@@ -367,7 +373,13 @@ export default function Dashboard({
                                                         )}
                                                     </p>
                                                     <p className="mt-2 text-xs text-slate-400">
-                                                        Open to see all wallets ({formatNumber(accounts.length, numberLocale)})
+                                                        Open to see all wallets
+                                                        (
+                                                        {formatNumber(
+                                                            accounts.length,
+                                                            numberLocale,
+                                                        )}
+                                                        )
                                                     </p>
                                                 </div>
 
@@ -436,8 +448,7 @@ export default function Dashboard({
                                                                             account.currency,
                                                                             baseCurrency,
                                                                             eurPerUnit,
-                                                                        ) >
-                                                                        0
+                                                                        ) > 0
                                                                             ? 'text-emerald-600 dark:text-emerald-400'
                                                                             : convertAmount(
                                                                                     account.current_balance,
@@ -469,7 +480,10 @@ export default function Dashboard({
                                                                         ? ` • **** ${account.mask}`
                                                                         : ''}
                                                                 </p>
-                                                                {normalizeCurrencyCode(account.currency) !== baseCurrency ? (
+                                                                {normalizeCurrencyCode(
+                                                                    account.currency,
+                                                                ) !==
+                                                                baseCurrency ? (
                                                                     <p className="shrink-0 text-[11px] text-muted-foreground">
                                                                         {formatCurrency(
                                                                             account.current_balance,
@@ -541,10 +555,10 @@ export default function Dashboard({
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-[15px] leading-tight font-medium text-foreground break-words">
+                                                <p className="text-[15px] leading-tight font-medium break-words text-foreground">
                                                     {title}
                                                 </p>
-                                                <p className="mt-1 text-xs text-muted-foreground break-words">
+                                                <p className="mt-1 text-xs break-words text-muted-foreground">
                                                     {subtitle}
                                                     {account.mask
                                                         ? ` • **** ${account.mask}`
@@ -580,7 +594,9 @@ export default function Dashboard({
                                                         numberLocale,
                                                     )}
                                                 </p>
-                                                {normalizeCurrencyCode(account.currency) !== baseCurrency ? (
+                                                {normalizeCurrencyCode(
+                                                    account.currency,
+                                                ) !== baseCurrency ? (
                                                     <p className="mt-1 text-[11px] text-muted-foreground">
                                                         {formatCurrency(
                                                             account.current_balance,
@@ -600,7 +616,8 @@ export default function Dashboard({
                             <Card className="col-span-full gap-0 rounded-2xl border border-dashed border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,247,0.9))] py-6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card">
                                 <CardContent className="px-4 text-center text-sm text-muted-foreground">
                                     No connected bank accounts yet. Use Add New
-                                    Wallet to connect one with Plaid.
+                                    Wallet to connect your bank or add a cash
+                                    wallet.
                                 </CardContent>
                             </Card>
                         )}
@@ -611,7 +628,8 @@ export default function Dashboard({
                             <Card className="col-span-full gap-0 rounded-2xl border border-dashed border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,247,0.9))] py-6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card">
                                 <CardContent className="px-4 text-center text-sm text-muted-foreground">
                                     No connected bank accounts yet. Use Add New
-                                    Wallet to connect one with Plaid.
+                                    Wallet to connect your bank or add a cash
+                                    wallet.
                                 </CardContent>
                             </Card>
                         </div>
@@ -644,8 +662,15 @@ export default function Dashboard({
                             >
                                 <CalendarDays className="size-4 text-muted-foreground" />
                                 <span>
-                                    {formatDisplayDate(filters.start_date, numberLocale)} -{' '}
-                                    {formatDisplayDate(filters.end_date, numberLocale)}
+                                    {formatDisplayDate(
+                                        filters.start_date,
+                                        numberLocale,
+                                    )}{' '}
+                                    -{' '}
+                                    {formatDisplayDate(
+                                        filters.end_date,
+                                        numberLocale,
+                                    )}
                                 </span>
                             </div>
 

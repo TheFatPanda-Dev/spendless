@@ -11,30 +11,43 @@ class BankConnection extends Model
 {
     use HasFactory;
 
+    public const PROVIDER_ENABLE_BANKING = 'enable_banking';
+
+    public const PROVIDER_MANUAL = 'manual';
+
+    /** Waiting for the user to approve access at their bank. */
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_CONNECTED = 'connected';
+
+    public const STATUS_SYNCING = 'syncing';
+
+    /** The last sync failed; it is retried at the next slot. */
+    public const STATUS_SYNC_FAILED = 'sync_failed';
+
+    /** Bank access expired or was revoked; the user has to reconnect. */
+    public const STATUS_NEEDS_REAUTH = 'needs_reauth';
+
+    /** Days before access ends when the app starts asking the user to reconnect. */
+    public const CONSENT_WARNING_DAYS = 7;
+
     protected $fillable = [
         'wallet_id',
         'user_id',
         'provider',
-        'plaid_item_id_hash',
-        'plaid_item_id_encrypted',
-        'plaid_access_token_encrypted',
-        'institution_id',
         'institution_name',
-        'plaid_cursor',
+        'institution_logo',
         'aspsp_name',
         'aspsp_country',
         'state',
         'status',
         'session_id',
         'consent_valid_until',
+        'consent_reminder_sent_at',
         'authorized_at',
         'last_synced_at',
-        'last_webhook_at',
         'next_sync_at',
         'last_sync_error',
-        'available_products',
-        'error_code',
-        'error_message',
         'metadata',
         'sync_failures',
     ];
@@ -42,15 +55,13 @@ class BankConnection extends Model
     protected function casts(): array
     {
         return [
-            'plaid_item_id_encrypted' => 'encrypted',
-            'plaid_access_token_encrypted' => 'encrypted',
             'consent_valid_until' => 'datetime',
+            'consent_reminder_sent_at' => 'datetime',
             'authorized_at' => 'datetime',
             'last_synced_at' => 'datetime',
-            'last_webhook_at' => 'datetime',
             'next_sync_at' => 'datetime',
-            'available_products' => 'array',
             'metadata' => 'array',
+            'sync_failures' => 'integer',
         ];
     }
 
@@ -79,8 +90,35 @@ class BankConnection extends Model
         return $this->hasMany(BankSyncRun::class);
     }
 
-    public function webhookEvents(): HasMany
+    public function isManual(): bool
     {
-        return $this->hasMany(PlaidWebhookEvent::class);
+        return $this->provider === self::PROVIDER_MANUAL;
+    }
+
+    public function consentExpiresSoon(): bool
+    {
+        return $this->consent_valid_until !== null
+            && $this->consent_valid_until->isBefore(now()->addDays(self::CONSENT_WARNING_DAYS));
+    }
+
+    /**
+     * Shape shared by the wallet pages, settings and the admin area.
+     *
+     * @return array<string, mixed>
+     */
+    public function toStatusArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'provider' => $this->provider,
+            'status' => $this->status,
+            'institution_name' => $this->institution_name,
+            'institution_logo' => $this->institution_logo,
+            'last_synced_at' => $this->last_synced_at?->toIso8601String(),
+            'next_sync_at' => $this->next_sync_at?->toIso8601String(),
+            'consent_valid_until' => $this->consent_valid_until?->toIso8601String(),
+            'consent_expires_soon' => ! $this->isManual() && $this->consentExpiresSoon(),
+            'error_message' => $this->last_sync_error,
+        ];
     }
 }

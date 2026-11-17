@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\BankConnection;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Policies\BankConnectionPolicy;
 use App\Policies\WalletPolicy;
@@ -33,16 +34,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Wallet::class, WalletPolicy::class);
         Gate::policy(BankConnection::class, BankConnectionPolicy::class);
+        Gate::define('admin', fn (User $user): bool => $user->is_admin === true);
 
         RateLimiter::for('banking-sensitive', function (Request $request): array {
             return [
                 Limit::perMinute(30)->by((string) optional($request->user())->id),
-            ];
-        });
-
-        RateLimiter::for('plaid-webhooks', function (Request $request): array {
-            return [
-                Limit::perMinute(120)->by((string) $request->ip()),
             ];
         });
 

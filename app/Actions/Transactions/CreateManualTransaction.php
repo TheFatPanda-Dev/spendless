@@ -19,7 +19,7 @@ class CreateManualTransaction
             $category = $attributes['category'];
             $amount = round((float) $attributes['amount'], 2);
             $signedAmount = $category->type === 'income' ? $amount : -$amount;
-            $currency = (string) ($bankAccount->currency_code ?: $bankAccount->currency ?: 'EUR');
+            $currency = (string) ($bankAccount->currency ?: 'EUR');
             $merchantName = $attributes['merchant_name'];
             $transactionName = $attributes['transaction_name'] ?: $merchantName ?: 'Manual transaction';
             $balances = is_array($bankAccount->balances_encrypted) ? $bankAccount->balances_encrypted : [];
@@ -38,8 +38,6 @@ class CreateManualTransaction
                 'name' => $transactionName,
                 'amount' => $signedAmount,
                 'currency' => $currency,
-                'iso_currency_code' => $currency,
-                'booked_at' => $attributes['date'],
                 'date' => $attributes['date'],
                 'pending' => false,
                 'description' => null,

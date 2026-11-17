@@ -33,17 +33,15 @@ class WalletSettingsTest extends TestCase
             'currency' => 'EUR',
         ]);
 
-        $ownerConnection = $this->createPlaidConnection($owner, $ownerWallet, 'owner-item');
-        $otherConnection = $this->createPlaidConnection($otherUser, $otherWallet, 'other-item');
+        $ownerConnection = $this->createBankConnection($owner, $ownerWallet, 'owner-item');
+        $otherConnection = $this->createBankConnection($otherUser, $otherWallet, 'other-item');
 
         $ownerAccount = BankAccount::query()->create([
             'bank_connection_id' => $ownerConnection->id,
             'external_uid' => 'owner-acc-1',
-            'plaid_account_id' => 'owner-acc-1',
             'name' => 'Owner Checking',
             'display_name' => 'Daily spending',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => ['current' => 123.45],
             'is_active' => true,
         ]);
@@ -51,10 +49,8 @@ class WalletSettingsTest extends TestCase
         BankAccount::query()->create([
             'bank_connection_id' => $otherConnection->id,
             'external_uid' => 'other-acc-1',
-            'plaid_account_id' => 'other-acc-1',
             'name' => 'Other Checking',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => ['current' => 55.00],
             'is_active' => true,
         ]);
@@ -93,15 +89,13 @@ class WalletSettingsTest extends TestCase
             'currency' => 'GBP',
         ]);
 
-        $connection = $this->createPlaidConnection($user, $wallet, 'base-currency-item');
+        $connection = $this->createBankConnection($user, $wallet, 'base-currency-item');
 
         BankAccount::query()->create([
             'bank_connection_id' => $connection->id,
             'external_uid' => 'acc-base-1',
-            'plaid_account_id' => 'acc-base-1',
             'name' => 'Checking',
             'currency' => 'GBP',
-            'currency_code' => 'GBP',
             'balances_encrypted' => ['current' => 100],
             'is_active' => true,
         ]);
@@ -164,15 +158,13 @@ class WalletSettingsTest extends TestCase
             'currency' => 'EUR',
         ]);
 
-        $connection = $this->createPlaidConnection($user, $wallet, 'update-item');
+        $connection = $this->createBankConnection($user, $wallet, 'update-item');
 
         $account = BankAccount::query()->create([
             'bank_connection_id' => $connection->id,
             'external_uid' => 'acc-update-1',
-            'plaid_account_id' => 'acc-update-1',
             'name' => 'Checking',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => ['current' => 100],
             'is_active' => true,
         ]);
@@ -201,15 +193,13 @@ class WalletSettingsTest extends TestCase
             'currency' => 'EUR',
         ]);
 
-        $connection = $this->createPlaidConnection($user, $wallet, 'delete-item');
+        $connection = $this->createBankConnection($user, $wallet, 'delete-item');
 
         $account = BankAccount::query()->create([
             'bank_connection_id' => $connection->id,
             'external_uid' => 'acc-delete-1',
-            'plaid_account_id' => 'acc-delete-1',
             'name' => 'Checking',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => ['current' => 100],
             'is_active' => true,
         ]);
@@ -244,15 +234,13 @@ class WalletSettingsTest extends TestCase
             'currency' => 'EUR',
         ]);
 
-        $connection = $this->createPlaidConnection($owner, $wallet, 'forbidden-item');
+        $connection = $this->createBankConnection($owner, $wallet, 'forbidden-item');
 
         $account = BankAccount::query()->create([
             'bank_connection_id' => $connection->id,
             'external_uid' => 'acc-forbidden-1',
-            'plaid_account_id' => 'acc-forbidden-1',
             'name' => 'Owner Account',
             'currency' => 'EUR',
-            'currency_code' => 'EUR',
             'balances_encrypted' => ['current' => 100],
             'is_active' => true,
         ]);
@@ -268,20 +256,16 @@ class WalletSettingsTest extends TestCase
             ->assertForbidden();
     }
 
-    private function createPlaidConnection(User $user, Wallet $wallet, string $itemId): BankConnection
+    private function createBankConnection(User $user, Wallet $wallet, string $itemId): BankConnection
     {
         return BankConnection::query()->create([
             'wallet_id' => $wallet->id,
             'user_id' => $user->id,
-            'provider' => 'plaid',
-            'plaid_item_id_hash' => hash('sha256', $itemId),
-            'plaid_item_id_encrypted' => $itemId,
-            'plaid_access_token_encrypted' => 'access-token',
-            'institution_id' => 'ins_001',
-            'institution_name' => 'Plaid Test Bank',
+            'provider' => 'enable_banking',
+            'institution_name' => 'Test Bank',
             'status' => 'connected',
-            'aspsp_name' => 'Plaid Test Bank',
-            'aspsp_country' => 'US',
+            'aspsp_name' => 'Test Bank',
+            'aspsp_country' => 'SI',
             'state' => (string) fake()->uuid(),
             'authorized_at' => now(),
         ]);

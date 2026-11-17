@@ -55,7 +55,7 @@ class BackfillManualOpeningBalanceTransactions extends Command
                 continue;
             }
 
-            $currency = (string) ($account->currency_code ?: $account->currency ?: $account->connection?->wallet?->currency ?: 'EUR');
+            $currency = (string) ($account->currency ?: $account->connection?->wallet?->currency ?: 'EUR');
             $openedOn = $account->created_at?->toDateString() ?? now()->toDateString();
 
             if ($shouldDryRun) {
@@ -79,8 +79,6 @@ class BackfillManualOpeningBalanceTransactions extends Command
                 'name' => 'Opening balance',
                 'amount' => $openingBalance,
                 'currency' => $currency,
-                'iso_currency_code' => $currency,
-                'booked_at' => $openedOn,
                 'date' => $openedOn,
                 'pending' => false,
                 'description' => 'Opening balance (backfilled)',

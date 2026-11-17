@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\BankConnection;
 use App\Support\Localization\NumberLocaleOptions;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -50,6 +51,18 @@ class HandleInertiaRequests extends Middleware
                 'oauthPrompt' => fn () => $request->session()->get('oauth_prompt'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Banks whose access expired or is about to: shown as a "Reconnect" banner.
+            'bankAlerts' => fn (): array => $request->user() === null ? [] : BankConnection::query()
+                ->where('user_id', $request->user()->id)
+                ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+                ->where(fn ($query) => $query
+                    ->where('status', BankConnection::STATUS_NEEDS_REAUTH)
+                    ->orWhere(fn ($query) => $query
+                        ->where('status', '!=', BankConnection::STATUS_PENDING)
+                        ->where('consent_valid_until', '<', now()->addDays(BankConnection::CONSENT_WARNING_DAYS))))
+                ->get()
+                ->map(fn (BankConnection $connection): array => $connection->toStatusArray())
+                ->all(),
         ];
     }
 }

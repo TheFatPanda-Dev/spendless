@@ -14,6 +14,11 @@ export default function SitePrefsBanner() {
             return false;
         }
 
+        // Not inside the small "connect a bank" popup, where it would cover the bank list.
+        if (window.name === 'bank-add-account') {
+            return false;
+        }
+
         return !hasStoredCookieConsent();
     });
 

@@ -51,25 +51,19 @@ return [
         'base_url' => env('ENABLE_BANKING_BASE_URL', 'https://api.enablebanking.com'),
         'app_id' => env('ENABLE_BANKING_APP_ID'),
         'private_key_path' => env('ENABLE_BANKING_PRIVATE_KEY_PATH'),
-        'country' => env('ENABLE_BANKING_COUNTRY', 'SI'),
-        'consent_days' => (int) env('ENABLE_BANKING_CONSENT_DAYS', 10),
-        'sync_interval_minutes' => (int) env('ENABLE_BANKING_SYNC_INTERVAL_MINUTES', 60),
+        // Countries offered in the bank picker (ISO 3166 alpha-2), first one is the default.
+        'countries' => array_values(array_filter(array_map(
+            fn (string $country): string => strtoupper(trim($country)),
+            explode(',', (string) env('ENABLE_BANKING_COUNTRIES', 'SI,GB')),
+        ))),
+        // Consent length asked from the bank; capped by each bank's own maximum.
+        'max_consent_days' => (int) env('ENABLE_BANKING_MAX_CONSENT_DAYS', 180),
+        // Background syncs run in fixed slots (6 h = 00/06/12/18), i.e. 4 a day, which is
+        // the PSD2 limit for refreshes without the account holder present.
+        'sync_interval_hours' => (int) env('ENABLE_BANKING_SYNC_INTERVAL_HOURS', 6),
+        'initial_history_days' => (int) env('ENABLE_BANKING_INITIAL_HISTORY_DAYS', 90),
         'jwt_issuer' => env('ENABLE_BANKING_JWT_ISS', 'enablebanking.com'),
         'jwt_audience' => env('ENABLE_BANKING_JWT_AUD', 'api.enablebanking.com'),
-    ],
-
-    'plaid' => [
-        'base_url' => env('PLAID_BASE_URL', 'https://sandbox.plaid.com'),
-        'client_id' => env('PLAID_CLIENT_ID'),
-        'secret' => env('PLAID_SECRET'),
-        'environment' => env('PLAID_ENV', 'sandbox'),
-        'version' => env('PLAID_VERSION', '2020-09-14'),
-        'country_codes' => array_filter(array_map('trim', explode(',', (string) env('PLAID_COUNTRY_CODES', 'US')))),
-        'language' => env('PLAID_LANGUAGE', 'en'),
-        'webhook_url' => env('PLAID_WEBHOOK_URL'),
-        'webhook_secret' => env('PLAID_WEBHOOK_SECRET'),
-        'redirect_uri' => env('PLAID_REDIRECT_URI'),
-        'initial_days_requested' => (int) env('PLAID_INITIAL_DAYS_REQUESTED', 730),
     ],
 
     'freecurrencyapi' => [

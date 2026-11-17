@@ -73,6 +73,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'password_set_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
+            'is_admin' => 'boolean',
         ];
     }
 

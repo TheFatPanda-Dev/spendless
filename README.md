@@ -52,56 +52,41 @@
     npm run dev
     ```
 
-## Plaid Transactions Integration
+## Bank sync (Enable Banking)
 
-This project includes a wallet-centric Plaid Transactions integration with:
+SpendLess reads balances and transactions from European and UK banks through
+[Enable Banking](https://enablebanking.com/) (PSD2 / Open Banking). It's free for your own accounts in
+restricted mode.
 
-- Multiple wallets per user.
-- Multiple Plaid connections per wallet.
-- Multiple accounts per connection.
-- Incremental sync using Plaid `transactions/sync` cursor flow.
-- Manual refresh (all connections and single connection).
-- Scheduled refresh every 4 hours.
-- Webhook-triggered sync for transaction updates.
+- Connect: **Add New Wallet → Connect a bank account**, pick the country and bank, approve at the bank.
+- Background sync every 6 hours (4 times a day, the PSD2 limit for unattended refreshes); **Sync now** any time.
+- Access lasts up to 180 days; SpendLess shows a **Reconnect** banner and emails a week before it ends.
+- Amounts are signed: money in is positive, money out is negative.
 
-### Required Environment Variables
-
-Set these values in `.env`:
+Set up the credentials as described in [docs/ENABLE-BANKING-PRODUCTION.md](docs/ENABLE-BANKING-PRODUCTION.md):
 
 ```bash
-PLAID_BASE_URL=https://sandbox.plaid.com
-PLAID_ENV=sandbox
-PLAID_CLIENT_ID=your_plaid_client_id
-PLAID_SECRET=your_plaid_secret
-PLAID_VERSION=2020-09-14
-PLAID_COUNTRY_CODES=US
-PLAID_LANGUAGE=en
-PLAID_WEBHOOK_URL="${APP_URL}/plaid/webhook"
-PLAID_WEBHOOK_SECRET=your_private_webhook_shared_secret
-PLAID_REDIRECT_URI=
-PLAID_INITIAL_DAYS_REQUESTED=730
+ENABLE_BANKING_APP_ID=your-application-id
+ENABLE_BANKING_PRIVATE_KEY_PATH=storage/app/private/enablebanking.pem
+ENABLE_BANKING_COUNTRIES=SI,GB
 ```
 
-### Security and Data Protection
+## Background work
 
-- Plaid access tokens are stored server-side only.
-- Sensitive fields are encrypted at rest using Laravel encrypted casts.
-- Webhook payload archives are encrypted.
-- Sensitive endpoints are rate-limited.
-
-### Scheduler
-
-Run Laravel scheduler in production to enable automatic 4-hour refresh:
+Everything runs from one cron entry:
 
 ```bash
-php artisan schedule:work
+* * * * * cd /path/to/spendless && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-### Queue Worker
+Locally, `composer run dev` starts the queue listener; run `php artisan schedule:work` to test scheduled syncs.
 
-Bank sync and refresh operations are queued:
+## Admin area
 
-```bash
-php artisan queue:work
-```
+The first account is the admin (or run `php artisan spendless:make-admin you@example.com`).
+**Settings → Admin** has a setup check (cron, Enable Banking, mail, HTTPS…), users, a sign-up switch,
+every bank connection's status, and failed background jobs.
 
+## Deployment
+
+See [docs/DEPLOY-NEOSERV.md](docs/DEPLOY-NEOSERV.md) for shared hosting with cPanel + SSH.

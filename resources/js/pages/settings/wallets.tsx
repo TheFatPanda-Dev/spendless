@@ -8,12 +8,13 @@ import AddNewWalletMenu from '@/components/add-new-wallet-menu';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { usePlaidAccountLinkedRefresh } from '@/hooks/use-plaid-account-linked-refresh';
+import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-refresh';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { openCenteredPopup } from '@/lib/popup';
-import type { BreadcrumbItem } from '@/types';
+import { openBankPopup } from '@/lib/bank-popup';
+import { formatDisplayDate } from '@/lib/date-filters';
+import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type Account = {
     id: number;
@@ -24,6 +25,8 @@ type Account = {
     wallet_name: string | null;
     mask: string | null;
     currency: string | null;
+    is_active: boolean;
+    connection: BankConnectionStatus | null;
 };
 
 type Props = {
@@ -86,7 +89,7 @@ export default function WalletSettings({
     const [isSavingNumberLocale, setIsSavingNumberLocale] = useState(false);
     const [showNumberLocaleSaved, setShowNumberLocaleSaved] = useState(false);
 
-    usePlaidAccountLinkedRefresh({ only: ['accounts'] });
+    useBankAccountLinkedRefresh({ only: ['accounts'] });
 
     const {
         isSyncing,
@@ -140,22 +143,11 @@ export default function WalletSettings({
     };
 
     const handleAddNewWallet = (): void => {
-        const popup = openCenteredPopup(
-            '/wallets/add-account',
-            'plaid-add-account',
-            {
-                width: 520,
-                height: 760,
-            },
-        );
-
-        if (!popup) {
-            window.alert('Popup was blocked. Please allow popups and try again.');
-
-            return;
+        if (!openBankPopup()) {
+            window.alert(
+                'Popup was blocked. Please allow popups and try again.',
+            );
         }
-
-        popup.focus();
     };
 
     const handleBaseCurrencyChange = (nextBaseCurrency: string): void => {
@@ -265,26 +257,28 @@ export default function WalletSettings({
 
                             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                                 <div className="relative min-w-0">
-                                <select
-                                    value={baseCurrency}
-                                    onChange={(event) =>
-                                        handleBaseCurrencyChange(
-                                            event.target.value,
-                                        )
-                                    }
-                                    disabled={isSavingBaseCurrency}
-                                    className="h-10 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-9 text-sm"
-                                >
-                                    {base_currency.options.map((currencyOption) => (
-                                        <option
-                                            key={currencyOption.code}
-                                            value={currencyOption.code}
-                                        >
-                                            {currencyOption.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                    <select
+                                        value={baseCurrency}
+                                        onChange={(event) =>
+                                            handleBaseCurrencyChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                        disabled={isSavingBaseCurrency}
+                                        className="h-10 w-full appearance-none rounded-md border border-input bg-background pr-9 pl-3 text-sm"
+                                    >
+                                        {base_currency.options.map(
+                                            (currencyOption) => (
+                                                <option
+                                                    key={currencyOption.code}
+                                                    value={currencyOption.code}
+                                                >
+                                                    {currencyOption.label}
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 </div>
 
                                 <span className="text-xs text-muted-foreground">
@@ -308,26 +302,29 @@ export default function WalletSettings({
 
                             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                                 <div className="relative min-w-0">
-                                <select
-                                    value={numberLocale}
-                                    onChange={(event) =>
-                                        handleNumberLocaleChange(
-                                            event.target.value,
-                                        )
-                                    }
-                                    disabled={isSavingNumberLocale}
-                                    className="h-10 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-9 text-sm"
-                                >
-                                    {number_locale.options.map((localeOption) => (
-                                        <option
-                                            key={localeOption.code}
-                                            value={localeOption.code}
-                                        >
-                                            {localeOption.label} ({localeOption.example})
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                    <select
+                                        value={numberLocale}
+                                        onChange={(event) =>
+                                            handleNumberLocaleChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                        disabled={isSavingNumberLocale}
+                                        className="h-10 w-full appearance-none rounded-md border border-input bg-background pr-9 pl-3 text-sm"
+                                    >
+                                        {number_locale.options.map(
+                                            (localeOption) => (
+                                                <option
+                                                    key={localeOption.code}
+                                                    value={localeOption.code}
+                                                >
+                                                    {localeOption.label} (
+                                                    {localeOption.example})
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 </div>
 
                                 <span className="text-xs text-muted-foreground">
@@ -398,7 +395,28 @@ export default function WalletSettings({
                                                     {account.wallet_name
                                                         ? ` • Wallet: ${account.wallet_name}`
                                                         : ''}
+                                                    {account.connection
+                                                        ?.provider ===
+                                                        'enable_banking' &&
+                                                    account.connection
+                                                        .consent_valid_until
+                                                        ? ` • Access until ${formatDisplayDate(account.connection.consent_valid_until.slice(0, 10), number_locale.selected)}`
+                                                        : ''}
                                                 </p>
+                                                {account.connection?.status ===
+                                                'needs_reauth' ? (
+                                                    <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                                                        Not syncing: reconnect
+                                                        this bank from the
+                                                        dashboard or Wallets
+                                                        page.
+                                                    </p>
+                                                ) : !account.is_active ? (
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        No longer shared by the
+                                                        bank. History is kept.
+                                                    </p>
+                                                ) : null}
                                             </div>
                                         </div>
 
@@ -423,7 +441,9 @@ export default function WalletSettings({
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                disabled={isSaving || isDeleting}
+                                                disabled={
+                                                    isSaving || isDeleting
+                                                }
                                                 onClick={() =>
                                                     handleSave(account.id)
                                                 }
@@ -436,7 +456,9 @@ export default function WalletSettings({
                                             <Button
                                                 type="button"
                                                 variant="destructive"
-                                                disabled={isSaving || isDeleting}
+                                                disabled={
+                                                    isSaving || isDeleting
+                                                }
                                                 onClick={() =>
                                                     handleDelete(
                                                         account.id,
