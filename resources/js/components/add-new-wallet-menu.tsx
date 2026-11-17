@@ -1,4 +1,4 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -90,6 +90,14 @@ export default function AddNewWalletMenu({
                         }}
                     >
                         Connect a bank account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onSelect={() => {
+                            setOpen(false);
+                            router.visit('/imports/new');
+                        }}
+                    >
+                        Import bank statement
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onSelect={(event) => {

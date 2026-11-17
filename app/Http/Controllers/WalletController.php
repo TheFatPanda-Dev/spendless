@@ -7,6 +7,7 @@ use App\Actions\Wallets\CreateManualWallet;
 use App\Http\Requests\StoreManualWalletRequest;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
+use App\Models\BankStatementImport;
 use App\Models\BankTransaction;
 use App\Models\Wallet;
 use Illuminate\Http\RedirectResponse;
@@ -117,6 +118,15 @@ class WalletController extends Controller
                             'pending' => $transaction->pending,
                         ];
                     })->values(),
+                    'imports' => $connection->provider === BankConnection::PROVIDER_IMPORT
+                        ? BankStatementImport::query()
+                            ->whereIn('bank_account_id', $connection->accounts->pluck('id'))
+                            ->latest()
+                            ->limit(5)
+                            ->get()
+                            ->map(fn (BankStatementImport $import): array => $import->toSummaryArray())
+                            ->values()
+                        : [],
                     'sync_runs' => $connection->syncRuns->map(fn ($run): array => [
                         'id' => $run->id,
                         'sync_type' => $run->sync_type,

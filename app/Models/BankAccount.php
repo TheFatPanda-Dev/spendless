@@ -49,6 +49,11 @@ class BankAccount extends Model
         return $this->hasMany(BankTransaction::class);
     }
 
+    public function statementImports(): HasMany
+    {
+        return $this->hasMany(BankStatementImport::class);
+    }
+
     /**
      * Last four characters of the account number, padded for display ("**1234").
      */

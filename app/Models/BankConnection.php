@@ -15,6 +15,9 @@ class BankConnection extends Model
 
     public const PROVIDER_MANUAL = 'manual';
 
+    /** Kept up to date by importing statement files (banks without an open-banking route). */
+    public const PROVIDER_IMPORT = 'import';
+
     /** Waiting for the user to approve access at their bank. */
     public const STATUS_PENDING = 'pending';
 

@@ -3,6 +3,7 @@
 use App\Models\BankSyncRun;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 
 /*
 | Everything here is driven by ONE cron entry (see docs/DEPLOY-NEOSERV.md):
@@ -18,6 +19,17 @@ Schedule::command('banking:dispatch-due-syncs')->everyFifteenMinutes()->withoutO
 Schedule::command('banking:send-access-reminders')->dailyAt('09:00')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [BankSyncRun::class]])->daily();
 Schedule::command('queue:prune-failed', ['--hours' => 24 * 30])->daily();
+
+// Statement files uploaded but never confirmed.
+Schedule::call(function (): void {
+    $disk = Storage::disk('local');
+
+    foreach ($disk->allFiles('imports') as $file) {
+        if ($disk->lastModified($file) < now()->subDay()->getTimestamp()) {
+            $disk->delete($file);
+        }
+    }
+})->name('prune-statement-uploads')->daily();
 
 // Shared hosting can't keep a queue worker running, so start a short-lived one every
 // minute. Keep this last: it blocks this schedule:run for up to 50 seconds.

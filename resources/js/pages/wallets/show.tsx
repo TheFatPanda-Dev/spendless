@@ -1,6 +1,7 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import Unplug from 'lucide-react/dist/esm/icons/unplug.js';
+import Upload from 'lucide-react/dist/esm/icons/upload.js';
 import WalletIcon from 'lucide-react/dist/esm/icons/wallet.js';
 import { useState } from 'react';
 import BankAlertsBanner from '@/components/bank-alerts-banner';
@@ -54,8 +55,19 @@ type Account = {
     last_synced_at: string | null;
 };
 
+type StatementImport = {
+    id: number;
+    filename: string;
+    rows_added: number;
+    rows_updated: number;
+    date_from: string | null;
+    date_to: string | null;
+    created_at: string | null;
+};
+
 type Connection = BankConnectionStatus & {
     accounts: Account[];
+    imports: StatementImport[];
     transactions: Transaction[];
     sync_runs: SyncRun[];
 };
@@ -110,10 +122,13 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
 
     const disconnect = (connection: Connection): void => {
         const name = connection.institution_name ?? 'this bank';
+        const isImport = connection.provider === 'import';
 
         if (
             !window.confirm(
-                `Disconnect ${name}? Its accounts and all their transactions will be deleted from SpendLess, and access at the bank is ended.`,
+                isImport
+                    ? `Delete ${name}? Its account and all imported transactions will be deleted from SpendLess.`
+                    : `Disconnect ${name}? Its accounts and all their transactions will be deleted from SpendLess, and access at the bank is ended.`,
             )
         ) {
             return;
@@ -242,16 +257,27 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                     {!isCashWallet ? (
                                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                             <Badge
-                                                variant={bankStatusVariant(
-                                                    connection.status,
-                                                )}
+                                                variant={
+                                                    connection.provider ===
+                                                    'import'
+                                                        ? 'outline'
+                                                        : bankStatusVariant(
+                                                              connection.status,
+                                                          )
+                                                }
                                             >
-                                                {bankStatusLabel(
-                                                    connection.status,
-                                                )}
+                                                {connection.provider ===
+                                                'import'
+                                                    ? 'Statement import'
+                                                    : bankStatusLabel(
+                                                          connection.status,
+                                                      )}
                                             </Badge>
                                             <span>
-                                                Last synced:{' '}
+                                                {connection.provider ===
+                                                'import'
+                                                    ? 'Last import: '
+                                                    : 'Last synced: '}
                                                 {formatDate(
                                                     connection.last_synced_at,
                                                     numberLocale,
@@ -297,8 +323,20 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
 
                                 {!isCashWallet ? (
                                     <div className="flex flex-wrap items-center gap-2">
-                                        {connection.status === 'needs_reauth' ||
-                                        connection.consent_expires_soon ? (
+                                        {connection.provider === 'import' &&
+                                        connection.accounts[0] ? (
+                                            <Button asChild>
+                                                <Link
+                                                    href={`/imports/new?account=${connection.accounts[0].id}`}
+                                                >
+                                                    <Upload className="size-4" />
+                                                    Import statement
+                                                </Link>
+                                            </Button>
+                                        ) : null}
+                                        {connection.provider !== 'import' &&
+                                        (connection.status === 'needs_reauth' ||
+                                            connection.consent_expires_soon) ? (
                                             <Button
                                                 onClick={() =>
                                                     setPopupBlocked(
@@ -311,8 +349,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 Reconnect
                                             </Button>
                                         ) : null}
-                                        {connection.status !==
-                                        'needs_reauth' ? (
+                                        {connection.provider !== 'import' &&
+                                        connection.status !== 'needs_reauth' ? (
                                             <Button
                                                 variant="outline"
                                                 disabled={
@@ -340,7 +378,9 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             }
                                         >
                                             <Unplug className="size-4" />
-                                            Disconnect
+                                            {connection.provider === 'import'
+                                                ? 'Delete'
+                                                : 'Disconnect'}
                                         </Button>
                                     </div>
                                 ) : null}
@@ -475,57 +515,98 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                 </div>
                             </div>
 
-                            <div className="rounded-lg border border-border bg-background/75 p-3">
-                                <h3 className="mb-2 font-medium">
-                                    Recent Sync Runs
-                                </h3>
-                                {connection.sync_runs.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">
-                                        No sync runs recorded yet.
-                                    </p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {connection.sync_runs.map((run) => (
-                                            <div
-                                                key={run.id}
-                                                className="rounded-md border border-border bg-card p-2.5 text-sm"
-                                            >
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge
-                                                            variant={runStatusVariant(
-                                                                run.status,
-                                                            )}
-                                                        >
-                                                            {run.status}
-                                                        </Badge>
-                                                        <span className="text-muted-foreground">
-                                                            {run.sync_type}
-                                                        </span>
-                                                    </div>
+                            {connection.provider === 'import' ? (
+                                <div className="rounded-lg border border-border bg-background/75 p-3">
+                                    <h3 className="mb-2 font-medium">
+                                        Recent Imports
+                                    </h3>
+                                    {connection.imports.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No statements imported yet.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {connection.imports.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5 text-sm"
+                                                >
+                                                    <span className="min-w-0 truncate">
+                                                        {item.filename}
+                                                    </span>
                                                     <span className="text-xs text-muted-foreground">
+                                                        {item.rows_added} new ·{' '}
+                                                        {item.rows_updated}{' '}
+                                                        already there
+                                                        {item.date_from &&
+                                                        item.date_to
+                                                            ? ` · ${formatDisplayDate(item.date_from, numberLocale)} – ${formatDisplayDate(item.date_to, numberLocale)}`
+                                                            : ''}
+                                                        {' · '}
                                                         {formatDate(
-                                                            run.started_at,
+                                                            item.created_at,
                                                             numberLocale,
                                                         )}
                                                     </span>
                                                 </div>
-                                                <p className="mt-1 text-xs text-muted-foreground">
-                                                    {run.added_count} new ·{' '}
-                                                    {run.modified_count} updated
-                                                    · {run.removed_count}{' '}
-                                                    removed
-                                                </p>
-                                                {run.error_message ? (
-                                                    <p className="mt-1 text-xs text-destructive">
-                                                        {run.error_message}
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : isCashWallet ? null : (
+                                <div className="rounded-lg border border-border bg-background/75 p-3">
+                                    <h3 className="mb-2 font-medium">
+                                        Recent Sync Runs
+                                    </h3>
+                                    {connection.sync_runs.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No sync runs recorded yet.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {connection.sync_runs.map((run) => (
+                                                <div
+                                                    key={run.id}
+                                                    className="rounded-md border border-border bg-card p-2.5 text-sm"
+                                                >
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge
+                                                                variant={runStatusVariant(
+                                                                    run.status,
+                                                                )}
+                                                            >
+                                                                {run.status}
+                                                            </Badge>
+                                                            <span className="text-muted-foreground">
+                                                                {run.sync_type}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {formatDate(
+                                                                run.started_at,
+                                                                numberLocale,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {run.added_count} new ·{' '}
+                                                        {run.modified_count}{' '}
+                                                        updated ·{' '}
+                                                        {run.removed_count}{' '}
+                                                        removed
                                                     </p>
-                                                ) : null}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                                                    {run.error_message ? (
+                                                        <p className="mt-1 text-xs text-destructive">
+                                                            {run.error_message}
+                                                        </p>
+                                                    ) : null}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </section>
                     ))}
 
