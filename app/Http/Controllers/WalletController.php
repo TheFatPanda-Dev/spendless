@@ -7,7 +7,10 @@ use App\Actions\Wallets\CreateManualWallet;
 use App\Http\Requests\StoreManualWalletRequest;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
+use App\Models\BankStatementImport;
 use App\Models\BankTransaction;
+use App\Models\InvestmentActivity;
+use App\Models\InvestmentPosition;
 use App\Models\Wallet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -117,6 +120,18 @@ class WalletController extends Controller
                             'pending' => $transaction->pending,
                         ];
                     })->values(),
+                    'investments' => $connection->provider === BankConnection::PROVIDER_IBKR
+                        ? $this->investments($connection)
+                        : null,
+                    'imports' => $connection->provider === BankConnection::PROVIDER_IMPORT
+                        ? BankStatementImport::query()
+                            ->whereIn('bank_account_id', $connection->accounts->pluck('id'))
+                            ->latest()
+                            ->limit(5)
+                            ->get()
+                            ->map(fn (BankStatementImport $import): array => $import->toSummaryArray())
+                            ->values()
+                        : [],
                     'sync_runs' => $connection->syncRuns->map(fn ($run): array => [
                         'id' => $run->id,
                         'sync_type' => $run->sync_type,
@@ -131,5 +146,59 @@ class WalletController extends Controller
                 ])->values(),
             ],
         ]);
+    }
+
+    /**
+     * Holdings and recent trades/transfers of an investment connection.
+     *
+     * @return array<string, mixed>
+     */
+    private function investments(BankConnection $connection): array
+    {
+        $accountIds = $connection->accounts->pluck('id');
+        $positions = InvestmentPosition::query()
+            ->whereIn('bank_account_id', $accountIds)
+            ->orderByDesc('value_in_base')
+            ->get();
+
+        return [
+            'base_currency' => $connection->accounts->first()?->currency,
+            'total_value' => round((float) $connection->accounts->sum(fn (BankAccount $account): float => (float) ($account->balances_encrypted['current'] ?? 0)), 2),
+            'cash' => round((float) $connection->accounts->sum(fn (BankAccount $account): float => (float) ($account->balances_encrypted['available'] ?? 0)), 2),
+            'as_of' => $connection->accounts->first()?->balances_encrypted['as_of'] ?? null,
+            'unrealized_pnl' => round((float) $positions->sum('unrealized_pnl_in_base'), 2),
+            'holdings' => $positions->map(fn (InvestmentPosition $position): array => [
+                'id' => $position->id,
+                'symbol' => $position->symbol,
+                'description' => $position->description,
+                'asset_category' => $position->asset_category,
+                'quantity' => $position->quantity,
+                'mark_price' => $position->mark_price,
+                'currency' => $position->currency,
+                'position_value' => $position->position_value,
+                'value_in_base' => $position->value_in_base,
+                'unrealized_pnl' => $position->unrealized_pnl,
+                'unrealized_pnl_in_base' => $position->unrealized_pnl_in_base,
+            ])->values(),
+            'activities' => InvestmentActivity::query()
+                ->whereIn('bank_account_id', $accountIds)
+                ->latest('date')
+                ->latest('id')
+                ->limit(30)
+                ->get()
+                ->map(fn (InvestmentActivity $activity): array => [
+                    'id' => $activity->id,
+                    'kind' => $activity->kind,
+                    'date' => $activity->date?->toDateString(),
+                    'symbol' => $activity->symbol,
+                    'description' => $activity->description,
+                    'quantity' => $activity->quantity,
+                    'price' => $activity->price,
+                    'amount' => $activity->amount,
+                    'commission' => $activity->commission,
+                    'currency' => $activity->currency,
+                ])->values(),
+            'query_id' => $connection->metadata['query_id'] ?? null,
+        ];
     }
 }

@@ -12,7 +12,7 @@ class WalletSyncStatusController extends Controller
     {
         $counts = BankConnection::query()
             ->where('user_id', $request->user()->id)
-            ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+            ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR])
             ->where('status', '!=', BankConnection::STATUS_PENDING)
             ->selectRaw('status, count(*) as total')
             ->groupBy('status')

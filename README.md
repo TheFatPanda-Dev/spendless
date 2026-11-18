@@ -71,6 +71,22 @@ ENABLE_BANKING_PRIVATE_KEY_PATH=storage/app/private/enablebanking.pem
 ENABLE_BANKING_COUNTRIES=SI,GB
 ```
 
+## Statement import
+
+For banks without open banking (e.g. UK accounts): **Add New Wallet → Import bank statement**. OFX/QFX,
+CSV, Excel (.xlsx) and Santander's .txt download are supported; Revolut, Barclays and Nationwide layouts are
+recognised automatically, any other CSV is mapped once per account. Re-importing overlapping files never
+creates duplicates.
+
+## Interactive Brokers
+
+**Add New Wallet → Connect Interactive Brokers** with a Flex Query ID and Flex Web Service token
+(IBKR Client Portal → Performance & Reports → Flex Queries). The Activity Flex Query needs Account
+Information, Net Asset Value (NAV) in Base, Open Positions, Trades, Cash Transactions and Cash Report,
+in XML. SpendLess fetches it daily (end-of-day data): account value counts towards your total, holdings
+and trades show on the wallet page, dividends/interest are income and fees/withholding tax are expenses.
+The token is stored encrypted; SpendLess asks for a new one when it expires.
+
 ## Background work
 
 Everything runs from one cron entry:

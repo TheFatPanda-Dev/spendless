@@ -1,6 +1,7 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import { useMemo, useState } from 'react';
+import IbkrConnectDialog from '@/components/ibkr-connect-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -33,6 +34,7 @@ export default function AddNewWalletMenu({
 }: AddNewWalletMenuProps) {
     const [open, setOpen] = useState(false);
     const [manualDialogOpen, setManualDialogOpen] = useState(false);
+    const [ibkrDialogOpen, setIbkrDialogOpen] = useState(false);
     const [startingBalanceInput, setStartingBalanceInput] = useState('');
     const page = usePage();
     const numberLocale =
@@ -90,6 +92,23 @@ export default function AddNewWalletMenu({
                         }}
                     >
                         Connect a bank account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onSelect={() => {
+                            setOpen(false);
+                            router.visit('/imports/new');
+                        }}
+                    >
+                        Import bank statement
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onSelect={(event) => {
+                            event.preventDefault();
+                            setOpen(false);
+                            setIbkrDialogOpen(true);
+                        }}
+                    >
+                        Connect Interactive Brokers
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onSelect={(event) => {
@@ -241,6 +260,11 @@ export default function AddNewWalletMenu({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <IbkrConnectDialog
+                open={ibkrDialogOpen}
+                onOpenChange={setIbkrDialogOpen}
+            />
         </>
     );
 }

@@ -7,6 +7,7 @@ use App\Actions\Transactions\ResolveBankTransactionCategory;
 use App\Http\Requests\Banking\StoreManualTransactionRequest;
 use App\Http\Requests\Banking\UpdateBankTransactionRequest;
 use App\Models\BankAccount;
+use App\Models\BankConnection;
 use App\Models\BankTransaction;
 use App\Models\Category;
 use App\Support\Categories\CategoryOptions;
@@ -92,6 +93,9 @@ class BankAccountController extends Controller
                 'provider' => $bankAccount->connection?->provider,
                 'is_manual' => (bool) $bankAccount->connection?->isManual(),
                 'connection' => $bankAccount->connection?->toStatusArray(),
+                'last_import' => $bankAccount->connection?->provider === BankConnection::PROVIDER_IMPORT
+                    ? $bankAccount->statementImports()->latest()->first()?->toSummaryArray()
+                    : null,
                 'mask' => $bankAccount->maskForDisplay(),
                 'currency' => $bankAccount->currency,
                 'balances' => $bankAccount->balances_encrypted,

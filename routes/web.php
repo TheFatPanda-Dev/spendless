@@ -6,6 +6,8 @@ use App\Http\Controllers\Auth\OAuthRegistrationController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IbkrConnectionController;
+use App\Http\Controllers\StatementImportController;
 use App\Http\Controllers\WalletBankConnectionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WalletSyncStatusController;
@@ -51,6 +53,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('wallets.refresh-all');
         Route::post('bank-connections/{bankConnection}/refresh', [WalletBankConnectionController::class, 'refreshConnection'])
             ->name('bank-connections.refresh');
+        Route::post('investments/ibkr', [IbkrConnectionController::class, 'store'])
+            ->name('investments.ibkr.store');
+        Route::patch('investments/ibkr/{bankConnection}', [IbkrConnectionController::class, 'update'])
+            ->name('investments.ibkr.update');
         Route::post('banking/connect', [EnableBankingConnectionController::class, 'start'])
             ->name('banking.start');
         Route::post('banking/connections/{bankConnection}/reconnect', [EnableBankingConnectionController::class, 'reconnect'])
@@ -61,6 +67,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('banking/callback', [EnableBankingConnectionController::class, 'callback'])
         ->name('banking.callback');
+
+    Route::get('imports/new', [StatementImportController::class, 'create'])->name('imports.create');
+    Route::post('imports', [StatementImportController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('imports.store');
+    Route::prefix('imports/{token}')->where(['token' => '[A-Za-z0-9]{40}'])->group(function (): void {
+        Route::get('/', [StatementImportController::class, 'show'])->name('imports.show');
+        Route::patch('mapping', [StatementImportController::class, 'updateMapping'])->name('imports.mapping');
+        Route::post('confirm', [StatementImportController::class, 'confirm'])->name('imports.confirm');
+        Route::delete('/', [StatementImportController::class, 'destroy'])->name('imports.destroy');
+    });
 });
 
 Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');

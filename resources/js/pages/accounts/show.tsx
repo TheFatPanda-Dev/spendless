@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import ArrowDownCircle from 'lucide-react/dist/esm/icons/arrow-down-circle.js';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right.js';
@@ -9,6 +9,7 @@ import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
 import Circle from 'lucide-react/dist/esm/icons/circle.js';
 import Landmark from 'lucide-react/dist/esm/icons/landmark.js';
 import Search from 'lucide-react/dist/esm/icons/search.js';
+import Upload from 'lucide-react/dist/esm/icons/upload.js';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryIcon } from '@/components/category-icon';
 import { resolveCategoryColorPresentation } from '@/components/category-icon-utils';
@@ -45,6 +46,12 @@ type Account = {
         available?: number | null;
     } | null;
     last_synced_at: string | null;
+    last_import?: {
+        created_at: string | null;
+        date_to: string | null;
+        rows_added: number;
+        is_stale: boolean;
+    } | null;
 };
 
 type Transaction = {
@@ -753,6 +760,9 @@ export default function AccountShow({
     );
 
     const isManualAccount = account.is_manual;
+    const isImportedAccount = account.provider === 'import';
+    const importIsStale =
+        isImportedAccount && (account.last_import?.is_stale ?? true);
 
     const manualCategoryOptions = useMemo(
         () => categoryOptions[manualSelectedCategoryType] ?? [],
@@ -1096,7 +1106,18 @@ export default function AccountShow({
                                         : 'Institution')}
                                 {account.mask ? ` • **** ${account.mask}` : ''}
                             </p>
-                            {!isManualAccount ? (
+                            {isImportedAccount ? (
+                                <p
+                                    className={`mt-2 text-xs ${importIsStale ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-muted-foreground'}`}
+                                >
+                                    {account.last_import?.date_to
+                                        ? `Transactions up to ${formatDisplayDate(account.last_import.date_to, numberLocale)} · imported ${formatLocalizedDateTime(account.last_import.created_at, numberLocale)}`
+                                        : 'No statement imported yet'}
+                                    {importIsStale
+                                        ? ' · time for a new statement'
+                                        : ''}
+                                </p>
+                            ) : !isManualAccount ? (
                                 <p className="mt-2 text-xs text-muted-foreground">
                                     Last synced:{' '}
                                     {formatLocalizedDateTime(
@@ -1145,6 +1166,19 @@ export default function AccountShow({
                                 }}
                             >
                                 Add Transaction
+                            </Button>
+                        ) : null}
+                        {isImportedAccount ? (
+                            <Button
+                                asChild
+                                className="border border-brand bg-brand font-semibold text-white hover:bg-brand/90 dark:border-brand dark:bg-brand dark:text-white dark:hover:bg-brand/90"
+                            >
+                                <Link
+                                    href={`/imports/new?account=${account.id}`}
+                                >
+                                    <Upload className="size-4" />
+                                    Import statement
+                                </Link>
                             </Button>
                         ) : null}
                     </div>

@@ -203,14 +203,22 @@ export default function WalletsIndex({
                                         .map((connection) => (
                                             <Badge
                                                 key={connection.id}
-                                                variant={bankStatusVariant(
-                                                    connection.status,
-                                                )}
+                                                variant={
+                                                    connection.provider ===
+                                                    'import'
+                                                        ? 'outline'
+                                                        : bankStatusVariant(
+                                                              connection.status,
+                                                          )
+                                                }
                                                 className="max-w-full truncate"
                                             >
-                                                {bankStatusLabel(
-                                                    connection.status,
-                                                )}
+                                                {connection.provider ===
+                                                'import'
+                                                    ? 'Statement import'
+                                                    : bankStatusLabel(
+                                                          connection.status,
+                                                      )}
                                             </Badge>
                                         ))
                                 )}
