@@ -5,8 +5,8 @@ namespace App\Actions\Transactions;
 use App\Models\BankTransaction;
 use App\Models\Category;
 use App\Models\User;
+use App\Support\Text\SearchText;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 class ResolveBankTransactionCategory
 {
@@ -16,66 +16,92 @@ class ResolveBankTransactionCategory
     ];
 
     /**
+     * Checked in order; the first rule with a matching keyword wins, and within it the first
+     * preferred category the user has (subcategory first, then its parent). Keywords match
+     * whole words of the normalised payee/description text (SI and UK merchants).
+     *
      * @var array<string, list<array{keywords: list<string>, preferred: list<string>}>>
      */
     private const KEYWORD_RULES = [
         'expense' => [
-            [
-                'keywords' => ['fuel', 'gas station', 'gasoline', 'petrol', 'diesel', 'shell', 'esso', 'chevron', 'bp', 'omv', 'mol', 'texaco', 'bencin', 'gorivo'],
-                'preferred' => ['Fuel', 'Car', 'Cars', 'Vehicle', 'Vehicles', 'Transportation'],
-            ],
-            [
-                'keywords' => ['grocery', 'groceries', 'supermarket', 'market', 'aldi', 'lidl', 'tesco', 'spar', 'mercator', 'hofer', 'tus', 'eurospin', 'jager', 'sainsbury', 'sainsburys', 'asda', 'morrisons', 'waitrose', 'co op', 'ocado'],
-                'preferred' => ['Groceries'],
-            ],
-            [
-                'keywords' => ['restaurant', 'cafe', 'coffee', 'bar', 'pub', 'food', 'takeaway', 'delivery', 'mcdonalds', 'wolt', 'glovo', 'deliveroo', 'just eat', 'restavracija', 'gostilna', 'kavarna', 'pizzeria'],
-                'preferred' => ['Food & Drink'],
-            ],
-            [
-                'keywords' => ['uber', 'lyft', 'bolt', 'taxi', 'bus', 'train', 'tram', 'metro', 'toll', 'parking', 'transport', 'tfl', 'trainline', 'national rail', 'dars', 'vinjeta', 'parkirnina', 'arriva', 'lpp'],
-                'preferred' => ['Transportation', 'Car', 'Cars', 'Vehicle', 'Vehicles', 'Travel & Vacation'],
-            ],
-            [
-                'keywords' => ['rent', 'mortgage', 'landlord', 'apartment', 'lease', 'najemnina', 'council tax', 'elektro', 'energetika', 'british gas', 'octopus energy'],
-                'preferred' => ['Housing'],
-            ],
-            [
-                'keywords' => ['pharmacy', 'doctor', 'hospital', 'dentist', 'wellness', 'medical', 'lekarna', 'boots', 'zzzs'],
-                'preferred' => ['Health & Wellness'],
-            ],
-            [
-                'keywords' => ['netflix', 'spotify', 'subscription', 'membership', 'recurring'],
-                'preferred' => ['Subscriptions'],
-            ],
-            [
-                'keywords' => ['amazon', 'retail', 'shopping', 'store'],
-                'preferred' => ['Shopping'],
-            ],
+            // Before "uber" (taxi) and generic "food".
+            ['keywords' => ['uber eats', 'ubereats', 'wolt', 'glovo', 'deliveroo', 'just eat', 'justeat', 'foodpanda', 'takeaway'], 'preferred' => ['Takeaway & Delivery', 'Food & Drink']],
+            ['keywords' => ['fuel', 'gas station', 'gasoline', 'petrol', 'diesel', 'shell', 'esso', 'chevron', 'bp', 'omv', 'mol', 'texaco', 'bencin', 'gorivo'], 'preferred' => ['Fuel', 'Car', 'Cars', 'Vehicle', 'Vehicles', 'Transportation']],
+            ['keywords' => ['grocery', 'groceries', 'supermarket', 'market', 'aldi', 'lidl', 'tesco', 'spar', 'mercator', 'hofer', 'tus', 'eurospin', 'jager', 'sainsbury', 'sainsburys', 'asda', 'morrisons', 'waitrose', 'co op', 'ocado', 'iceland'], 'preferred' => ['Groceries']],
+            ['keywords' => ['coffee', 'cafe', 'caffe', 'kavarna', 'starbucks', 'costa coffee', 'pret a manger', 'caffe nero', 'espresso'], 'preferred' => ['Coffee & Cafés', 'Food & Drink']],
+            ['keywords' => ['bar', 'pub', 'brewery', 'pivnica', 'wetherspoon', 'wetherspoons', 'cocktail'], 'preferred' => ['Bars & Pubs', 'Food & Drink']],
+            ['keywords' => ['restaurant', 'restavracija', 'gostilna', 'gostisce', 'gostišče', 'pizzeria', 'pizza', 'bistro', 'grill', 'sushi', 'burger', 'mcdonalds', 'mcdonald s', 'kfc', 'nandos', 'burger king', 'subway'], 'preferred' => ['Restaurants', 'Food & Drink']],
+            ['keywords' => ['food', 'delivery'], 'preferred' => ['Food & Drink']],
+            ['keywords' => ['rent a car', 'car rental', 'sixt', 'hertz', 'avis', 'europcar', 'enterprise rent'], 'preferred' => ['Travel & Vacation', 'Transportation']],
+            ['keywords' => ['uber', 'lyft', 'bolt', 'taxi', 'free now', 'freenow', 'addison lee'], 'preferred' => ['Taxi & Rideshare', 'Transportation']],
+            ['keywords' => ['parking', 'parkirnina', 'parkiranje', 'toll', 'dars', 'vinjeta', 'ncp', 'ringgo', 'justpark', 'paybyphone', 'dartford crossing', 'congestion charge', 'ulez'], 'preferred' => ['Parking & Tolls', 'Transportation']],
+            ['keywords' => ['bus', 'train', 'tram', 'metro', 'transport', 'tfl', 'trainline', 'national rail', 'arriva', 'lpp', 'nomago', 'flixbus', 'slovenske zeleznice', 'oyster', 'avanti', 'lner', 'gwr'], 'preferred' => ['Public Transport', 'Transportation']],
+            ['keywords' => ['car insurance', 'motor insurance', 'avtomobilsko zavarovanje', 'avto zavarovanje', 'kasko'], 'preferred' => ['Car Insurance', 'Transportation']],
+            ['keywords' => ['car service', 'avtoservis', 'vulkanizer', 'kwik fit', 'halfords', 'mot', 'car wash', 'autopralnica'], 'preferred' => ['Car Maintenance', 'Transportation']],
+            ['keywords' => ['mortgage', 'stanovanjski kredit', 'hipoteka', 'hipotekarni'], 'preferred' => ['Mortgage', 'Housing']],
+            ['keywords' => ['rent', 'landlord', 'najemnina', 'najem', 'lease', 'letting', 'lettings'], 'preferred' => ['Rent', 'Housing']],
+            ['keywords' => ['council tax', 'nusz', 'nadomestilo za uporabo stavbnega zemljisca'], 'preferred' => ['Council Tax', 'Housing']],
+            ['keywords' => ['elektro', 'energetika', 'british gas', 'octopus energy', 'octopus', 'edf', 'e on', 'eon', 'ovo energy', 'thames water', 'severn trent', 'united utilities', 'anglian water', 'vodovod', 'komunala', 'snaga', 'gen i', 'plinarna', 'electricity', 'water', 'gas bill'], 'preferred' => ['Utilities', 'Housing']],
+            ['keywords' => ['telekom', 'telekom slovenije', 'a1', 'telemach', 't 2', 'bt', 'virgin media', 'sky', 'vodafone', 'ee', 'o2', 'three uk', 'giffgaff', 'plusnet', 'talktalk', 'izi mobil', 'broadband'], 'preferred' => ['Internet & Phone', 'Housing']],
+            ['keywords' => ['home insurance', 'household insurance', 'zavarovanje doma', 'zavarovanje stanovanja'], 'preferred' => ['Home Insurance', 'Housing']],
+            ['keywords' => ['ikea', 'jysk', 'lesnina', 'dunelm', 'the range', 'home bargains', 'wilko', 'pohistvo', 'pohištvo'], 'preferred' => ['Furniture & Household', 'Housing']],
+            ['keywords' => ['plumber', 'electrician', 'locksmith', 'handyman', 'popravilo', 'vzdrzevanje', 'vzdrževanje', 'instalater', 'inštalater'], 'preferred' => ['Repairs & Maintenance', 'Housing']],
+            ['keywords' => ['vzajemna', 'dopolnilno zavarovanje', 'zdravstveno zavarovanje', 'bupa', 'vitality', 'axa health'], 'preferred' => ['Health Insurance', 'Health & Wellness']],
+            ['keywords' => ['pharmacy', 'lekarna', 'lekarne', 'chemist', 'boots'], 'preferred' => ['Pharmacy', 'Health & Wellness']],
+            ['keywords' => ['doctor', 'hospital', 'dentist', 'dental', 'zobozdravnik', 'ambulanta', 'clinic', 'klinika', 'medical', 'zzzs', 'nhs', 'optician', 'specsavers', 'zdravstveni dom'], 'preferred' => ['Doctor & Dentist', 'Health & Wellness']],
+            ['keywords' => ['gym', 'fitness', 'puregym', 'pure gym', 'the gym group', 'david lloyd', 'nuffield', 'anytime fitness', 'yoga', 'pilates'], 'preferred' => ['Gym & Fitness', 'Health & Wellness']],
+            ['keywords' => ['wellness', 'spa', 'massage', 'masaza', 'masaža'], 'preferred' => ['Health & Wellness']],
+            ['keywords' => ['hairdresser', 'hair', 'frizer', 'frizerski', 'barber', 'salon', 'beauty', 'kozmetika', 'kozmeticni', 'nails', 'manikura'], 'preferred' => ['Hair & Beauty', 'Personal Care']],
+            ['keywords' => ['dm', 'drogerie', 'muller', 'müller', 'superdrug', 'savers', 'rossmann'], 'preferred' => ['Toiletries', 'Personal Care']],
+            // Before "amazon" (online shopping).
+            ['keywords' => ['netflix', 'spotify', 'disney', 'disney plus', 'hbo', 'hbo max', 'apple tv', 'youtube premium', 'youtube', 'prime video', 'amazon prime', 'voyo', 'deezer', 'tidal', 'now tv', 'paramount', 'crunchyroll'], 'preferred' => ['Streaming', 'Subscriptions']],
+            ['keywords' => ['apple com bill', 'itunes', 'app store', 'google play', 'google one', 'google storage', 'microsoft', 'adobe', 'openai', 'chatgpt', 'anthropic', 'claude ai', 'github', 'icloud', 'dropbox', 'notion', '1password', 'canva', 'jetbrains'], 'preferred' => ['Software & Apps', 'Subscriptions']],
+            ['keywords' => ['membership', 'clanarina', 'članarina', 'national trust', 'costco'], 'preferred' => ['Memberships', 'Subscriptions']],
+            ['keywords' => ['subscription', 'recurring', 'narocnina', 'naročnina'], 'preferred' => ['Subscriptions']],
+            ['keywords' => ['ryanair', 'easyjet', 'wizz', 'wizz air', 'wizzair', 'lufthansa', 'british airways', 'klm', 'air france', 'turkish airlines', 'jet2', 'airline', 'airlines', 'flight', 'transavia', 'vueling', 'eurowings', 'austrian airlines'], 'preferred' => ['Flights', 'Travel & Vacation']],
+            ['keywords' => ['booking com', 'airbnb', 'hotel', 'hostel', 'expedia', 'trivago', 'hotels com', 'premier inn', 'travelodge', 'apartmaji'], 'preferred' => ['Accommodation', 'Travel & Vacation']],
+            ['keywords' => ['cinema', 'kino', 'cineplexx', 'kolosej', 'odeon', 'vue', 'cineworld', 'ticketmaster', 'eventim', 'theatre', 'theater', 'concert', 'koncert', 'festival', 'see tickets'], 'preferred' => ['Events & Cinema', 'Entertainment']],
+            ['keywords' => ['steam', 'steampowered', 'playstation', 'psn', 'xbox', 'nintendo', 'epic games', 'gog com', 'twitch'], 'preferred' => ['Games', 'Entertainment']],
+            ['keywords' => ['bookshop', 'waterstones', 'knjigarna', 'mladinska knjiga', 'kindle', 'audible', 'bandcamp'], 'preferred' => ['Books & Music', 'Entertainment']],
+            ['keywords' => ['hobbycraft', 'hobby', 'craft'], 'preferred' => ['Hobbies', 'Entertainment']],
+            // Before "amazon"/generic shopping.
+            ['keywords' => ['currys', 'big bang', 'bigbang', 'apple store', 'harvey norman', 'mediamarkt', 'media markt'], 'preferred' => ['Electronics', 'Shopping']],
+            ['keywords' => ['h m', 'zara', 'primark', 'uniqlo', 'deichmann', 'new yorker', 'mango', 'bershka', 'tk maxx', 'tkmaxx', 'nike', 'adidas', 'sports direct', 'jd sports', 'schuh'], 'preferred' => ['Clothing & Shoes', 'Shopping']],
+            ['keywords' => ['bauhaus', 'obi', 'merkur trgovina', 'b q', 'homebase', 'wickes', 'screwfix', 'toolstation', 'garden centre', 'vrtni center', 'hornbach'], 'preferred' => ['Home & Garden', 'Shopping']],
+            ['keywords' => ['amazon', 'amzn', 'ebay', 'aliexpress', 'temu', 'shein', 'zalando', 'etsy', 'mimovrste', 'vinted'], 'preferred' => ['Online Shopping', 'Shopping']],
+            ['keywords' => ['vrtec', 'nursery', 'childcare', 'kindergarten', 'varstvo', 'babysitter', 'nanny'], 'preferred' => ['Childcare', 'Family & Dependents']],
+            ['keywords' => ['toys', 'toy', 'smyths', 'hamleys', 'igrace', 'igrače'], 'preferred' => ['Kids', 'Family & Dependents']],
+            ['keywords' => ['pet', 'pets', 'pets at home', 'fressnapf', 'veterinar', 'veterinarska', 'vet', 'vets'], 'preferred' => ['Pets', 'Family & Dependents']],
+            ['keywords' => ['udemy', 'coursera', 'tuition', 'course', 'tecaj', 'tečaj', 'school', 'sola', 'šola', 'fakulteta', 'university', 'college', 'skillshare', 'duolingo'], 'preferred' => ['Courses', 'Education']],
+            ['keywords' => ['textbook', 'school supplies', 'papirnica', 'stationery', 'ryman'], 'preferred' => ['Books & Supplies', 'Education']],
+            ['keywords' => ['credit card', 'kreditna kartica', 'card repayment', 'amex', 'american express', 'barclaycard'], 'preferred' => ['Credit Card', 'Debt Repayment']],
+            ['keywords' => ['loan', 'kredit', 'obrok kredita', 'posojilo', 'klarna', 'paypal credit', 'zopa'], 'preferred' => ['Loans', 'Debt Repayment']],
+            ['keywords' => ['fee', 'fees', 'provizija', 'nadomestilo', 'bank charge', 'bank charges', 'account fee', 'vodenje racuna', 'vodenje računa', 'monthly fee', 'overdraft', 'commission', 'stroski vodenja', 'stroški vodenja'], 'preferred' => ['Bank Fees', 'Other']],
+            ['keywords' => ['furs', 'davek', 'davki', 'tax', 'hmrc', 'hm revenue', 'self assessment', 'dohodnina'], 'preferred' => ['Taxes', 'Other']],
+            ['keywords' => ['retail', 'shopping', 'store', 'shop'], 'preferred' => ['Shopping']],
         ],
         'income' => [
-            [
-                'keywords' => ['salary', 'payroll', 'wage', 'paycheck', 'placa', 'plača', 'regres'],
-                'preferred' => ['Wages & Salary'],
-            ],
-            [
-                'keywords' => ['refund', 'reimbursement'],
-                'preferred' => ['Refunds & Reimbursements', 'Tax Refunds'],
-            ],
-            [
-                'keywords' => ['interest', 'obresti'],
-                'preferred' => ['Interest Income'],
-            ],
-            [
-                'keywords' => ['dividend'],
-                'preferred' => ['Investment Dividends'],
-            ],
-            [
-                'keywords' => ['grant', 'scholarship'],
-                'preferred' => ['Grants & Scholarships'],
-            ],
+            ['keywords' => ['tax refund', 'hmrc refund', 'vracilo dohodnine', 'vračilo dohodnine', 'dohodnina', 'furs'], 'preferred' => ['Tax Refunds', 'Refunds & Reimbursements']],
+            ['keywords' => ['regres', 'holiday pay', 'holiday allowance'], 'preferred' => ['Holiday Pay (Regres)', 'Wages & Salary']],
+            ['keywords' => ['bonus', 'nagrada', 'bozicnica', 'božičnica', 'poslovna uspesnost', 'poslovna uspešnost'], 'preferred' => ['Bonus', 'Wages & Salary']],
+            ['keywords' => ['salary', 'payroll', 'wage', 'wages', 'paycheck', 'placa', 'plača', 'osebni dohodek'], 'preferred' => ['Salary', 'Wages & Salary']],
+            ['keywords' => ['reimbursement', 'expense claim', 'expenses', 'povracilo stroskov', 'povračilo stroškov', 'potni stroski', 'potni stroški', 'kilometrina', 'dnevnica'], 'preferred' => ['Expense Claims', 'Refunds & Reimbursements']],
+            ['keywords' => ['refund', 'vracilo', 'vračilo', 'chargeback'], 'preferred' => ['Purchase Refunds', 'Refunds & Reimbursements', 'Tax Refunds']],
+            ['keywords' => ['interest', 'obresti'], 'preferred' => ['Interest Income']],
+            ['keywords' => ['dividend', 'dividende', 'dividenda'], 'preferred' => ['Investment Dividends']],
+            ['keywords' => ['grant', 'scholarship', 'stipendija'], 'preferred' => ['Grants & Scholarships']],
+            ['keywords' => ['pension', 'pokojnina', 'zpiz'], 'preferred' => ['Pensions & Retirement Distributions']],
+            ['keywords' => ['child benefit', 'otroski dodatek', 'otroški dodatek', 'universal credit', 'dwp', 'zavod za zaposlovanje', 'center za socialno delo'], 'preferred' => ['Government Benefits & Subsidies']],
+            ['keywords' => ['rent', 'najemnina', 'najem', 'tenant'], 'preferred' => ['Rental & Real Estate Income']],
+            ['keywords' => ['vinted', 'ebay', 'bolha', 'depop'], 'preferred' => ['Sales (Selling Personal Items)']],
         ],
     ];
+
+    /**
+     * Words in category names too common in bank text to mean anything on their own
+     * ("CARD PAYMENT", "BANK TRANSFER", "ONLINE PAYMENT").
+     */
+    private const GENERIC_NAME_TOKENS = ['card', 'bank', 'online', 'credit', 'home', 'public', 'self', 'side', 'real', 'items', 'purchase', 'expense', 'claims', 'payment'];
 
     /**
      * @var array<string, Collection<int, Category>>
@@ -146,15 +172,7 @@ class ResolveBankTransactionCategory
 
     private function buildSignalText(BankTransaction $transaction): string
     {
-        return collect([
-            $transaction->merchant_name,
-            $transaction->payee,
-            $transaction->name,
-            $transaction->description,
-        ])
-            ->filter(fn ($value): bool => is_string($value) && trim($value) !== '')
-            ->map(fn (string $value): string => $this->normalizeText($value))
-            ->implode(' ');
+        return SearchText::forTransaction($transaction);
     }
 
     /**
@@ -209,7 +227,9 @@ class ResolveBankTransactionCategory
                     }
 
                     foreach (explode(' ', $normalizedName) as $token) {
-                        if (mb_strlen($token) >= 4 && $this->containsNormalizedPhrase($signalText, $token)) {
+                        if (mb_strlen($token) >= 4
+                            && ! in_array($token, self::GENERIC_NAME_TOKENS, true)
+                            && $this->containsNormalizedPhrase($signalText, $token)) {
                             $score += 8;
                         }
                     }
@@ -257,10 +277,7 @@ class ResolveBankTransactionCategory
     private function normalizeText(string $value): string
     {
         // Punctuation separates words: "TESCO,LONDON" and "(interest)" still match.
-        return (string) Str::of($value)
-            ->replaceMatches('/[^\p{L}\p{N}\s]+/u', ' ')
-            ->lower()
-            ->squish();
+        return SearchText::normalize($value);
     }
 
     private function containsNormalizedPhrase(string $signalText, string $phrase): bool

@@ -101,6 +101,20 @@ The token is stored encrypted; SpendLess asks for a new one when it expires.
 
 Both count towards the dashboard total.
 
+## Categories and tags
+
+- **Categories say what a payment was.** New accounts start with 36 main categories and about 50
+  subcategories (Housing > Rent, Transportation > Fuel, Food & Drink > Coffee & Cafés…). Bank
+  transactions are filed into the most specific one automatically (SI and UK merchants); change any
+  of them under **Settings → All Categories**.
+- **Tags say which thing it was for:** a car, a motorbike, a flat. Tag a transaction from its
+  account page (click it, pick tags or type a new one). **Tags** in the top bar shows what each tag
+  cost or earned this month / year / 12 months / all time, split by category, per currency.
+- **Tag rules** tag new transactions automatically: from a given account (e.g. the motorbike's card)
+  and/or when the payee or description contains some text (e.g. "J. Novak" for a flat's rent). A rule
+  can also tag matching past transactions. Rules check each transaction once, so a tag you remove by
+  hand stays removed.
+
 ## Background work
 
 Everything runs from one cron entry:

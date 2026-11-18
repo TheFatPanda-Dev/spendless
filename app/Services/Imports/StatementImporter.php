@@ -7,6 +7,7 @@ use App\Models\BankAccount;
 use App\Models\BankStatementImport;
 use App\Models\BankTransaction;
 use App\Models\User;
+use App\Services\Tags\TagRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -14,7 +15,10 @@ class StatementImporter
 {
     private const CHUNK = 400;
 
-    public function __construct(private readonly ResolveBankTransactionCategory $resolveCategory) {}
+    public function __construct(
+        private readonly ResolveBankTransactionCategory $resolveCategory,
+        private readonly TagRules $tagRules,
+    ) {}
 
     /**
      * @param  BankAccount|null  $account  Null when the account will be created on confirm.
@@ -135,6 +139,8 @@ class StatementImporter
             if ($plan->stalePendingIds !== []) {
                 $account->transactions()->whereIn('id', $plan->stalePendingIds)->delete();
             }
+
+            $this->tagRules->applyToNew($user);
 
             $this->updateBalance($account, $plan, $statement, $balanceOverride);
 

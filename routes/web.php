@@ -9,6 +9,8 @@ use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IbkrConnectionController;
 use App\Http\Controllers\StatementImportController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\TagRuleController;
 use App\Http\Controllers\WalletBankConnectionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WalletSyncStatusController;
@@ -48,6 +50,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('accounts.transactions.manual.store');
     Route::patch('accounts/{bankAccount}/transactions/{bankTransaction}', [BankAccountController::class, 'update'])
         ->name('accounts.transactions.update');
+
+    Route::get('tags', [TagController::class, 'index'])->name('tags.index');
+    Route::post('tags', [TagController::class, 'store'])->name('tags.store');
+    Route::patch('tags/{tag}', [TagController::class, 'update'])->name('tags.update');
+    Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+    Route::post('tags/{tag}/rules', [TagRuleController::class, 'store'])->name('tags.rules.store');
+    Route::delete('tags/{tag}/rules/{rule}', [TagRuleController::class, 'destroy'])
+        ->scopeBindings()
+        ->name('tags.rules.destroy');
 
     Route::middleware('throttle:banking-sensitive')->group(function (): void {
         Route::post('wallets/refresh-all', [WalletBankConnectionController::class, 'refreshAll'])

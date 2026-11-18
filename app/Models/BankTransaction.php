@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BankTransaction extends Model
 {
@@ -33,7 +34,13 @@ class BankTransaction extends Model
             'amount' => 'decimal:2',
             'pending' => 'boolean',
             'category_manually_set' => 'boolean',
+            'tag_rules_applied' => 'boolean',
         ];
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'bank_transaction_tag');
     }
 
     public function connection(): BelongsTo

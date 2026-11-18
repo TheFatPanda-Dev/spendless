@@ -40,7 +40,7 @@ class BankAccountController extends Controller
         $bankAccount->load([
             'connection',
             'transactions' => fn ($query) => $query
-                ->with('assignedCategory')
+                ->with(['assignedCategory', 'tags' => fn ($tags) => $tags->select('tags.id')])
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->latest('date')
                 ->limit(200),
@@ -78,6 +78,7 @@ class BankAccountController extends Controller
                     'currency' => $transaction->currency,
                     'date' => $transaction->date?->toDateString(),
                     'pending' => $transaction->pending,
+                    'tag_ids' => $transaction->tags->modelKeys(),
                 ];
             })
             ->values();
@@ -112,6 +113,7 @@ class BankAccountController extends Controller
                 'income' => $this->buildCategoryOptions($categories, 'income'),
             ],
             'categoryColors' => CategoryOptions::colors(),
+            'tags' => $user->tags()->orderBy('name')->get(['id', 'name', 'color']),
             'transactions' => $transactions,
         ]);
     }
@@ -150,6 +152,10 @@ class BankAccountController extends Controller
 
         if ($updates !== []) {
             $bankTransaction->forceFill($updates)->save();
+        }
+
+        if ($request->exists('tag_ids')) {
+            $bankTransaction->tags()->sync($request->validated('tag_ids') ?? []);
         }
 
         return to_route('accounts.show', [

@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid.js';
 import Menu from 'lucide-react/dist/esm/icons/menu.js';
+import Tags from 'lucide-react/dist/esm/icons/tags.js';
 import AppLogo from '@/components/app-logo';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             title: 'Dashboard',
             href: dashboardHref,
             icon: LayoutGrid,
+        },
+        {
+            title: 'Tags',
+            href: '/tags',
+            icon: Tags,
         },
     ];
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();

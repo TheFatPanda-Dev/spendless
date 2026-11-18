@@ -13,6 +13,9 @@ import Upload from 'lucide-react/dist/esm/icons/upload.js';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryIcon } from '@/components/category-icon';
 import { resolveCategoryColorPresentation } from '@/components/category-icon-utils';
+import { TagChip } from '@/components/tag-chip';
+import type { TagOption } from '@/components/tag-chip';
+import { TransactionTagPicker } from '@/components/transaction-tag-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -72,6 +75,7 @@ type Transaction = {
     currency: string | null;
     date: string | null;
     pending: boolean;
+    tag_ids: number[];
 };
 
 type CategoryOption = {
@@ -115,8 +119,45 @@ type Props = {
         income: CategoryOption[];
     };
     categoryColors: CategoryColorOption[];
+    tags: TagOption[];
     transactions: Transaction[];
 };
+
+function TransactionTags({
+    tagIds,
+    tagsById,
+    colorMap,
+}: {
+    tagIds: number[];
+    tagsById: Map<number, TagOption>;
+    colorMap: Map<string, CategoryColorOption>;
+}) {
+    const transactionTags = tagIds
+        .map((id) => tagsById.get(id))
+        .filter((tag): tag is TagOption => tag !== undefined);
+
+    if (transactionTags.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-1 flex flex-wrap gap-1">
+            {transactionTags.map((tag) => (
+                <TagChip key={tag.id} tag={tag} colorMap={colorMap} />
+            ))}
+        </div>
+    );
+}
+
+function sameIds(left: number[], right: number[]): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    const rightIds = new Set(right);
+
+    return left.every((id) => rightIds.has(id));
+}
 
 function formatCurrency(value: number, currency: string): string {
     const sign = value > 0 ? '+' : '';
@@ -605,6 +646,7 @@ export default function AccountShow({
     filters,
     categoryOptions,
     categoryColors,
+    tags,
     transactions,
 }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -625,6 +667,11 @@ export default function AccountShow({
         () => new Map(categoryColors.map((option) => [option.value, option])),
         [categoryColors],
     );
+    const tagsById = useMemo(
+        () => new Map(tags.map((tag) => [tag.id, tag])),
+        [tags],
+    );
+    const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
     const counterparties = useMemo(
         () =>
@@ -847,10 +894,29 @@ export default function AccountShow({
         activeTransaction !== null &&
         editedMerchantName !== (activeTransaction.merchant_name ?? '');
 
+    const hasTagsChanged =
+        activeTransaction !== null &&
+        !sameIds(selectedTagIds, activeTransaction.tag_ids);
+
     const hasTransactionChanges =
         hasCategorySelectionChanged ||
         hasMerchantNameChanged ||
-        hasTransactionNameChanged;
+        hasTransactionNameChanged ||
+        hasTagsChanged;
+
+    const toggleTag = (tagId: number): void => {
+        setSelectedTagIds((current) =>
+            current.includes(tagId)
+                ? current.filter((id) => id !== tagId)
+                : [...current, tagId],
+        );
+    };
+
+    const addCreatedTag = (tag: TagOption): void => {
+        setSelectedTagIds((current) =>
+            current.includes(tag.id) ? current : [...current, tag.id],
+        );
+    };
 
     const resetFilters = (): void => {
         setCounterpartyFilter('all');
@@ -872,6 +938,7 @@ export default function AccountShow({
         );
         setEditedMerchantName(transaction.merchant_name ?? '');
         setEditedTransactionName(transaction.name ?? '');
+        setSelectedTagIds(transaction.tag_ids);
         setSelectedCategoryType(transaction.category_type);
         setIsCategoryPickerOpen(false);
         setCategoryPickerView('type');
@@ -888,6 +955,7 @@ export default function AccountShow({
         setSelectedCategoryId('');
         setEditedMerchantName('');
         setEditedTransactionName('');
+        setSelectedTagIds([]);
         setSelectedCategoryType('expense');
         setIsCategoryPickerOpen(false);
         setCategoryPickerView('type');
@@ -904,7 +972,12 @@ export default function AccountShow({
             category_id?: number;
             merchant_name?: string | null;
             name?: string | null;
+            tag_ids?: number[];
         } = {};
+
+        if (hasTagsChanged) {
+            payload.tag_ids = selectedTagIds;
+        }
 
         if (hasCategorySelectionChanged && selectedCategoryId !== '') {
             payload.category_id = Number(selectedCategoryId);
@@ -1741,6 +1814,17 @@ export default function AccountShow({
                                                                     transaction.name ??
                                                                     '---'}
                                                             </p>
+                                                            <TransactionTags
+                                                                tagIds={
+                                                                    transaction.tag_ids
+                                                                }
+                                                                tagsById={
+                                                                    tagsById
+                                                                }
+                                                                colorMap={
+                                                                    categoryColorMap
+                                                                }
+                                                            />
                                                         </div>
 
                                                         <div className="flex min-w-0 items-center justify-end gap-3 text-right">
@@ -1906,6 +1990,31 @@ export default function AccountShow({
                                                                                 </Button>
                                                                             </div>
                                                                         </div>
+                                                                        <div className="mt-3 border-t border-brand/10 pt-3 dark:border-white/8">
+                                                                            <TransactionTagPicker
+                                                                                tags={
+                                                                                    tags
+                                                                                }
+                                                                                selectedIds={
+                                                                                    selectedTagIds
+                                                                                }
+                                                                                onToggle={
+                                                                                    toggleTag
+                                                                                }
+                                                                                onCreated={
+                                                                                    addCreatedTag
+                                                                                }
+                                                                                colors={
+                                                                                    categoryColors
+                                                                                }
+                                                                                colorMap={
+                                                                                    categoryColorMap
+                                                                                }
+                                                                                disabled={
+                                                                                    isUpdatingCategory
+                                                                                }
+                                                                            />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ) : null}
@@ -2029,6 +2138,17 @@ export default function AccountShow({
                                                                             {transaction.merchant_name ??
                                                                                 'No merchant details'}
                                                                         </p>
+                                                                        <TransactionTags
+                                                                            tagIds={
+                                                                                transaction.tag_ids
+                                                                            }
+                                                                            tagsById={
+                                                                                tagsById
+                                                                            }
+                                                                            colorMap={
+                                                                                categoryColorMap
+                                                                            }
+                                                                        />
                                                                     </td>
                                                                     <td
                                                                         className={`border-y px-3 py-2.5 align-middle ${isActive ? 'border-brand/25' : 'border-brand/8 dark:border-white/8'}`}
@@ -2204,6 +2324,31 @@ export default function AccountShow({
                                                                                                 : 'Save'}
                                                                                         </Button>
                                                                                     </div>
+                                                                                </div>
+                                                                                <div className="mt-3 border-t border-brand/10 pt-3 dark:border-white/8">
+                                                                                    <TransactionTagPicker
+                                                                                        tags={
+                                                                                            tags
+                                                                                        }
+                                                                                        selectedIds={
+                                                                                            selectedTagIds
+                                                                                        }
+                                                                                        onToggle={
+                                                                                            toggleTag
+                                                                                        }
+                                                                                        onCreated={
+                                                                                            addCreatedTag
+                                                                                        }
+                                                                                        colors={
+                                                                                            categoryColors
+                                                                                        }
+                                                                                        colorMap={
+                                                                                            categoryColorMap
+                                                                                        }
+                                                                                        disabled={
+                                                                                            isUpdatingCategory
+                                                                                        }
+                                                                                    />
                                                                                 </div>
                                                                             </div>
                                                                         </td>

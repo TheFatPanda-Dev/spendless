@@ -8,6 +8,7 @@ use App\Models\BankConnection;
 use App\Models\BankSyncRun;
 use App\Models\BankTransaction;
 use App\Models\InvestmentActivity;
+use App\Services\Tags\TagRules;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class IbkrSync
     public function __construct(
         private readonly FlexClient $client,
         private readonly ResolveBankTransactionCategory $resolveCategory,
+        private readonly TagRules $tagRules,
     ) {}
 
     public static function nextRun(): CarbonImmutable
@@ -60,6 +62,10 @@ class IbkrSync
                     $updated += $accountUpdated;
                 }
             });
+
+            if ($connection->user !== null) {
+                $this->tagRules->applyToNew($connection->user);
+            }
 
             $connection->forceFill([
                 'status' => BankConnection::STATUS_CONNECTED,

@@ -7,6 +7,7 @@ use App\Models\BankAccount;
 use App\Models\BankConnection;
 use App\Models\BankSyncRun;
 use App\Models\BankTransaction;
+use App\Services\Tags\TagRules;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -26,6 +27,7 @@ class EnableBankingSync
     public function __construct(
         private readonly EnableBankingClient $client,
         private readonly ResolveBankTransactionCategory $resolveCategory,
+        private readonly TagRules $tagRules,
     ) {}
 
     /**
@@ -57,6 +59,10 @@ class EnableBankingSync
                 $added += $accountAdded;
                 $updated += $accountUpdated;
                 $removed += $accountRemoved;
+            }
+
+            if ($connection->user !== null) {
+                $this->tagRules->applyToNew($connection->user);
             }
 
             $connection->forceFill([

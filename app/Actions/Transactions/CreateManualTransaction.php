@@ -5,11 +5,14 @@ namespace App\Actions\Transactions;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\Category;
+use App\Services\Tags\TagRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CreateManualTransaction
 {
+    public function __construct(private readonly TagRules $tagRules) {}
+
     /**
      * @param  array{category: Category, amount: float, date: string, merchant_name: string|null, transaction_name: string|null}  $attributes
      */
@@ -63,6 +66,10 @@ class CreateManualTransaction
                     $connection->wallet->forceFill([
                         'last_synced_at' => now(),
                     ])->save();
+                }
+
+                if ($connection->user !== null) {
+                    $this->tagRules->applyToNew($connection->user);
                 }
             }
 
