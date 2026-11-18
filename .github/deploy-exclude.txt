@@ -1,0 +1,25 @@
+# Never uploaded to (and never deleted from) the server by the deploy workflow.
+# Server-only state:
+/.env
+/.env.*
+/storage/
+/bootstrap/cache/
+/public/storage
+/public/hot
+/database/*.sqlite
+# Not needed in production:
+/.git/
+/.github/
+/node_modules/
+/tests/
+/phpunit.xml
+/.phpunit.cache/
+/.phpunit.result.cache
+/.lerd.yaml
+/.node-version
+/.php-version
+/.editorconfig
+/.prettierrc
+/.prettierignore
+/eslint.config.js
+/pint.json

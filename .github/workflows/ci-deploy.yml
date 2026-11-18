@@ -1,0 +1,123 @@
+name: Test and deploy
+
+# Every push and pull request runs the checks.
+# A push to main that passes them is deployed to the server (neoserv) over SSH.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel a production deploy half-way.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3, zip, intl, bcmath, openssl
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci --no-audit --no-fund
+
+      - name: Prepare app
+        run: cp .env.example .env && php artisan key:generate
+
+      - run: npm run build
+      - run: npx tsc --noEmit
+      - run: npx eslint .
+      - run: vendor/bin/pint --test
+      - run: php artisan test
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Repository Settings → Environments → "production" can require your approval first.
+    environment: production
+    env:
+      SSH_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+      SSH_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      APP_PATH: ${{ secrets.DEPLOY_PATH }}
+      PHP_BIN: ${{ secrets.DEPLOY_PHP || 'php' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, zip, intl, bcmath, openssl
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build for production
+        env:
+          VITE_APP_NAME: SpendLess
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$APP_PATH" || { echo "::error::Secret DEPLOY_PATH is not set"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          echo "SSH=ssh -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
+
+      - name: Maintenance mode
+        run: $SSH "$SSH_TARGET" "cd '$APP_PATH' && $PHP_BIN artisan down --retry=30 || true"
+
+      - name: Upload code
+        run: rsync -az --delete --exclude-from=.github/deploy-exclude.txt -e "$SSH" ./ "$SSH_TARGET:$APP_PATH/"
+
+      - name: Back up database, migrate, cache, go live
+        run: |
+          $SSH "$SSH_TARGET" bash -se <<SCRIPT
+          set -euo pipefail
+          cd '$APP_PATH'
+          $PHP_BIN artisan optimize:clear
+          # A failed backup stops the deploy before any migration runs (the site stays in maintenance).
+          $PHP_BIN artisan spendless:backup-database
+          $PHP_BIN artisan migrate --force
+          $PHP_BIN artisan config:cache
+          $PHP_BIN artisan route:cache
+          $PHP_BIN artisan view:cache
+          [ -e public/storage ] || $PHP_BIN artisan storage:link || true
+          $PHP_BIN artisan queue:restart
+          $PHP_BIN artisan up
+          SCRIPT
+
+      - name: If something failed
+        if: failure()
+        run: |
+          echo "::error::The deploy stopped. The site may still be in maintenance mode."
+          echo "Check the step above, fix it, then re-run this job or run 'php artisan up' on the server."
+          echo "Database backups are in storage/app/backups on the server."

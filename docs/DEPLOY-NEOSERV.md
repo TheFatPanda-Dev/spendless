@@ -42,7 +42,59 @@ Paths below assume the app lives in `~/spendless` with the domain's document roo
    That's the only cron entry needed. Within two minutes **Settings → Admin → Setup check**
    should show "Cron job" in green. The Admin page also prints the exact line for your server.
 
-## 2. Deploying an update
+## 2. Automatic deploys from GitHub (recommended)
+
+`.github/workflows/ci-deploy.yml` runs on every push:
+
+1. **Checks:** PHP tests, TypeScript, ESLint and Pint.
+2. **Deploy:** only for a push to `main` that passes the checks.
+   1. The site goes into maintenance mode.
+   2. The code is uploaded with its PHP dependencies already installed and the frontend already built, so the server needs neither Composer nor Node.
+   3. The database is backed up to `storage/app/backups` (the newest 10 are kept).
+   4. Migrations run, the caches are rebuilt and the site comes back up.
+
+Your `.env`, `storage/` (logs, keys, uploads, backups) and `bootstrap/cache` are never touched or uploaded; see `.github/deploy-exclude.txt`. If the backup or a migration fails, the deploy stops with the site still in maintenance mode, before anything else changes. GitHub emails you.
+
+### One-time setup
+
+1. **Create a deploy key** on your computer (no passphrase, used only by GitHub):
+
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/spendless_deploy -N "" -C "github-actions-deploy"
+   ```
+
+2. **Allow it on neoserv.** cPanel → *SSH Access* → *Manage SSH Keys* → *Import Key*: paste the contents of
+   `~/.ssh/spendless_deploy.pub`, then *Manage* → **Authorize**.
+3. **Record the server's fingerprint** (use your SSH host and port):
+
+   ```bash
+   ssh-keyscan -p PORT your-ssh-host
+   ```
+
+4. **Add the repository secrets** in GitHub → *Settings* → *Secrets and variables* → *Actions* → *New repository secret*:
+
+   | Secret | Value |
+   |---|---|
+   | `DEPLOY_HOST` | SSH host name of your neoserv account |
+   | `DEPLOY_PORT` | SSH port (leave out if it is 22) |
+   | `DEPLOY_USER` | your cPanel / SSH user name |
+   | `DEPLOY_PATH` | full path of the app, e.g. `/home/USER/spendless` (the folder that contains `artisan`) |
+   | `DEPLOY_SSH_KEY` | the whole contents of `~/.ssh/spendless_deploy` (the private key) |
+   | `DEPLOY_KNOWN_HOSTS` | the output of the `ssh-keyscan` command |
+   | `DEPLOY_PHP` | optional: PHP binary if plain `php` is too old, e.g. `/opt/cpanel/ea-php83/root/usr/bin/php` |
+
+5. Optional safety: *Settings* → *Environments* → **production** → *Required reviewers* → add yourself.
+   Each deploy then waits for you to click "Approve".
+6. The server needs `rsync` (`which rsync` over SSH; it's standard on cPanel). If `mysqldump` has another
+   name there, add `DB_DUMP_BINARY=mariadb-dump` (or a full path) to the server's `.env`.
+
+From then on, `git push` to `main` is the whole deployment. Don't run `git pull` on the server any more,
+because the workflow manages those files.
+
+## 3. Deploying an update by hand
+
+Use this only if you don't use the GitHub workflow.
+
 
 Build the frontend on your own computer (shared hosting has too little memory for Vite):
 
@@ -71,7 +123,7 @@ duplicate columns. Manual cash wallets, their transactions, categories and users
 oldest user becomes admin. Take a database backup first (cPanel → *Backup* or phpMyAdmin →
 *Export*).
 
-## 3. What runs in the background
+## 4. What runs in the background
 
 | What | When |
 |---|---|
@@ -81,7 +133,7 @@ oldest user becomes admin. Take a database backup first (cPanel → *Backup* or 
 | "Reconnect your bank" email | 7 days before a bank's 180-day access ends (09:00 UTC) |
 | Clean-up | Daily: sync history older than 30 days, failed jobs older than 30 days |
 
-## 4. Troubleshooting
+## 5. Troubleshooting
 
 Open **Settings → Admin**. Every check is either green or explains what to change. Common ones:
 

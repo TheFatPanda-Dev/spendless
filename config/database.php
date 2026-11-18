@@ -19,6 +19,10 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    // Program used by `php artisan spendless:backup-database` (e.g. "mariadb-dump" or a full path).
+    'dump_binary' => env('DB_DUMP_BINARY', 'mysqldump'),
+    'backup_path' => env('DB_BACKUP_PATH', storage_path('app/backups')),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections
