@@ -38,6 +38,8 @@ type Account = {
     official_name: string | null;
     institution_name: string | null;
     provider: string | null;
+    wallet_id?: number | null;
+    subtype?: string | null;
     is_manual: boolean;
     mask: string | null;
     currency: string | null;
@@ -1106,6 +1108,21 @@ export default function AccountShow({
                                         : 'Institution')}
                                 {account.mask ? ` • **** ${account.mask}` : ''}
                             </p>
+                            {account.provider === 'asset' &&
+                            account.wallet_id ? (
+                                <Button
+                                    asChild
+                                    className="border border-brand bg-brand font-semibold text-white hover:bg-brand/90 dark:border-brand dark:bg-brand dark:text-white dark:hover:bg-brand/90"
+                                >
+                                    <Link
+                                        href={`/wallets/${account.wallet_id}`}
+                                    >
+                                        {account.subtype === 'pension'
+                                            ? 'Update value'
+                                            : 'ISA details'}
+                                    </Link>
+                                </Button>
+                            ) : null}
                             {isImportedAccount ? (
                                 <p
                                     className={`mt-2 text-xs ${importIsStale ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-muted-foreground'}`}

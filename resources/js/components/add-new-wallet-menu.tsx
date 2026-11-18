@@ -1,6 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import { useMemo, useState } from 'react';
+import AssetAccountDialog from '@/components/asset-account-dialog';
 import IbkrConnectDialog from '@/components/ibkr-connect-dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +36,7 @@ export default function AddNewWalletMenu({
     const [open, setOpen] = useState(false);
     const [manualDialogOpen, setManualDialogOpen] = useState(false);
     const [ibkrDialogOpen, setIbkrDialogOpen] = useState(false);
+    const [assetDialogOpen, setAssetDialogOpen] = useState(false);
     const [startingBalanceInput, setStartingBalanceInput] = useState('');
     const page = usePage();
     const numberLocale =
@@ -109,6 +111,15 @@ export default function AddNewWalletMenu({
                         }}
                     >
                         Connect Interactive Brokers
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onSelect={(event) => {
+                            event.preventDefault();
+                            setOpen(false);
+                            setAssetDialogOpen(true);
+                        }}
+                    >
+                        Add Cash ISA or pension
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onSelect={(event) => {
@@ -264,6 +275,12 @@ export default function AddNewWalletMenu({
             <IbkrConnectDialog
                 open={ibkrDialogOpen}
                 onOpenChange={setIbkrDialogOpen}
+            />
+
+            <AssetAccountDialog
+                open={assetDialogOpen}
+                onOpenChange={setAssetDialogOpen}
+                mode={{ type: 'create' }}
             />
         </>
     );

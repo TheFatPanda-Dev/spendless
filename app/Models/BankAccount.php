@@ -64,6 +64,11 @@ class BankAccount extends Model
         return $this->hasMany(InvestmentActivity::class);
     }
 
+    public function valuations(): HasMany
+    {
+        return $this->hasMany(AssetValuation::class);
+    }
+
     /**
      * Last four characters of the account number, padded for display ("**1234").
      */

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Transactions\ResolveBankTransactionCategory;
 use App\Actions\Wallets\CreateManualWallet;
 use App\Http\Requests\StoreManualWalletRequest;
+use App\Models\AssetValuation;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
 use App\Models\BankStatementImport;
@@ -12,6 +13,8 @@ use App\Models\BankTransaction;
 use App\Models\InvestmentActivity;
 use App\Models\InvestmentPosition;
 use App\Models\Wallet;
+use App\Services\Assets\AssetAccounts;
+use App\Services\Assets\FixedTermSavings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -120,6 +123,9 @@ class WalletController extends Controller
                             'pending' => $transaction->pending,
                         ];
                     })->values(),
+                    'asset' => $connection->provider === BankConnection::PROVIDER_ASSET
+                        ? $this->asset($connection)
+                        : null,
                     'investments' => $connection->provider === BankConnection::PROVIDER_IBKR
                         ? $this->investments($connection)
                         : null,
@@ -199,6 +205,38 @@ class WalletController extends Controller
                     'currency' => $activity->currency,
                 ])->values(),
             'query_id' => $connection->metadata['query_id'] ?? null,
+        ];
+    }
+
+    /**
+     * Cash ISA terms and progress, or a pension's value history.
+     *
+     * @return array<string, mixed>
+     */
+    private function asset(BankConnection $connection): array
+    {
+        $account = $connection->accounts->first();
+        $kind = $account?->subtype;
+
+        if ($kind === AssetAccounts::KIND_CASH_ISA) {
+            return [
+                'kind' => $kind,
+                'isa' => FixedTermSavings::fromTerms($connection->metadata['terms'] ?? [])?->toArray(),
+                'valuations' => [],
+            ];
+        }
+
+        $valuations = $account?->valuations()->orderByDesc('date')->limit(24)->get() ?? collect();
+
+        return [
+            'kind' => $kind,
+            'isa' => null,
+            'valuations' => $valuations->values()->map(fn (AssetValuation $valuation, int $index): array => [
+                'id' => $valuation->id,
+                'date' => $valuation->date?->toDateString(),
+                'value' => $valuation->value,
+                'change' => isset($valuations[$index + 1]) ? round($valuation->value - $valuations[$index + 1]->value, 2) : null,
+            ])->all(),
         ];
     }
 }

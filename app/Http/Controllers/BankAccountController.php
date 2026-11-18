@@ -91,6 +91,8 @@ class BankAccountController extends Controller
                 'institution_name' => $bankAccount->connection?->institution_name,
                 'institution_logo' => $bankAccount->connection?->institution_logo,
                 'provider' => $bankAccount->connection?->provider,
+                'wallet_id' => $bankAccount->connection?->wallet_id,
+                'subtype' => $bankAccount->subtype,
                 'is_manual' => (bool) $bankAccount->connection?->isManual(),
                 'connection' => $bankAccount->connection?->toStatusArray(),
                 'last_import' => $bankAccount->connection?->provider === BankConnection::PROVIDER_IMPORT

@@ -4,6 +4,8 @@ import Unplug from 'lucide-react/dist/esm/icons/unplug.js';
 import Upload from 'lucide-react/dist/esm/icons/upload.js';
 import WalletIcon from 'lucide-react/dist/esm/icons/wallet.js';
 import { useEffect, useRef, useState } from 'react';
+import AssetAccountDialog from '@/components/asset-account-dialog';
+import type { IsaTerms } from '@/components/asset-account-dialog';
 import BankAlertsBanner from '@/components/bank-alerts-banner';
 import BankLogo from '@/components/bank-logo';
 import Heading from '@/components/heading';
@@ -111,8 +113,30 @@ const ACTIVITY_LABELS: Record<string, string> = {
     withdrawal: 'Withdrawal',
 };
 
+type AssetData = {
+    kind: 'cash_isa' | 'pension' | string;
+    isa:
+        | (IsaTerms & {
+              maturity_date: string;
+              total_profit: number;
+              profit_earned: number;
+              value_today: number;
+              value_at_maturity: number;
+              progress: number;
+              matured: boolean;
+          })
+        | null;
+    valuations: Array<{
+        id: number;
+        date: string;
+        value: number;
+        change: number | null;
+    }>;
+};
+
 type Connection = BankConnectionStatus & {
     accounts: Account[];
+    asset: AssetData | null;
     investments: Investments | null;
     imports: StatementImport[];
     transactions: Transaction[];
@@ -155,6 +179,11 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
     const isCashWallet = wallet.type === 'cash';
     const [popupBlocked, setPopupBlocked] = useState(false);
     const [ibkrDialogFor, setIbkrDialogFor] = useState<Connection | null>(null);
+    const [assetDialog, setAssetDialog] = useState<
+        | { type: 'edit-isa'; connectionId: number; terms: IsaTerms }
+        | { type: 'pension-value'; connectionId: number }
+        | null
+    >(null);
     const money = (value: number, currency: string | null): string =>
         new Intl.NumberFormat(numberLocale, {
             style: 'currency',
@@ -207,11 +236,12 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
         const name = connection.institution_name ?? 'this bank';
         const isImport = connection.provider === 'import';
         const isIbkr = connection.provider === 'ibkr';
+        const isAsset = connection.provider === 'asset';
 
         if (
             !window.confirm(
-                isImport
-                    ? `Delete ${name}? Its account and all imported transactions will be deleted from SpendLess.`
+                isImport || isAsset
+                    ? `Delete ${name}? It and its history will be deleted from SpendLess.`
                     : isIbkr
                       ? `Disconnect ${name}? Its holdings, trades and dividends will be deleted from SpendLess. Your IBKR account is not affected.`
                       : `Disconnect ${name}? Its accounts and all their transactions will be deleted from SpendLess, and access at the bank is ended.`,
@@ -249,7 +279,11 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                         ? 'A cash wallet you keep up to date yourself.'
                                         : wallet.type === 'investment'
                                           ? 'Account value, holdings, trades and dividends.'
-                                          : 'Linked bank, its accounts and recent transactions.'
+                                          : wallet.type === 'savings'
+                                            ? 'Fixed-term savings: the value grows with the profit earned.'
+                                            : wallet.type === 'pension'
+                                              ? 'Pension value, updated from your pension app.'
+                                              : 'Linked bank, its accounts and recent transactions.'
                                 }
                             />
                             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -261,7 +295,10 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                     <>
                                         <span>·</span>
                                         <span>
-                                            Last synced:{' '}
+                                            {wallet.type === 'savings' ||
+                                            wallet.type === 'pension'
+                                                ? 'Updated: '
+                                                : 'Last synced: '}
                                             {formatDate(
                                                 wallet.last_synced_at,
                                                 numberLocale,
@@ -347,7 +384,9 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             <Badge
                                                 variant={
                                                     connection.provider ===
-                                                    'import'
+                                                        'import' ||
+                                                    connection.provider ===
+                                                        'asset'
                                                         ? 'outline'
                                                         : bankStatusVariant(
                                                               connection.status,
@@ -357,15 +396,24 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 {connection.provider ===
                                                 'import'
                                                     ? 'Statement import'
-                                                    : bankStatusLabel(
-                                                          connection.status,
-                                                      )}
+                                                    : connection.provider ===
+                                                        'asset'
+                                                      ? connection.asset
+                                                            ?.kind === 'pension'
+                                                          ? 'Pension'
+                                                          : 'Cash ISA'
+                                                      : bankStatusLabel(
+                                                            connection.status,
+                                                        )}
                                             </Badge>
                                             <span>
                                                 {connection.provider ===
                                                 'import'
                                                     ? 'Last import: '
-                                                    : 'Last synced: '}
+                                                    : connection.provider ===
+                                                        'asset'
+                                                      ? 'Updated: '
+                                                      : 'Last synced: '}
                                                 {formatDate(
                                                     connection.last_synced_at,
                                                     numberLocale,
@@ -422,6 +470,38 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 </Link>
                                             </Button>
                                         ) : null}
+                                        {connection.asset?.kind ===
+                                            'cash_isa' &&
+                                        connection.asset.isa ? (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setAssetDialog({
+                                                        type: 'edit-isa',
+                                                        connectionId:
+                                                            connection.id,
+                                                        terms: connection.asset!
+                                                            .isa!,
+                                                    })
+                                                }
+                                            >
+                                                Edit
+                                            </Button>
+                                        ) : null}
+                                        {connection.asset?.kind ===
+                                        'pension' ? (
+                                            <Button
+                                                onClick={() =>
+                                                    setAssetDialog({
+                                                        type: 'pension-value',
+                                                        connectionId:
+                                                            connection.id,
+                                                    })
+                                                }
+                                            >
+                                                Update value
+                                            </Button>
+                                        ) : null}
                                         {connection.provider === 'ibkr' ? (
                                             <Button
                                                 variant={
@@ -454,6 +534,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             </Button>
                                         ) : null}
                                         {connection.provider !== 'import' &&
+                                        connection.provider !== 'asset' &&
                                         connection.status !== 'needs_reauth' ? (
                                             <Button
                                                 variant="outline"
@@ -482,13 +563,188 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             }
                                         >
                                             <Unplug className="size-4" />
-                                            {connection.provider === 'import'
+                                            {connection.provider === 'import' ||
+                                            connection.provider === 'asset'
                                                 ? 'Delete'
                                                 : 'Disconnect'}
                                         </Button>
                                     </div>
                                 ) : null}
                             </div>
+
+                            {connection.asset?.isa ? (
+                                <div className="space-y-3 rounded-lg border border-border bg-background/75 p-3">
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        {[
+                                            {
+                                                label: 'Value today',
+                                                value: money(
+                                                    connection.asset.isa
+                                                        .value_today,
+                                                    connection.accounts[0]
+                                                        ?.currency ?? 'GBP',
+                                                ),
+                                            },
+                                            {
+                                                label: connection.asset.isa
+                                                    .matured
+                                                    ? 'Profit paid'
+                                                    : 'Profit earned so far',
+                                                value: money(
+                                                    connection.asset.isa
+                                                        .profit_earned,
+                                                    connection.accounts[0]
+                                                        ?.currency ?? 'GBP',
+                                                ),
+                                            },
+                                            {
+                                                label: 'Value at the end',
+                                                value: money(
+                                                    connection.asset.isa
+                                                        .value_at_maturity,
+                                                    connection.accounts[0]
+                                                        ?.currency ?? 'GBP',
+                                                ),
+                                            },
+                                        ].map((item) => (
+                                            <div
+                                                key={item.label}
+                                                className="rounded-md border border-border bg-card px-3 py-2"
+                                            >
+                                                <p className="text-xs text-muted-foreground">
+                                                    {item.label}
+                                                </p>
+                                                <p className="text-lg font-semibold">
+                                                    {item.value}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                            <div
+                                                className="h-full rounded-full bg-brand"
+                                                style={{
+                                                    width: `${Math.round(connection.asset.isa.progress * 100)}%`,
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {money(
+                                                connection.asset.isa.amount,
+                                                connection.accounts[0]
+                                                    ?.currency ?? 'GBP',
+                                            )}{' '}
+                                            at {connection.asset.isa.rate}% a
+                                            year for{' '}
+                                            {connection.asset.isa.years}{' '}
+                                            {connection.asset.isa.years === 1
+                                                ? 'year'
+                                                : 'years'}{' '}
+                                            ·{' '}
+                                            {formatDisplayDate(
+                                                connection.asset.isa.start_date,
+                                                numberLocale,
+                                            )}{' '}
+                                            →{' '}
+                                            {formatDisplayDate(
+                                                connection.asset.isa
+                                                    .maturity_date,
+                                                numberLocale,
+                                            )}
+                                            {connection.asset.isa.matured
+                                                ? ' · term ended, profit paid'
+                                                : ` · profit of ${money(connection.asset.isa.total_profit, connection.accounts[0]?.currency ?? 'GBP')} paid at the end`}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {connection.asset?.kind === 'pension' ? (
+                                <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
+                                    <h3 className="font-medium">
+                                        Value history
+                                    </h3>
+                                    {connection.asset.valuations.length ===
+                                    0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No values yet.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {connection.asset.valuations.map(
+                                                (valuation) => (
+                                                    <div
+                                                        key={valuation.id}
+                                                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5 text-sm"
+                                                    >
+                                                        <span className="text-muted-foreground">
+                                                            {formatDisplayDate(
+                                                                valuation.date,
+                                                                numberLocale,
+                                                            )}
+                                                        </span>
+                                                        <span className="flex items-center gap-3">
+                                                            {valuation.change !==
+                                                            null ? (
+                                                                <span
+                                                                    className={`text-xs ${
+                                                                        valuation.change <
+                                                                        0
+                                                                            ? 'text-rose-600 dark:text-rose-400'
+                                                                            : 'text-emerald-600 dark:text-emerald-400'
+                                                                    }`}
+                                                                >
+                                                                    {valuation.change >=
+                                                                    0
+                                                                        ? '+'
+                                                                        : ''}
+                                                                    {money(
+                                                                        valuation.change,
+                                                                        connection
+                                                                            .accounts[0]
+                                                                            ?.currency ??
+                                                                            'GBP',
+                                                                    )}
+                                                                </span>
+                                                            ) : null}
+                                                            <span className="font-medium">
+                                                                {money(
+                                                                    valuation.value,
+                                                                    connection
+                                                                        .accounts[0]
+                                                                        ?.currency ??
+                                                                        'GBP',
+                                                                )}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                className="text-xs text-muted-foreground hover:text-destructive"
+                                                                onClick={() => {
+                                                                    if (
+                                                                        window.confirm(
+                                                                            'Remove this value?',
+                                                                        )
+                                                                    ) {
+                                                                        router.delete(
+                                                                            `/assets/${connection.id}/valuations/${valuation.id}`,
+                                                                            {
+                                                                                preserveScroll: true,
+                                                                            },
+                                                                        );
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </span>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
 
                             {connection.investments ? (
                                 <div className="space-y-4 rounded-lg border border-border bg-background/75 p-3">
@@ -720,136 +976,143 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                 </div>
                             ) : null}
 
-                            <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-                                <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
-                                    <h3 className="font-medium">
-                                        Linked Accounts
-                                    </h3>
-                                    {connection.accounts.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">
-                                            No accounts imported yet.
-                                        </p>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {connection.accounts.map(
-                                                (account) => (
-                                                    <div
-                                                        key={account.id}
-                                                        className="rounded-md border border-border bg-card p-3"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div>
-                                                                <p className="font-medium">
-                                                                    {account.name ??
-                                                                        'Account'}
-                                                                </p>
-                                                                {!account.is_active ? (
-                                                                    <p className="text-xs text-muted-foreground">
-                                                                        No
-                                                                        longer
-                                                                        shared
-                                                                        by the
-                                                                        bank
+                            {connection.provider !== 'asset' ? (
+                                <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                                    <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
+                                        <h3 className="font-medium">
+                                            Linked Accounts
+                                        </h3>
+                                        {connection.accounts.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">
+                                                No accounts imported yet.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {connection.accounts.map(
+                                                    (account) => (
+                                                        <div
+                                                            key={account.id}
+                                                            className="rounded-md border border-border bg-card p-3"
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <p className="font-medium">
+                                                                        {account.name ??
+                                                                            'Account'}
                                                                     </p>
-                                                                ) : null}
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {account.official_name ??
-                                                                        account.type ??
-                                                                        'Unknown type'}
-                                                                </p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {account.mask
-                                                                        ? `**** ${account.mask}`
-                                                                        : 'No mask available'}
-                                                                </p>
-                                                            </div>
-                                                            <div className="text-right text-sm">
-                                                                <p>
-                                                                    {money(
-                                                                        account
-                                                                            .balances
-                                                                            ?.current ??
-                                                                            0,
-                                                                        account.currency ??
-                                                                            wallet.currency,
-                                                                    )}
-                                                                </p>
-                                                                {wallet.type !==
-                                                                'cash' ? (
+                                                                    {!account.is_active ? (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            No
+                                                                            longer
+                                                                            shared
+                                                                            by
+                                                                            the
+                                                                            bank
+                                                                        </p>
+                                                                    ) : null}
                                                                     <p className="text-xs text-muted-foreground">
-                                                                        Synced{' '}
-                                                                        {formatDate(
-                                                                            account.last_synced_at,
-                                                                            numberLocale,
+                                                                        {account.official_name ??
+                                                                            account.type ??
+                                                                            'Unknown type'}
+                                                                    </p>
+                                                                    {account.mask ? (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            ****{' '}
+                                                                            {
+                                                                                account.mask
+                                                                            }
+                                                                        </p>
+                                                                    ) : null}
+                                                                </div>
+                                                                <div className="text-right text-sm">
+                                                                    <p>
+                                                                        {money(
+                                                                            account
+                                                                                .balances
+                                                                                ?.current ??
+                                                                                0,
+                                                                            account.currency ??
+                                                                                wallet.currency,
                                                                         )}
                                                                     </p>
-                                                                ) : null}
+                                                                    {wallet.type !==
+                                                                    'cash' ? (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            Synced{' '}
+                                                                            {formatDate(
+                                                                                account.last_synced_at,
+                                                                                numberLocale,
+                                                                            )}
+                                                                        </p>
+                                                                    ) : null}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ),
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
 
-                                <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
-                                    <h3 className="font-medium">
-                                        Recent Transactions
-                                    </h3>
-                                    {connection.transactions.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">
-                                            No transactions synced yet.
-                                        </p>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {connection.transactions
-                                                .slice(0, 12)
-                                                .map((transaction) => (
-                                                    <div
-                                                        key={transaction.id}
-                                                        className="rounded-md border border-border bg-card p-2.5"
-                                                    >
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <div>
-                                                                <p className="text-sm font-medium">
-                                                                    {transaction.merchant_name ??
-                                                                        transaction.name ??
-                                                                        'Transaction'}
-                                                                </p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {transaction.date
-                                                                        ? formatDisplayDate(
-                                                                              transaction.date,
-                                                                              numberLocale,
-                                                                          )
-                                                                        : 'Unknown date'}
-                                                                </p>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <p className="text-sm font-medium">
-                                                                    {transaction.amount.toFixed(
-                                                                        2,
-                                                                    )}{' '}
-                                                                    {transaction.currency ??
-                                                                        wallet.currency}
-                                                                </p>
-                                                                {transaction.pending ? (
-                                                                    <Badge
-                                                                        variant="secondary"
-                                                                        className="mt-1"
-                                                                    >
-                                                                        Pending
-                                                                    </Badge>
-                                                                ) : null}
+                                    <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
+                                        <h3 className="font-medium">
+                                            Recent Transactions
+                                        </h3>
+                                        {connection.transactions.length ===
+                                        0 ? (
+                                            <p className="text-sm text-muted-foreground">
+                                                No transactions synced yet.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {connection.transactions
+                                                    .slice(0, 12)
+                                                    .map((transaction) => (
+                                                        <div
+                                                            key={transaction.id}
+                                                            className="rounded-md border border-border bg-card p-2.5"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <div>
+                                                                    <p className="text-sm font-medium">
+                                                                        {transaction.merchant_name ??
+                                                                            transaction.name ??
+                                                                            'Transaction'}
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {transaction.date
+                                                                            ? formatDisplayDate(
+                                                                                  transaction.date,
+                                                                                  numberLocale,
+                                                                              )
+                                                                            : 'Unknown date'}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-sm font-medium">
+                                                                        {transaction.amount.toFixed(
+                                                                            2,
+                                                                        )}{' '}
+                                                                        {transaction.currency ??
+                                                                            wallet.currency}
+                                                                    </p>
+                                                                    {transaction.pending ? (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="mt-1"
+                                                                        >
+                                                                            Pending
+                                                                        </Badge>
+                                                                    ) : null}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )}
+                                                    ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : null}
 
                             {connection.provider === 'import' ? (
                                 <div className="rounded-lg border border-border bg-background/75 p-3">
@@ -889,7 +1152,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                         </div>
                                     )}
                                 </div>
-                            ) : isCashWallet ? null : (
+                            ) : isCashWallet ||
+                              connection.provider === 'asset' ? null : (
                                 <div className="rounded-lg border border-border bg-background/75 p-3">
                                     <h3 className="mb-2 font-medium">
                                         Recent Sync Runs
@@ -954,6 +1218,18 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                     ) : null}
                 </div>
             </div>
+
+            {assetDialog ? (
+                <AssetAccountDialog
+                    open
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setAssetDialog(null);
+                        }
+                    }}
+                    mode={assetDialog}
+                />
+            ) : null}
 
             <IbkrConnectDialog
                 open={ibkrDialogFor !== null}

@@ -205,7 +205,9 @@ export default function WalletsIndex({
                                                 key={connection.id}
                                                 variant={
                                                     connection.provider ===
-                                                    'import'
+                                                        'import' ||
+                                                    connection.provider ===
+                                                        'asset'
                                                         ? 'outline'
                                                         : bankStatusVariant(
                                                               connection.status,
@@ -216,9 +218,15 @@ export default function WalletsIndex({
                                                 {connection.provider ===
                                                 'import'
                                                     ? 'Statement import'
-                                                    : bankStatusLabel(
-                                                          connection.status,
-                                                      )}
+                                                    : connection.provider ===
+                                                        'asset'
+                                                      ? wallet.type ===
+                                                        'pension'
+                                                          ? 'Pension'
+                                                          : 'Cash ISA'
+                                                      : bankStatusLabel(
+                                                            connection.status,
+                                                        )}
                                             </Badge>
                                         ))
                                 )}

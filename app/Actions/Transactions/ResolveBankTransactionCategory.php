@@ -256,8 +256,9 @@ class ResolveBankTransactionCategory
 
     private function normalizeText(string $value): string
     {
+        // Punctuation separates words: "TESCO,LONDON" and "(interest)" still match.
         return (string) Str::of($value)
-            ->replace(['_', '-', '/', '&'], ' ')
+            ->replaceMatches('/[^\p{L}\p{N}\s]+/u', ' ')
             ->lower()
             ->squish();
     }

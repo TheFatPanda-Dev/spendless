@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssetAccountController;
 use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OAuthRegistrationController;
@@ -53,6 +54,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('wallets.refresh-all');
         Route::post('bank-connections/{bankConnection}/refresh', [WalletBankConnectionController::class, 'refreshConnection'])
             ->name('bank-connections.refresh');
+        Route::post('assets', [AssetAccountController::class, 'store'])->name('assets.store');
+        Route::patch('assets/{bankConnection}', [AssetAccountController::class, 'update'])->name('assets.update');
+        Route::post('assets/{bankConnection}/valuations', [AssetAccountController::class, 'storeValuation'])
+            ->name('assets.valuations.store');
+        Route::delete('assets/{bankConnection}/valuations/{valuation}', [AssetAccountController::class, 'destroyValuation'])
+            ->name('assets.valuations.destroy');
         Route::post('investments/ibkr', [IbkrConnectionController::class, 'store'])
             ->name('investments.ibkr.store');
         Route::patch('investments/ibkr/{bankConnection}', [IbkrConnectionController::class, 'update'])

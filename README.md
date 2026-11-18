@@ -87,6 +87,18 @@ in XML. SpendLess fetches it daily (end-of-day data): account value counts towar
 and trades show on the wallet page, dividends/interest are income and fees/withholding tax are expenses.
 The token is stored encrypted; SpendLess asks for a new one when it expires.
 
+## Cash ISA and pension
+
+**Add New Wallet → Add Cash ISA or pension.**
+
+- **Cash ISA (fixed term):** amount, start date, term in years and expected profit rate. Profit is
+  amount × rate × years, paid at the end of the term: until then the value shows the profit earned so
+  far, and on the maturity date the profit is recorded as income. Recalculated daily.
+- **Pension:** enter the value from your provider's app (e.g. PensionBee has no API) and press
+  **Update value** whenever you check; the history shows the change between updates.
+
+Both count towards the dashboard total.
+
 ## Background work
 
 Everything runs from one cron entry:

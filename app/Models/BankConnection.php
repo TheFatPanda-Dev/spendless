@@ -21,6 +21,9 @@ class BankConnection extends Model
     /** Interactive Brokers, read through its Flex Web Service. */
     public const PROVIDER_IBKR = 'ibkr';
 
+    /** Savings and pensions tracked by hand: a fixed-term Cash ISA or a pension value. */
+    public const PROVIDER_ASSET = 'asset';
+
     /** Waiting for the user to approve access at their bank. */
     public const STATUS_PENDING = 'pending';
 
