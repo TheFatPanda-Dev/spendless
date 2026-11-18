@@ -18,6 +18,9 @@ class BankConnection extends Model
     /** Kept up to date by importing statement files (banks without an open-banking route). */
     public const PROVIDER_IMPORT = 'import';
 
+    /** Interactive Brokers, read through its Flex Web Service. */
+    public const PROVIDER_IBKR = 'ibkr';
+
     /** Waiting for the user to approve access at their bank. */
     public const STATUS_PENDING = 'pending';
 
@@ -52,8 +55,14 @@ class BankConnection extends Model
         'next_sync_at',
         'last_sync_error',
         'metadata',
+        'credentials_encrypted',
         'sync_failures',
     ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = ['credentials_encrypted'];
 
     protected function casts(): array
     {
@@ -64,6 +73,7 @@ class BankConnection extends Model
             'last_synced_at' => 'datetime',
             'next_sync_at' => 'datetime',
             'metadata' => 'array',
+            'credentials_encrypted' => 'encrypted:array',
             'sync_failures' => 'integer',
         ];
     }

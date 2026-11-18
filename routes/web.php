@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\OAuthRegistrationController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IbkrConnectionController;
 use App\Http\Controllers\StatementImportController;
 use App\Http\Controllers\WalletBankConnectionController;
 use App\Http\Controllers\WalletController;
@@ -52,6 +53,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('wallets.refresh-all');
         Route::post('bank-connections/{bankConnection}/refresh', [WalletBankConnectionController::class, 'refreshConnection'])
             ->name('bank-connections.refresh');
+        Route::post('investments/ibkr', [IbkrConnectionController::class, 'store'])
+            ->name('investments.ibkr.store');
+        Route::patch('investments/ibkr/{bankConnection}', [IbkrConnectionController::class, 'update'])
+            ->name('investments.ibkr.update');
         Route::post('banking/connect', [EnableBankingConnectionController::class, 'start'])
             ->name('banking.start');
         Route::post('banking/connections/{bankConnection}/reconnect', [EnableBankingConnectionController::class, 'reconnect'])

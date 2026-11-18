@@ -46,7 +46,7 @@ class AdminController extends Controller
         $connections = BankConnection::query()
             ->with('user:id,name,email')
             ->withCount('accounts')
-            ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+            ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR])
             ->where('status', '!=', BankConnection::STATUS_PENDING)
             ->orderBy('institution_name')
             ->get()

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SyncEnableBankingConnectionJob;
+use App\Jobs\SyncIbkrConnectionJob;
 use App\Models\BankConnection;
 use App\Services\Banking\BankActivityLogger;
 use App\Services\EnableBanking\PsuHeaders;
@@ -25,7 +26,7 @@ class WalletBankConnectionController extends Controller
     {
         $connections = $request->user()
             ->bankConnections()
-            ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+            ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR])
             ->whereIn('status', [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED])
             ->get();
 
@@ -46,7 +47,7 @@ class WalletBankConnectionController extends Controller
         Gate::authorize('update', $bankConnection);
 
         abort_unless(
-            $bankConnection->provider === BankConnection::PROVIDER_ENABLE_BANKING
+            in_array($bankConnection->provider, [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR], true)
                 && in_array($bankConnection->status, [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED], true),
             Response::HTTP_UNPROCESSABLE_ENTITY,
         );
@@ -66,6 +67,12 @@ class WalletBankConnectionController extends Controller
         }
 
         $connection->forceFill(['status' => BankConnection::STATUS_SYNCING])->save();
+
+        if ($connection->provider === BankConnection::PROVIDER_IBKR) {
+            SyncIbkrConnectionJob::dispatchAfterResponse($connection->id, 'manual');
+
+            return true;
+        }
 
         SyncEnableBankingConnectionJob::dispatchAfterResponse(
             $connection->id,

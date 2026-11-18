@@ -54,6 +54,16 @@ class BankAccount extends Model
         return $this->hasMany(BankStatementImport::class);
     }
 
+    public function investmentPositions(): HasMany
+    {
+        return $this->hasMany(InvestmentPosition::class);
+    }
+
+    public function investmentActivities(): HasMany
+    {
+        return $this->hasMany(InvestmentActivity::class);
+    }
+
     /**
      * Last four characters of the account number, padded for display ("**1234").
      */

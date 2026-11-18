@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\SyncEnableBankingConnectionJob;
+use App\Jobs\SyncIbkrConnectionJob;
 use App\Models\BankConnection;
 use Illuminate\Console\Command;
 
@@ -22,7 +23,7 @@ class DispatchDueBankSyncs extends Command
 
         // A sync that died mid-way (e.g. PHP was killed) must not stay "syncing" forever.
         BankConnection::query()
-            ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+            ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR])
             ->where('status', BankConnection::STATUS_SYNCING)
             ->where('updated_at', '<', now()->subMinutes(30))
             ->update(['status' => BankConnection::STATUS_SYNC_FAILED, 'last_sync_error' => 'The last sync did not finish.']);
@@ -49,6 +50,16 @@ class DispatchDueBankSyncs extends Command
             ->pluck('id')
             ->each(function (int $connectionId) use (&$dispatched): void {
                 SyncEnableBankingConnectionJob::dispatch($connectionId, 'scheduled');
+                $dispatched++;
+            });
+
+        BankConnection::query()
+            ->where('provider', BankConnection::PROVIDER_IBKR)
+            ->whereIn('status', [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED])
+            ->where(fn ($query) => $query->whereNull('next_sync_at')->orWhere('next_sync_at', '<=', now()))
+            ->pluck('id')
+            ->each(function (int $connectionId) use (&$dispatched): void {
+                SyncIbkrConnectionJob::dispatch($connectionId, 'scheduled');
                 $dispatched++;
             });
 
