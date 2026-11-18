@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Plaid\PlaidUsage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,12 @@ class BankConnection extends Model
 
     /** Savings and pensions tracked by hand: a fixed-term Cash ISA or a pension value. */
     public const PROVIDER_ASSET = 'asset';
+
+    /** UK banks through Plaid (Enable Banking covers the EU). */
+    public const PROVIDER_PLAID = 'plaid';
+
+    /** Providers SpendLess syncs on a schedule and through "Sync now". */
+    public const SYNCED_PROVIDERS = [self::PROVIDER_ENABLE_BANKING, self::PROVIDER_IBKR, self::PROVIDER_PLAID];
 
     /** Waiting for the user to approve access at their bank. */
     public const STATUS_PENDING = 'pending';
@@ -135,6 +142,7 @@ class BankConnection extends Model
             'consent_valid_until' => $this->consent_valid_until?->toIso8601String(),
             'consent_expires_soon' => ! $this->isManual() && $this->consentExpiresSoon(),
             'error_message' => $this->last_sync_error,
+            'plaid_usage' => $this->provider === self::PROVIDER_PLAID ? PlaidUsage::toArray() : null,
         ];
     }
 }

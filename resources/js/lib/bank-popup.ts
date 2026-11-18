@@ -23,3 +23,22 @@ export function openBankPopup(reconnectConnectionId?: number): boolean {
 
     return true;
 }
+
+/**
+ * Opens Plaid Link for a UK bank in the same popup window. Falls back to this window
+ * when popups are blocked (the finish page then returns to the dashboard).
+ */
+export function openPlaidPopup(): void {
+    const popup = openCenteredPopup('/banking/plaid', 'bank-add-account', {
+        width: 520,
+        height: 760,
+    });
+
+    if (!popup) {
+        window.location.assign('/banking/plaid');
+
+        return;
+    }
+
+    popup.focus();
+}

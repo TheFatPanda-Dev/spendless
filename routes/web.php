@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OAuthRegistrationController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
+use App\Http\Controllers\Banking\PlaidConnectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IbkrConnectionController;
 use App\Http\Controllers\StatementImportController;
@@ -81,10 +82,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('banking.reconnect');
         Route::delete('banking/connections/{bankConnection}', [EnableBankingConnectionController::class, 'destroy'])
             ->name('banking.destroy');
+        Route::get('banking/plaid', [PlaidConnectionController::class, 'show'])->name('banking.plaid.show');
+        Route::post('banking/plaid/exchange', [PlaidConnectionController::class, 'exchange'])
+            ->name('banking.plaid.exchange');
     });
 
     Route::get('banking/callback', [EnableBankingConnectionController::class, 'callback'])
         ->name('banking.callback');
+    Route::get('banking/plaid/oauth', [PlaidConnectionController::class, 'oauth'])->name('banking.plaid.oauth');
+    Route::get('banking/plaid/complete', [PlaidConnectionController::class, 'complete'])->name('banking.plaid.complete');
 
     Route::get('imports/new', [StatementImportController::class, 'create'])->name('imports.create');
     Route::post('imports', [StatementImportController::class, 'store'])

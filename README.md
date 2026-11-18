@@ -73,6 +73,31 @@ ENABLE_BANKING_PRIVATE_KEY_PATH=storage/app/private/enablebanking.pem
 ENABLE_BANKING_COUNTRIES=SI,GB
 ```
 
+## UK banks (Plaid)
+
+Enable Banking's free restricted mode has no UK banks, so UK accounts (Revolut, Barclays, Nationwide,
+Santander…) connect through [Plaid](https://plaid.com/): **Add New Wallet → Connect a UK bank (Plaid)**.
+
+- Plaid's free tier for UK users is a fixed number of API calls (200 for Transactions); after that a paid
+  (custom) plan is needed. SpendLess makes the calls last: one `/transactions/sync` call per bank per sync
+  (balances come with it), a background sync **once a day** (`PLAID_SYNC_HOURS`, default 07:00), and
+  **Sync now** at most once an hour per bank.
+- It counts its own calls (Admin page and the wallet page) and stops background syncs 5 calls before
+  `PLAID_CALL_LIMIT`, keeping those for your own **Sync now** / reconnect. Set `PLAID_CALL_LIMIT=0` on a paid plan.
+- When a bank needs a new login, **Reconnect** opens Plaid Link in update mode; history, categories and tags stay.
+  A payment that goes from pending to posted keeps the category and tags you gave it.
+- When the allowance is used up, the bank simply stops syncing; statement import keeps working.
+
+```bash
+PLAID_CLIENT_ID=...
+PLAID_SECRET=...            # the Production secret (or Sandbox with PLAID_ENV=sandbox)
+PLAID_ENV=production
+PLAID_COUNTRY_CODES=GB
+```
+
+In the Plaid Dashboard (Developers → API), add `https://<your-domain>/banking/plaid/oauth` to
+**Allowed redirect URIs**: UK banks log in through OAuth and return there.
+
 ## Statement import
 
 For banks without open banking (e.g. UK accounts): **Add New Wallet → Import bank statement**. OFX/QFX,

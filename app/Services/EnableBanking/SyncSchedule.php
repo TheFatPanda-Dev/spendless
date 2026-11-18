@@ -20,16 +20,7 @@ final class SyncSchedule
      */
     public static function hours(): array
     {
-        $hours = collect(explode(',', (string) config('services.enable_banking.sync_hours', '')))
-            ->map(fn (string $hour): string => trim($hour))
-            ->filter(fn (string $hour): bool => ctype_digit($hour) && (int) $hour <= 23)
-            ->map(fn (string $hour): int => (int) $hour)
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-
-        return $hours === [] ? self::DEFAULT_HOURS : $hours;
+        return self::parseHours((string) config('services.enable_banking.sync_hours', ''), self::DEFAULT_HOURS);
     }
 
     public static function timezone(): string
@@ -40,13 +31,35 @@ final class SyncSchedule
     }
 
     /**
-     * The first sync time strictly after $from, returned in $from's timezone.
+     * Parse a "7,11,15,19" style list of hours; falls back to $default when nothing valid.
+     *
+     * @param  list<int>  $default
+     * @return list<int>
      */
-    public static function nextSlot(?CarbonInterface $from = null): CarbonImmutable
+    public static function parseHours(string $value, array $default): array
+    {
+        $hours = collect(explode(',', $value))
+            ->map(fn (string $hour): string => trim($hour))
+            ->filter(fn (string $hour): bool => ctype_digit($hour) && (int) $hour <= 23)
+            ->map(fn (string $hour): int => (int) $hour)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return $hours === [] ? $default : $hours;
+    }
+
+    /**
+     * The first sync time strictly after $from, returned in $from's timezone.
+     *
+     * @param  list<int>|null  $hours  Defaults to the bank-sync hours.
+     */
+    public static function nextSlot(?CarbonInterface $from = null, ?array $hours = null): CarbonImmutable
     {
         $from = CarbonImmutable::instance($from ?? now());
         $today = $from->setTimezone(self::timezone())->startOfDay();
-        $hours = self::hours();
+        $hours = $hours === null || $hours === [] ? self::hours() : array_values($hours);
 
         foreach ([$today, $today->addDay()] as $day) {
             foreach ($hours as $hour) {

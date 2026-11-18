@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SyncEnableBankingConnectionJob;
 use App\Jobs\SyncIbkrConnectionJob;
+use App\Jobs\SyncPlaidConnectionJob;
 use App\Models\BankConnection;
 use App\Services\Banking\BankActivityLogger;
 use App\Services\EnableBanking\PsuHeaders;
+use App\Services\Plaid\PlaidUsage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -26,7 +28,7 @@ class WalletBankConnectionController extends Controller
     {
         $connections = $request->user()
             ->bankConnections()
-            ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR])
+            ->whereIn('provider', BankConnection::SYNCED_PROVIDERS)
             ->whereIn('status', [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED])
             ->get();
 
@@ -47,7 +49,7 @@ class WalletBankConnectionController extends Controller
         Gate::authorize('update', $bankConnection);
 
         abort_unless(
-            in_array($bankConnection->provider, [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR], true)
+            in_array($bankConnection->provider, BankConnection::SYNCED_PROVIDERS, true)
                 && in_array($bankConnection->status, [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED], true),
             Response::HTTP_UNPROCESSABLE_ENTITY,
         );
@@ -56,17 +58,39 @@ class WalletBankConnectionController extends Controller
 
         return response()->json([
             'queued' => $queued ? 1 : 0,
-            'message' => $queued ? 'Syncing…' : 'This bank was synced a moment ago.',
+            'message' => match (true) {
+                $queued => 'Syncing…',
+                $bankConnection->provider === BankConnection::PROVIDER_PLAID && PlaidUsage::exhausted(userPresent: true) => "Plaid's free allowance is used up, so this bank can't sync.",
+                $bankConnection->provider === BankConnection::PROVIDER_PLAID => sprintf(
+                    'To save Plaid calls, a UK bank syncs at most once every %d minutes.',
+                    $this->plaidCooldownMinutes(),
+                ),
+                default => 'This bank was synced a moment ago.',
+            },
         ]);
     }
 
     private function queueSync(Request $request, BankConnection $connection): bool
     {
-        if ($connection->last_synced_at?->isAfter(now()->subSeconds(self::COOLDOWN_SECONDS))) {
+        $isPlaid = $connection->provider === BankConnection::PROVIDER_PLAID;
+        $cooldown = $isPlaid ? $this->plaidCooldownMinutes() * 60 : self::COOLDOWN_SECONDS;
+
+        if ($connection->last_synced_at?->isAfter(now()->subSeconds($cooldown))) {
+            return false;
+        }
+
+        // Each Plaid sync costs calls from the free allowance.
+        if ($isPlaid && PlaidUsage::exhausted(userPresent: true)) {
             return false;
         }
 
         $connection->forceFill(['status' => BankConnection::STATUS_SYNCING])->save();
+
+        if ($isPlaid) {
+            SyncPlaidConnectionJob::dispatchAfterResponse($connection->id, 'manual');
+
+            return true;
+        }
 
         if ($connection->provider === BankConnection::PROVIDER_IBKR) {
             SyncIbkrConnectionJob::dispatchAfterResponse($connection->id, 'manual');
@@ -81,5 +105,10 @@ class WalletBankConnectionController extends Controller
         );
 
         return true;
+    }
+
+    private function plaidCooldownMinutes(): int
+    {
+        return max(1, (int) config('services.plaid.manual_sync_cooldown_minutes', 60));
     }
 }

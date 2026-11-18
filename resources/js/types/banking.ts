@@ -16,4 +16,6 @@ export type BankConnectionStatus = {
     consent_valid_until: string | null;
     consent_expires_soon: boolean;
     error_message: string | null;
+    /** UK banks: free Plaid calls used, as counted by SpendLess. */
+    plaid_usage?: { used: number; limit: number } | null;
 };

@@ -51,10 +51,12 @@ class HandleInertiaRequests extends Middleware
                 'oauthPrompt' => fn () => $request->session()->get('oauth_prompt'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Offer "Connect a UK bank" only when Plaid credentials are set.
+            'plaid_enabled' => filled(config('services.plaid.client_id')) && filled(config('services.plaid.secret')),
             // Banks whose access expired or is about to: shown as a "Reconnect" banner.
             'bankAlerts' => fn (): array => $request->user() === null ? [] : BankConnection::query()
                 ->where('user_id', $request->user()->id)
-                ->where('provider', BankConnection::PROVIDER_ENABLE_BANKING)
+                ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_PLAID])
                 ->where(fn ($query) => $query
                     ->where('status', BankConnection::STATUS_NEEDS_REAUTH)
                     ->orWhere(fn ($query) => $query

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { openPlaidPopup } from '@/lib/bank-popup';
 import { walletCurrencyOptions } from '@/lib/currency-options';
 import {
     formatLocalizedDecimal,
@@ -95,6 +96,16 @@ export default function AddNewWalletMenu({
                     >
                         Connect a bank account
                     </DropdownMenuItem>
+                    {page.props.plaid_enabled === true ? (
+                        <DropdownMenuItem
+                            onSelect={() => {
+                                setOpen(false);
+                                openPlaidPopup();
+                            }}
+                        >
+                            Connect a UK bank (Plaid)
+                        </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuItem
                         onSelect={() => {
                             setOpen(false);

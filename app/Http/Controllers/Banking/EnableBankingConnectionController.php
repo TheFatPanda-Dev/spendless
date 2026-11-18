@@ -12,6 +12,7 @@ use App\Services\Banking\BankActivityLogger;
 use App\Services\EnableBanking\EnableBankingClient;
 use App\Services\EnableBanking\EnableBankingException;
 use App\Services\EnableBanking\PsuHeaders;
+use App\Services\Plaid\PlaidClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class EnableBankingConnectionController extends Controller
     /**
      * The bank picker shown in the "Connect a bank account" popup.
      */
-    public function create(Request $request, EnableBankingClient $client): InertiaResponse
+    public function create(Request $request, EnableBankingClient $client): InertiaResponse|RedirectResponse
     {
         Gate::authorize('create', Wallet::class);
 
@@ -73,6 +74,11 @@ class EnableBankingConnectionController extends Controller
             $connection = BankConnection::query()->findOrFail($request->integer('reconnect'));
             Gate::authorize('update', $connection);
             abort_if($connection->isManual(), Response::HTTP_NOT_FOUND);
+
+            // UK banks reconnect through Plaid Link instead of the bank picker.
+            if ($connection->provider === BankConnection::PROVIDER_PLAID) {
+                return to_route('banking.plaid.show', ['reconnect' => $connection->id]);
+            }
 
             $reconnect = [
                 'id' => $connection->id,
@@ -300,6 +306,12 @@ class EnableBankingConnectionController extends Controller
      */
     public static function closeBankSession(EnableBankingClient $client, BankConnection $connection): void
     {
+        if ($connection->provider === BankConnection::PROVIDER_PLAID) {
+            PlaidConnectionController::removeItem(app(PlaidClient::class), $connection);
+
+            return;
+        }
+
         if (
             $connection->provider !== BankConnection::PROVIDER_ENABLE_BANKING
             || $connection->session_id === null

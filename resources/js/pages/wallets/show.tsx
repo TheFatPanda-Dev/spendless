@@ -448,6 +448,22 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                     )}
                                                 </span>
                                             ) : null}
+                                            {connection.plaid_usage &&
+                                            connection.plaid_usage.limit > 0 ? (
+                                                <span title="Counted by SpendLess. The Plaid Dashboard has the official number.">
+                                                    Plaid calls:{' '}
+                                                    {
+                                                        connection.plaid_usage
+                                                            .used
+                                                    }{' '}
+                                                    of{' '}
+                                                    {
+                                                        connection.plaid_usage
+                                                            .limit
+                                                    }{' '}
+                                                    used
+                                                </span>
+                                            ) : null}
                                         </div>
                                     ) : null}
                                     {connection.error_message ? (
@@ -517,8 +533,9 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 Update token
                                             </Button>
                                         ) : null}
-                                        {connection.provider ===
-                                            'enable_banking' &&
+                                        {(connection.provider ===
+                                            'enable_banking' ||
+                                            connection.provider === 'plaid') &&
                                         (connection.status === 'needs_reauth' ||
                                             connection.consent_expires_soon) ? (
                                             <Button

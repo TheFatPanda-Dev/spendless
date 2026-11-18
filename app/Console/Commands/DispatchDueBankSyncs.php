@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Jobs\SyncEnableBankingConnectionJob;
 use App\Jobs\SyncIbkrConnectionJob;
+use App\Jobs\SyncPlaidConnectionJob;
 use App\Models\BankConnection;
+use App\Services\Plaid\PlaidUsage;
 use Illuminate\Console\Command;
 
 class DispatchDueBankSyncs extends Command
@@ -23,7 +25,7 @@ class DispatchDueBankSyncs extends Command
 
         // A sync that died mid-way (e.g. PHP was killed) must not stay "syncing" forever.
         BankConnection::query()
-            ->whereIn('provider', [BankConnection::PROVIDER_ENABLE_BANKING, BankConnection::PROVIDER_IBKR])
+            ->whereIn('provider', BankConnection::SYNCED_PROVIDERS)
             ->where('status', BankConnection::STATUS_SYNCING)
             ->where('updated_at', '<', now()->subMinutes(30))
             ->update(['status' => BankConnection::STATUS_SYNC_FAILED, 'last_sync_error' => 'The last sync did not finish.']);
@@ -62,6 +64,20 @@ class DispatchDueBankSyncs extends Command
                 SyncIbkrConnectionJob::dispatch($connectionId, 'scheduled');
                 $dispatched++;
             });
+
+        // UK banks: once a day, and not at all once the free Plaid allowance is used up.
+        if (! PlaidUsage::exhausted()) {
+            BankConnection::query()
+                ->where('provider', BankConnection::PROVIDER_PLAID)
+                ->whereIn('status', [BankConnection::STATUS_CONNECTED, BankConnection::STATUS_SYNC_FAILED])
+                ->whereNotNull('next_sync_at')
+                ->where('next_sync_at', '<=', now())
+                ->pluck('id')
+                ->each(function (int $connectionId) use (&$dispatched): void {
+                    SyncPlaidConnectionJob::dispatch($connectionId, 'scheduled');
+                    $dispatched++;
+                });
+        }
 
         $this->info(sprintf('Queued %d bank sync(s).', $dispatched));
 

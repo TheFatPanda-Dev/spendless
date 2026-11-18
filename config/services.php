@@ -67,6 +67,25 @@ return [
         'jwt_audience' => env('ENABLE_BANKING_JWT_AUD', 'api.enablebanking.com'),
     ],
 
+    // UK banks (Enable Banking has no UK coverage in restricted mode).
+    'plaid' => [
+        'client_id' => env('PLAID_CLIENT_ID'),
+        'secret' => env('PLAID_SECRET'),
+        'environment' => env('PLAID_ENV', 'production'),
+        'country_codes' => array_values(array_filter(array_map(
+            fn (string $country): string => strtoupper(trim($country)),
+            explode(',', (string) env('PLAID_COUNTRY_CODES', 'GB')),
+        ))),
+        // Must be listed under Allowed redirect URIs in the Plaid Dashboard (UK banks use OAuth).
+        'redirect_uri' => env('PLAID_REDIRECT_URI') ?: rtrim((string) env('APP_URL', ''), '/').'/banking/plaid/oauth',
+        'history_days' => (int) env('PLAID_HISTORY_DAYS', 90),
+        // Background sync once a day (local time, same timezone as bank syncs).
+        'sync_hours' => env('PLAID_SYNC_HOURS', '7'),
+        // Free allowance: SpendLess stops syncing a few calls before this. 0 = no limit (paid plan).
+        'call_limit' => (int) env('PLAID_CALL_LIMIT', 200),
+        'manual_sync_cooldown_minutes' => (int) env('PLAID_MANUAL_SYNC_COOLDOWN_MINUTES', 60),
+    ],
+
     'freecurrencyapi' => [
         'base_url' => env('FREECURRENCYAPI_BASE_URL', 'https://api.freecurrencyapi.com'),
         'key' => env('FREECURRENCYAPI_KEY'),

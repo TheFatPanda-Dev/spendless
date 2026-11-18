@@ -6,6 +6,7 @@ use App\Models\AppSetting;
 use App\Models\BankConnection;
 use App\Services\EnableBanking\EnableBankingClient;
 use App\Services\EnableBanking\EnableBankingException;
+use App\Services\Plaid\PlaidUsage;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -66,6 +67,7 @@ class SetupChecks
                     : 'Closed. Only existing users can sign in.'),
 
             $this->connectionsCheck(),
+            ...$this->plaidChecks(),
 
             $this->check('php', 'PHP version',
                 version_compare(PHP_VERSION, '8.2.0', '>=') ? 'ok' : 'fail',
@@ -194,6 +196,39 @@ class SetupChecks
             $total === 0
                 ? 'No banks connected yet.'
                 : sprintf('%d connected, %d need reconnecting, %d failing.', $total - $needsReauth - $failing, $needsReauth, $failing));
+    }
+
+    /**
+     * UK banks through Plaid: only shown once Plaid credentials are set. No API call here,
+     * every call counts against the free allowance.
+     *
+     * @return list<array{key: string, label: string, status: 'ok'|'warn'|'fail', detail: string}>
+     */
+    private function plaidChecks(): array
+    {
+        if (blank(config('services.plaid.client_id')) && blank(config('services.plaid.secret'))) {
+            return [];
+        }
+
+        $configured = filled(config('services.plaid.client_id')) && filled(config('services.plaid.secret'));
+        $environment = config('services.plaid.environment') === 'sandbox' ? 'sandbox' : 'production';
+        $redirect = (string) config('services.plaid.redirect_uri');
+        $used = PlaidUsage::used();
+        $limit = PlaidUsage::limit();
+
+        return [
+            $this->check('plaid', 'Plaid (UK banks)',
+                ! $configured ? 'fail' : ($environment === 'sandbox' && app()->isProduction() ? 'warn' : 'ok'),
+                ! $configured
+                    ? 'Set both PLAID_CLIENT_ID and PLAID_SECRET.'
+                    : sprintf('%s. Add this to Allowed redirect URIs in the Plaid Dashboard: %s', ucfirst($environment), $redirect)),
+
+            $this->check('plaid-usage', 'Plaid calls',
+                $limit === 0 ? 'ok' : (PlaidUsage::exhausted() ? 'fail' : ($used >= $limit * 0.8 ? 'warn' : 'ok')),
+                $limit === 0
+                    ? sprintf('%d transaction sync calls so far (no limit set).', $used)
+                    : sprintf('%d of %d free calls used, as counted by SpendLess (the Plaid Dashboard has the official number). UK banks sync once a day.', $used, $limit)),
+        ];
     }
 
     /**
