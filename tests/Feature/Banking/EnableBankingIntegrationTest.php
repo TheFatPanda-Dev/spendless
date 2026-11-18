@@ -478,11 +478,24 @@ class EnableBankingIntegrationTest extends TestCase
         $this->assertModelMissing($stalePending);
     }
 
-    public function test_sync_slots_are_every_six_hours_from_midnight(): void
+    public function test_sync_slots_are_every_four_hours_during_the_slovenian_day(): void
     {
-        $this->assertSame('2026-11-17 06:00', SyncSchedule::nextSlot(CarbonImmutable::parse('2026-11-17 05:59'))->format('Y-m-d H:i'));
-        $this->assertSame('2026-11-17 12:00', SyncSchedule::nextSlot(CarbonImmutable::parse('2026-11-17 06:00'))->format('Y-m-d H:i'));
-        $this->assertSame('2026-11-18 00:00', SyncSchedule::nextSlot(CarbonImmutable::parse('2026-11-17 23:30'))->format('Y-m-d H:i'));
+        $next = fn (string $utc): string => SyncSchedule::nextSlot(CarbonImmutable::parse($utc, 'UTC'))->format('Y-m-d H:i');
+
+        // Winter (CET = UTC+1): 07/11/15/19 local = 06/10/14/18 UTC.
+        $this->assertSame('2026-11-17 06:00', $next('2026-11-17 05:59'));
+        $this->assertSame('2026-11-17 10:00', $next('2026-11-17 06:00'));
+        $this->assertSame('2026-11-17 18:00', $next('2026-11-17 15:30'));
+        $this->assertSame('2026-11-18 06:00', $next('2026-11-17 18:00'));
+        $this->assertSame('2026-11-18 06:00', $next('2026-11-17 23:30'));
+        // Summer (CEST = UTC+2): 07:00 local = 05:00 UTC.
+        $this->assertSame('2026-07-01 05:00', $next('2026-07-01 02:00'));
+        $this->assertSame('07:00, 11:00, 15:00 and 19:00 (Europe/Ljubljana)', SyncSchedule::describe());
+
+        config(['services.enable_banking.sync_hours' => ' 21, 9,nope,25,9', 'services.enable_banking.sync_timezone' => 'UTC']);
+        $this->assertSame([9, 21], SyncSchedule::hours());
+        $this->assertSame('2026-11-17 21:00', $next('2026-11-17 09:00'));
+        $this->assertSame('09:00 and 21:00 (UTC)', SyncSchedule::describe());
     }
 
     public function test_access_reminder_is_emailed_once_a_week_before_expiry(): void

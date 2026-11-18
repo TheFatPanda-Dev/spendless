@@ -58,9 +58,10 @@ return [
         ))),
         // Consent length asked from the bank; capped by each bank's own maximum.
         'max_consent_days' => (int) env('ENABLE_BANKING_MAX_CONSENT_DAYS', 180),
-        // Background syncs run in fixed slots (6 h = 00/06/12/18), i.e. 4 a day, which is
-        // the PSD2 limit for refreshes without the account holder present.
-        'sync_interval_hours' => (int) env('ENABLE_BANKING_SYNC_INTERVAL_HOURS', 6),
+        // Background syncs run at these local hours: every 4 h during the day, 4 a day, which is
+        // the PSD2 limit for refreshes without the account holder present. "Sync now" is immediate.
+        'sync_hours' => env('ENABLE_BANKING_SYNC_HOURS', '7,11,15,19'),
+        'sync_timezone' => env('ENABLE_BANKING_SYNC_TIMEZONE', 'Europe/Ljubljana'),
         'initial_history_days' => (int) env('ENABLE_BANKING_INITIAL_HISTORY_DAYS', 90),
         'jwt_issuer' => env('ENABLE_BANKING_JWT_ISS', 'enablebanking.com'),
         'jwt_audience' => env('ENABLE_BANKING_JWT_AUD', 'api.enablebanking.com'),

@@ -127,7 +127,7 @@ oldest user becomes admin. Take a database backup first (cPanel → *Backup* or 
 
 | What | When |
 |---|---|
-| Bank sync (balances + transactions) | Every 6 hours (00, 06, 12, 18 UTC). That's 4 a day, the PSD2 limit for refreshes without you present |
+| Bank sync (balances + transactions) | 07:00, 11:00, 15:00 and 19:00 Slovenian time. That's 4 a day, the PSD2 limit for refreshes without you present |
 | "Sync now" / "Sync All" buttons | Immediately; they don't count toward the 4 a day |
 | Queue worker | Started every minute by the cron job, stops when the queue is empty |
 | "Reconnect your bank" email | 7 days before a bank's 180-day access ends (09:00 UTC) |

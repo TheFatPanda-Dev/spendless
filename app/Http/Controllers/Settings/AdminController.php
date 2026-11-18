@@ -8,6 +8,7 @@ use App\Models\AppSetting;
 use App\Models\BankConnection;
 use App\Models\User;
 use App\Services\EnableBanking\EnableBankingClient;
+use App\Services\EnableBanking\SyncSchedule;
 use App\Support\Admin\SetupChecks;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,6 +72,7 @@ class AdminController extends Controller
             'checks' => $setupChecks->local($request),
             'bankChecks' => Inertia::defer(fn (): array => $setupChecks->enableBanking()),
             'registrationOpen' => AppSetting::registrationOpen(),
+            'syncSchedule' => SyncSchedule::describe(),
             'users' => $users,
             'connections' => $connections,
             'failedJobs' => $failedJobs,

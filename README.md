@@ -59,7 +59,9 @@ SpendLess reads balances and transactions from European and UK banks through
 restricted mode.
 
 - Connect: **Add New Wallet → Connect a bank account**, pick the country and bank, approve at the bank.
-- Background sync every 6 hours (4 times a day, the PSD2 limit for unattended refreshes); **Sync now** any time.
+- Background sync every 4 hours during the day: 07:00, 11:00, 15:00 and 19:00 Slovenian time (4 a day, the PSD2
+  limit for unattended refreshes). **Sync now** syncs immediately, any time. Change the times with
+  `ENABLE_BANKING_SYNC_HOURS` / `ENABLE_BANKING_SYNC_TIMEZONE`.
 - Access lasts up to 180 days; SpendLess shows a **Reconnect** banner and emails a week before it ends.
 - Amounts are signed: money in is positive, money out is negative.
 

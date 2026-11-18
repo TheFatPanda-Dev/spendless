@@ -50,6 +50,7 @@ type Props = {
     checks: Check[];
     bankChecks?: Check[];
     registrationOpen: boolean;
+    syncSchedule: string;
     users: AdminUser[];
     connections: AdminConnection[];
     failedJobs: FailedJob[];
@@ -102,6 +103,7 @@ export default function Admin({
     checks,
     bankChecks,
     registrationOpen,
+    syncSchedule,
     users,
     connections,
     failedJobs,
@@ -315,7 +317,7 @@ export default function Admin({
                         <Heading
                             variant="small"
                             title="Bank connections"
-                            description="All users' banks. Background syncs run every 6 hours (00, 06, 12, 18 UTC)."
+                            description={`All users' banks. Background syncs run at ${syncSchedule}; "Sync now" runs immediately.`}
                         />
                         {connections.length === 0 ? (
                             <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
