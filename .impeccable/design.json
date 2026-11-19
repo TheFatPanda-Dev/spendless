@@ -1,0 +1,544 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T09:19:33.092Z",
+  "title": "Design System: SpendLess",
+  "extensions": {
+    "colorMeta": {
+      "deep-green": {
+        "role": "primary",
+        "displayName": "Deep Ledger Green",
+        "canonical": "oklch(44.6% 0.094 165)",
+        "tonalRamp": [
+          "#030e09",
+          "#0a2b1f",
+          "#044c36",
+          "#156e50",
+          "#419272",
+          "#74b598",
+          "#b0d4c3",
+          "#e1f4eb"
+        ]
+      },
+      "mint-action": {
+        "role": "primary",
+        "displayName": "Mint Action (dark)",
+        "canonical": "oklch(74.0% 0.160 162)",
+        "tonalRamp": [
+          "#001006",
+          "#002f18",
+          "#00532a",
+          "#007741",
+          "#009c63",
+          "#40be8b",
+          "#9ddbbc",
+          "#d8f7e7"
+        ]
+      },
+      "mint-hero": {
+        "role": "secondary",
+        "displayName": "Mint Hero",
+        "canonical": "oklch(94.4% 0.034 160)",
+        "tonalRamp": [
+          "#080c0a",
+          "#1d2721",
+          "#33443b",
+          "#4d6457",
+          "#6f8779",
+          "#96aa9f",
+          "#c2cec7",
+          "#eaf0ec"
+        ]
+      },
+      "hero-ink": {
+        "role": "secondary",
+        "displayName": "Hero Ink",
+        "canonical": "oklch(31.7% 0.056 163)",
+        "tonalRamp": [
+          "#060d09",
+          "#172820",
+          "#284739",
+          "#3e6855",
+          "#618b77",
+          "#8aae9c",
+          "#bbd0c6",
+          "#e6f2ec"
+        ]
+      },
+      "plot-green": {
+        "role": "secondary",
+        "displayName": "Plot Green",
+        "canonical": "oklch(49.8% 0.107 161)",
+        "tonalRamp": [
+          "#020f08",
+          "#052c1c",
+          "#004d31",
+          "#00704a",
+          "#37946c",
+          "#6eb693",
+          "#aed6c0",
+          "#e0f4e9"
+        ]
+      },
+      "series-forest": {
+        "role": "tertiary",
+        "displayName": "Series Forest (chart-1)",
+        "canonical": "oklch(44.6% 0.090 160)",
+        "tonalRamp": [
+          "#040e08",
+          "#0e2a1d",
+          "#124b33",
+          "#246d4c",
+          "#4a916e",
+          "#7ab495",
+          "#b3d4c1",
+          "#e2f3e9"
+        ]
+      },
+      "series-sage": {
+        "role": "tertiary",
+        "displayName": "Series Sage (chart-2)",
+        "canonical": "oklch(67.9% 0.095 159)",
+        "tonalRamp": [
+          "#030e08",
+          "#0d2b1c",
+          "#0e4c31",
+          "#1f6e4a",
+          "#47926c",
+          "#78b493",
+          "#b2d4c0",
+          "#e2f4e9"
+        ]
+      },
+      "series-amber": {
+        "role": "tertiary",
+        "displayName": "Series Amber (chart-3)",
+        "canonical": "oklch(76.2% 0.125 69)",
+        "tonalRamp": [
+          "#140800",
+          "#361d00",
+          "#613300",
+          "#8a4d00",
+          "#b07012",
+          "#d09858",
+          "#e5c4a1",
+          "#fdebd9"
+        ]
+      },
+      "series-slate": {
+        "role": "tertiary",
+        "displayName": "Series Slate (chart-4)",
+        "canonical": "oklch(71.8% 0.044 235)",
+        "tonalRamp": [
+          "#070c0f",
+          "#1a262d",
+          "#2d4350",
+          "#456273",
+          "#678597",
+          "#8fa9b9",
+          "#becdd7",
+          "#e8f0f5"
+        ]
+      },
+      "series-stone": {
+        "role": "tertiary",
+        "displayName": "Series Stone (chart-5)",
+        "canonical": "oklch(76.5% 0.019 148)",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#212522",
+          "#3b423b",
+          "#576158",
+          "#79837a",
+          "#9ea79f",
+          "#c7ccc7",
+          "#ecefed"
+        ]
+      },
+      "sage-canvas": {
+        "role": "neutral",
+        "displayName": "Sage Canvas",
+        "canonical": "oklch(97.4% 0.007 115)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242422",
+          "#3f403d",
+          "#5d5e5a",
+          "#80817c",
+          "#a4a5a1",
+          "#cacbc8",
+          "#eeeeed"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(21.2% 0.008 169)",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#222524",
+          "#3c413f",
+          "#595f5d",
+          "#7c827f",
+          "#a0a6a4",
+          "#c8cbca",
+          "#edefee"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "oklch(47.7% 0.023 159)",
+        "tonalRamp": [
+          "#090c0a",
+          "#202622",
+          "#38433c",
+          "#536259",
+          "#75857b",
+          "#9ba9a0",
+          "#c5cdc8",
+          "#ebf0ed"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(89.2% 0.013 149)",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#222522",
+          "#3c413d",
+          "#59605a",
+          "#7b827c",
+          "#a0a7a1",
+          "#c8ccc8",
+          "#edefed"
+        ]
+      },
+      "control-grey": {
+        "role": "neutral",
+        "displayName": "Control Grey",
+        "canonical": "oklch(58.5% 0.021 165)",
+        "tonalRamp": [
+          "#090c0b",
+          "#202623",
+          "#38433e",
+          "#53615b",
+          "#75847d",
+          "#9ba8a2",
+          "#c5cdc9",
+          "#ebf0ee"
+        ]
+      },
+      "dark-canvas": {
+        "role": "neutral",
+        "displayName": "Dark Canvas",
+        "canonical": "oklch(19.7% 0.011 163)",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#222523",
+          "#3c413e",
+          "#58605c",
+          "#7b827e",
+          "#a0a6a3",
+          "#c8ccc9",
+          "#edefee"
+        ]
+      },
+      "dark-card": {
+        "role": "neutral",
+        "displayName": "Dark Card",
+        "canonical": "oklch(24.6% 0.015 157)",
+        "tonalRamp": [
+          "#0a0c0b",
+          "#212523",
+          "#3b423d",
+          "#57605a",
+          "#79837d",
+          "#9ea7a2",
+          "#c7ccc9",
+          "#ecefed"
+        ]
+      },
+      "budget-red": {
+        "role": "status",
+        "displayName": "Budget Red",
+        "canonical": "oklch(47.6% 0.151 22)",
+        "tonalRamp": [
+          "#180505",
+          "#401213",
+          "#731a20",
+          "#a12e34",
+          "#ca5556",
+          "#e98380",
+          "#f6b9b5",
+          "#ffe5e3"
+        ]
+      },
+      "amber-warning": {
+        "role": "status",
+        "displayName": "Amber Warning",
+        "canonical": "oklch(44.2% 0.100 64)",
+        "tonalRamp": [
+          "#120902",
+          "#341f08",
+          "#5c3504",
+          "#845013",
+          "#a9733b",
+          "#ca9a6c",
+          "#e1c5ab",
+          "#fbebde"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The Left to spend figure only; 3.5rem on phones, container-fitted so it never clips."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "Screen title from tablet up; no eyebrow above."
+      },
+      "screen-title": {
+        "displayName": "Screen Title",
+        "purpose": "Screen title on phones, sharing a row with the month."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Panel and sheet titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Row names (at 500), columns, inputs."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, nav items, notices, pickers at 15px."
+      },
+      "amount": {
+        "displayName": "Amount",
+        "purpose": "List amounts: Medium, tabular lining figures, true minus sign."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Row subtitles and freshness lines."
+      },
+      "group-label": {
+        "displayName": "Group Label",
+        "purpose": "Ledger day headers, uppercase; column headers use it at 12px / 0.12em. Data labels, not eyebrows."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 8px 24px -12px rgb(0 0 0 / 0.35)",
+        "purpose": "Toasts only; in-flow content is flat."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Budget ring arc fill (500ms)."
+      },
+      {
+        "name": "press",
+        "value": "120ms color/background/border/transform; translateY(1px) on active",
+        "purpose": "Button press feedback; the phone + scales to 0.96."
+      },
+      {
+        "name": "toast-in",
+        "value": "200ms fade-in + slide-in-from-bottom 8px",
+        "purpose": "Toast entrance; success stays 4s, error 6s."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition durations 0.01ms",
+        "purpose": "Honours prefers-reduced-motion globally."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "<48rem (768px)"
+      },
+      {
+        "name": "tablet",
+        "value": "48rem (768px)"
+      },
+      {
+        "name": "desk",
+        "value": "68.75rem (1100px)"
+      }
+    ],
+    "darkTheme": {
+      "switch": ".dark class on the root (user appearance setting, system default)",
+      "source": "resources/css/app.css .dark block",
+      "note": "Every light role has a dark value; dark-* colour tokens in the frontmatter are the dark values of the same roles."
+    },
+    "coverage": {
+      "reviewed": [
+        "Overview (desktop light, desktop dark, phone)",
+        "Activity (desktop, phone, phone Filters sheet)",
+        "Budgets (desktop, phone)",
+        "Account page (desktop, phone)"
+      ],
+      "notReviewed": [
+        "Add-transaction sheet",
+        "Inline transaction editing",
+        "Auth screens",
+        "Tags",
+        "Imports",
+        "Settings",
+        "Phone dark mode"
+      ],
+      "outOfScope": [
+        "Admin (moving to Filament)"
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one filled action per screen, 44px, 12px radius.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\"><path d=\"M5 12h14M12 5v14\"/></svg>Add transaction</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:none;border-radius:12px;background:var(--primary,#006447);color:var(--primary-foreground,#fff);font:500 15px/1 Roboto,system-ui,sans-serif;cursor:pointer;transition:background-color 120ms,transform 120ms}.ds-btn-primary:hover{background:color-mix(in srgb,var(--primary,#006447) 90%,transparent)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions and month arrows.",
+      "html": "<button class=\"ds-btn-outline\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7L21 16M21 21v-5h-5\"/></svg>Sync all</button>",
+      "css": ".ds-btn-outline{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:1px solid color-mix(in srgb,var(--control,#718079) 70%,transparent);border-radius:12px;background:var(--card,#fff);color:var(--foreground,#151a18);font:500 15px/1 Roboto,system-ui,sans-serif;cursor:pointer;transition:background-color 120ms}.ds-btn-outline:hover{background:var(--muted,#edf1ec)}.ds-btn-outline:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:2px}"
+    },
+    {
+      "name": "Phone Add Button",
+      "kind": "button",
+      "refersTo": "button-phone-add",
+      "description": "The screen's add action in the phone top bar.",
+      "html": "<button class=\"ds-btn-add\" aria-label=\"Add transaction\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\"><path d=\"M5 12h14M12 5v14\"/></svg></button>",
+      "css": ".ds-btn-add{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:none;border-radius:14px;background:var(--primary,#006447);color:var(--primary-foreground,#fff);cursor:pointer;transition:transform 120ms,background-color 120ms}.ds-btn-add:hover{background:color-mix(in srgb,var(--primary,#006447) 90%,transparent)}.ds-btn-add:active{transform:scale(.96)}.ds-btn-add:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:2px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "44px field with control-grey border.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search payee or description\">",
+      "css": ".ds-input{height:44px;width:100%;padding:4px 14px;border:1px solid color-mix(in srgb,var(--control,#718079) 70%,transparent);border-radius:12px;background:var(--card,#fff);color:var(--foreground,#151a18);font:400 16px Roboto,system-ui,sans-serif;caret-color:var(--primary,#006447)}.ds-input::placeholder{color:var(--muted-foreground,#526158)}.ds-input:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:2px}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Desk rail items; active is a mint pill.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item is-active\" href=\"#\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg>Overview</a><a class=\"ds-rail-item\" href=\"#\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\"><path d=\"M3 6h18M3 12h12M3 18h16\"/></svg>Activity</a></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:6px;width:198px;padding:16px;background:var(--sidebar,#fff)}.ds-rail-item{display:flex;align-items:center;gap:14px;min-height:48px;padding:0 16px;border-radius:12px;color:var(--muted-foreground,#526158);font:400 15px Roboto,system-ui,sans-serif;text-decoration:none;transition:background-color 150ms,color 150ms}.ds-rail-item:hover{background:color-mix(in srgb,var(--sidebar-accent,#ddf4e6) 50%,transparent);color:var(--foreground,#151a18)}.ds-rail-item.is-active{background:var(--sidebar-accent,#ddf4e6);color:var(--sidebar-accent-foreground,#006447);font-weight:500}.ds-rail-item:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:2px}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "White card, hairline, 20px radius, section title with a text action.",
+      "html": "<section class=\"ds-panel\"><header><h2>Spending by category</h2><a href=\"#\">Details ›</a></header><p>Housing <span>€1,111.50</span></p></section>",
+      "css": ".ds-panel{padding:24px;border:1px solid var(--border,#d6ded7);border-radius:20px;background:var(--card,#fff);color:var(--card-foreground,#151a18);font-family:Roboto,system-ui,sans-serif}.ds-panel header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.ds-panel h2{margin:0;font:500 22px/28px Roboto,system-ui,sans-serif}.ds-panel a{color:var(--primary,#006447);font:500 15px Roboto,system-ui,sans-serif;text-decoration:none}.ds-panel a:hover{text-decoration:underline}.ds-panel p{display:flex;justify-content:space-between;margin:0;font-size:16px}.ds-panel span{font-variant-numeric:tabular-nums lining-nums}"
+    },
+    {
+      "name": "Hero Card",
+      "kind": "custom",
+      "refersTo": "hero-card",
+      "description": "Mint hero with the Left to spend figure and the open budget ring.",
+      "html": "<section class=\"ds-hero\"><div><p class=\"ds-hero-label\">Left to spend</p><p class=\"ds-hero-fig\">€602.46</p></div><svg class=\"ds-ring\" width=\"132\" height=\"132\" viewBox=\"0 0 132 132\"><g transform=\"rotate(-90 66 66)\"><circle cx=\"66\" cy=\"66\" r=\"61\" fill=\"none\" stroke=\"var(--track,#a9ceb7)\" stroke-width=\"10\" stroke-linecap=\"round\" stroke-dasharray=\"287.5 383.3\"/><circle cx=\"66\" cy=\"66\" r=\"61\" fill=\"none\" stroke=\"var(--plot,#08754f)\" stroke-width=\"10\" stroke-linecap=\"round\" stroke-dasharray=\"201.2 383.3\"/></g><text x=\"66\" y=\"66\" text-anchor=\"middle\" font-size=\"28\" fill=\"currentColor\">70%</text><text x=\"66\" y=\"88\" text-anchor=\"middle\" font-size=\"13\" fill=\"var(--hero-muted,#36634e)\">used</text></svg></section>",
+      "css": ".ds-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:32px;border-radius:20px;background:var(--hero,#daf4e5);color:var(--hero-foreground,#103b2a);font-family:Roboto,system-ui,sans-serif}.ds-hero-label{margin:0;color:var(--hero-muted,#36634e);font-size:18px}.ds-hero-fig{margin:4px 0 0;font-weight:300;font-size:64px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}.ds-ring{flex-shrink:0}"
+    },
+    {
+      "name": "Ledger Row",
+      "kind": "custom",
+      "refersTo": "icon-tile",
+      "description": "Transaction row: icon tile, payee, category, signed tabular amount, under a tinted day header.",
+      "html": "<div class=\"ds-ledger\"><h3>Tuesday 17 November</h3><button class=\"ds-row\"><span class=\"ds-tile\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M5 11l4-7M9 11l1 9\"/></svg></span><span class=\"ds-payee\">Hofer</span><span class=\"ds-cat\">Groceries</span><span class=\"ds-amt\">−€32.15</span></button><button class=\"ds-row\"><span class=\"ds-tile is-income\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/></svg></span><span class=\"ds-payee\">Opening balance</span><span class=\"ds-cat\">Other Income</span><span class=\"ds-amt is-in\">+€120.00</span></button></div>",
+      "css": ".ds-ledger{overflow:hidden;border:1px solid var(--border,#d6ded7);border-radius:20px;background:var(--card,#fff);font-family:Roboto,system-ui,sans-serif}.ds-ledger h3{margin:0;padding:10px 20px;border-bottom:1px solid var(--border,#d6ded7);background:color-mix(in srgb,var(--muted,#edf1ec) 45%,transparent);color:var(--muted-foreground,#526158);font:500 14px Roboto,system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase}.ds-row{display:grid;grid-template-columns:2.5rem minmax(0,2fr) minmax(0,1.2fr) 8.5rem;align-items:center;gap:16px;width:100%;padding:14px 20px;border:none;border-bottom:1px solid var(--border,#d6ded7);background:none;text-align:left;cursor:pointer;color:var(--foreground,#151a18);font:inherit;transition:background-color 150ms}.ds-row:last-child{border-bottom:none}.ds-row:hover{background:color-mix(in srgb,var(--muted,#edf1ec) 60%,transparent)}.ds-row:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:-2px}.ds-tile{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--border,#d6ded7);border-radius:12px;color:var(--muted-foreground,#526158)}.ds-tile.is-income{border-color:transparent;background:var(--hero,#daf4e5);color:var(--positive,#006447)}.ds-payee{font-weight:500;font-size:16px}.ds-cat{color:var(--muted-foreground,#526158);font-size:16px}.ds-amt{text-align:right;font-weight:500;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}.ds-amt.is-in{color:var(--positive,#006447)}"
+    },
+    {
+      "name": "Budget Bar",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "A category against its own budget; over budget it is all red with an ink tick where the budget ran out.",
+      "html": "<div class=\"ds-bb\"><div class=\"ds-bb-track\"><span class=\"ds-bb-fill\" style=\"width:93%\"></span></div></div><div class=\"ds-bb\"><div class=\"ds-bb-track\"><span class=\"ds-bb-fill is-over\" style=\"width:100%\"></span></div><span class=\"ds-bb-tick\" style=\"left:66%\"></span></div>",
+      "css": ".ds-bb{position:relative;height:10px;margin:12px 0}.ds-bb-track{position:absolute;inset:0;overflow:hidden;border-radius:9999px;background:var(--muted,#edf1ec)}.ds-bb-fill{position:absolute;inset:0 auto 0 0;border-radius:9999px;background:var(--plot,#08754f)}.ds-bb-fill.is-over{background:var(--destructive,#a02d33)}.ds-bb-tick{position:absolute;top:-4px;bottom:-4px;width:2px;transform:translateX(-50%);border-radius:9999px;background:var(--foreground,#151a18)}"
+    },
+    {
+      "name": "Warning Notice",
+      "kind": "custom",
+      "refersTo": "notice-warning",
+      "description": "Amber notice with a factual sentence and a next action.",
+      "html": "<div class=\"ds-notice\"><span>Transportation is €76.51 over its November budget.</span><a href=\"#\">Review transportation expenses ›</a></div>",
+      "css": ".ds-notice{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;padding:12px 16px;border-radius:12px;background:var(--warning-surface,#ffe9c9);color:var(--warning,#784500);font:400 15px Roboto,system-ui,sans-serif}.ds-notice a{color:inherit;font-weight:500;text-decoration:none}.ds-notice a:hover{text-decoration:underline}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Ledger",
+    "overview": "SpendLess is a calm sage-and-green workspace that answers one question first: how much is left to spend this month. Everything else (where the money went, what happened lately, where it sits) follows in white cards on a warm sage canvas, separated by hairlines rather than shadows. The look is the owner's SpendLess identity kit (`design/identity-kit/`), executed as a category-standard finance app at the quality bar of YNAB and Lunch Money. The kit is binding; this document records how the shipped code implements it.\n\nDensity is moderate: generous 20px-radius cards, 44px controls, one primary action per screen. Numbers carry the hierarchy, not decoration: the remaining budget is the only Light 64px figure on a screen, amounts are tabular and signed with a true minus, and colour is reserved for meaning (green for money in and the primary action, red only for over budget, amber for warnings). The direction contract refuses the dark neon dashboard tile wall and the trading-app red/green ticker; spending is not painted red.\n\nThe system has a light theme (sage) and a dark theme (deep green-black with a mint action), switched by the `.dark` class from the user's appearance setting. Both share every token role; only values change.\n\nCoverage boundary: the finish review shipped and approved Overview (desktop light and dark, phone), Activity, Budgets and an Account page. The add-transaction sheet, inline transaction editing, auth screens, Tags, Imports, Settings and phone dark mode were not reviewed. Those surfaces inherit the tokens below, but no rule here was derived from them; treat their current look as unverified. The admin area is moving to Filament and is outside this system.",
+    "keyCharacteristics": [
+      "Sage canvas, white cards, hairline borders; no structural shadows.",
+      "One mint hero card per screen carrying the \"Left to spend\" figure in Roboto Light.",
+      "Deep green is the single action colour; everything else is ink, muted ink or a series colour.",
+      "Tabular lining figures for every amount; true minus \"−\" for outflows, \"+\" for inflows.",
+      "44px touch targets everywhere, including phone icon buttons and the sheet close button.",
+      "Three layouts from one source: 230px rail (desk), 92px compact rail (tablet), top bar plus bottom tabs (phone)."
+    ],
+    "rules": [
+      {
+        "name": "The One Green Action Rule",
+        "body": "Each screen has exactly one filled deep-green button. Secondary actions are outline buttons or green text buttons.",
+        "section": "colors"
+      },
+      {
+        "name": "The Meaning-Only Colour Rule",
+        "body": "Red appears only when a budget is exceeded or something failed. Ordinary spending is ink with a minus sign, never red; income is green with a plus sign.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ranked Series Rule",
+        "body": "Category colours follow spend rank (chart-1 is the largest category this period), not a fixed category-to-colour mapping, so the biggest share is always the darkest green.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Money Rule",
+        "body": "Every amount uses the `amount` utility (tabular, lining figures) and `formatMoney`: two decimals always, a true minus sign \"−\" (U+2212) for outflows, \"+\" for inflows where the sign carries meaning, and the currency of the amount itself (€, £, US$ side by side, never silently converted).",
+        "section": "typography"
+      },
+      {
+        "name": "The Light Is For Money Rule",
+        "body": "Weight 300 is used only for large monetary figures. Text never goes Light.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline Not Shadow Rule",
+        "body": "Separation between content is a 1px hairline or a tonal step. If an element sits in the page flow, it has no shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do lead every money screen with the amount left to spend, in the Light display figure inside the mint hero card.",
+      "Do format every amount with `formatMoney` and the `amount` utility: two decimals, \"−\" for outflows, \"+\" for inflows, the amount's own currency.",
+      "Do keep every interactive element at least 44px (h-11), including icon buttons, picker arrows and sheet close buttons.",
+      "Do use the semantic roles (`bg-card`, `text-muted-foreground`, `border-control/70`, `bg-hero`) so light and dark both work; never hard-code hex in components.",
+      "Do colour categories by spend rank with chart-1..5 and keep one shared scale per chart.",
+      "Do separate content with 1px hairlines and tonal steps; reserve shadow for floating layers.",
+      "Do collapse dense controls on phones into a sheet (Filters, More) rather than wrapping rows of selects."
+    ],
+    "donts": [
+      "Don't put an eyebrow or kicker label above page titles; the kit's \"PERSONAL WORKSPACE\" label is deliberately omitted.",
+      "Don't add a second filled deep-green button to a screen.",
+      "Don't colour ordinary spending red or use a red/green ticker for amounts; red means over budget or failure.",
+      "Don't use Roboto Light for text, or swap Roboto for another family; the kit pins it.",
+      "Don't add shadows to cards, panels or the rail.",
+      "Don't use a hyphen-minus for negative amounts, or drop the cents.",
+      "Don't use unicode glyphs as icons; use lucide outlines at 1.75 stroke."
+    ]
+  }
+}
