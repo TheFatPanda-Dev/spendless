@@ -1,5 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
-import ShieldUser from 'lucide-react/dist/esm/icons/shield-user.js';
+import { Link } from '@inertiajs/react';
 import Shield from 'lucide-react/dist/esm/icons/shield.js';
 import Tags from 'lucide-react/dist/esm/icons/tags.js';
 import UserCircle2 from 'lucide-react/dist/esm/icons/user-circle-2.js';
@@ -10,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { edit } from '@/routes/profile';
-import type { Auth, NavItem } from '@/types';
+import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -35,18 +34,8 @@ const sidebarNavItems: NavItem[] = [
     },
 ];
 
-const adminNavItem: NavItem = {
-    title: 'Admin',
-    href: '/settings/admin',
-    icon: ShieldUser,
-};
-
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
-    const { auth } = usePage<{ auth: Auth }>().props;
-    const navItems = auth.user?.is_admin
-        ? [...sidebarNavItems, adminNavItem]
-        : sidebarNavItems;
 
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
@@ -65,7 +54,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         className="flex flex-col gap-1 rounded-card border border-border bg-card p-2"
                         aria-label="Settings"
                     >
-                        {navItems.map((item, index) => (
+                        {sidebarNavItems.map((item, index) => (
                             <Button
                                 key={`${toUrl(item.href)}-${index}`}
                                 variant="ghost"

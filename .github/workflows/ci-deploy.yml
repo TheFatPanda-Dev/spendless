@@ -110,6 +110,7 @@ jobs:
           $PHP_BIN artisan config:cache
           $PHP_BIN artisan route:cache
           $PHP_BIN artisan view:cache
+          $PHP_BIN artisan filament:optimize
           [ -e public/storage ] || $PHP_BIN artisan storage:link || true
           $PHP_BIN artisan queue:restart
           $PHP_BIN artisan up

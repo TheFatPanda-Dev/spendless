@@ -36,6 +36,15 @@ type Destination = {
     icon: LucideIcon;
     /** Other path prefixes that belong to this destination. */
     matches?: string[];
+    /** Outside the Inertia app (the Filament admin): a full page load. */
+    external?: boolean;
+};
+
+const ADMIN: Destination = {
+    title: 'Admin',
+    href: '/admin',
+    icon: ShieldUser,
+    external: true,
 };
 
 const PRIMARY: Destination[] = [
@@ -88,25 +97,40 @@ function RailLink({
 }) {
     const Icon = destination.icon;
 
+    const className = cn(
+        'group flex items-center rounded-xl text-[15px] transition-colors duration-150',
+        compact
+            ? 'min-h-14 flex-col justify-center gap-1 px-1 py-2 text-xs'
+            : 'min-h-12 gap-3.5 px-4',
+        active
+            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+            : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground',
+    );
+    const content = (
+        <>
+            <Icon className="size-[22px] shrink-0" strokeWidth={1.75} />
+            <span className={compact ? 'leading-none' : undefined}>
+                {destination.title}
+            </span>
+        </>
+    );
+
+    if (destination.external) {
+        return (
+            <a href={destination.href} className={className}>
+                {content}
+            </a>
+        );
+    }
+
     return (
         <Link
             href={destination.href}
             prefetch
             aria-current={active ? 'page' : undefined}
-            className={cn(
-                'group flex items-center rounded-xl text-[15px] transition-colors duration-150',
-                compact
-                    ? 'min-h-14 flex-col justify-center gap-1 px-1 py-2 text-xs'
-                    : 'min-h-12 gap-3.5 px-4',
-                active
-                    ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground',
-            )}
+            className={className}
         >
-            <Icon className="size-[22px] shrink-0" strokeWidth={1.75} />
-            <span className={compact ? 'leading-none' : undefined}>
-                {destination.title}
-            </span>
+            {content}
         </Link>
     );
 }
@@ -115,12 +139,6 @@ function Rail({ compact }: { compact: boolean }) {
     const isActive = useIsActive();
     const { auth } = usePage<{ auth: { user: { is_admin?: boolean } } }>()
         .props;
-    const admin: Destination = {
-        title: 'Admin',
-        href: '/settings/admin',
-        icon: ShieldUser,
-    };
-
     return (
         <aside
             className={cn(
@@ -152,14 +170,14 @@ function Rail({ compact }: { compact: boolean }) {
             <div className="mt-auto flex flex-col gap-1.5 border-t border-sidebar-border pt-5">
                 {auth.user?.is_admin ? (
                     <RailLink
-                        destination={admin}
-                        active={isActive(admin)}
+                        destination={ADMIN}
+                        active={false}
                         compact={compact}
                     />
                 ) : null}
                 <RailLink
                     destination={SETTINGS}
-                    active={isActive(SETTINGS) && !isActive(admin)}
+                    active={isActive(SETTINGS)}
                     compact={compact}
                 />
             </div>
@@ -174,9 +192,7 @@ function PhoneTabs() {
         .props;
     const extra = [
         ...PRIMARY.slice(4),
-        ...(auth.user?.is_admin
-            ? [{ title: 'Admin', href: '/settings/admin', icon: ShieldUser }]
-            : []),
+        ...(auth.user?.is_admin ? [ADMIN] : []),
         SETTINGS,
     ];
     const moreActive = extra.some((destination) => isActive(destination));

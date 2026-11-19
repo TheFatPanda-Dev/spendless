@@ -39,8 +39,8 @@ Paths below assume the app lives in `~/spendless` with the domain's document roo
    cd ~/spendless && /full/path/to/php artisan schedule:run >> /dev/null 2>&1
    ```
 
-   That's the only cron entry needed. Within two minutes **Settings → Admin → Setup check**
-   should show "Cron job" in green. The Admin page also prints the exact line for your server.
+   That's the only cron entry needed. Within two minutes the **Setup checks** on the admin overview (`/admin`, or **Admin** in the sidebar)
+   should show "Cron job" in green. That page also prints the exact line for your server.
 
 ## 2. Automatic deploys from GitHub (recommended)
 
@@ -135,7 +135,7 @@ oldest user becomes admin. Take a database backup first (cPanel → *Backup* or 
 
 ## 5. Troubleshooting
 
-Open **Settings → Admin**. Every check is either green or explains what to change. Common ones:
+Open **Admin** in the sidebar (`/admin`). Every setup check is either green or explains what to change. Common ones:
 
 - **Cron job red:** the cron line is missing or uses the wrong PHP path. Run the command by hand over SSH to see the error.
 - **Bank return link red:** add `https://your-domain.si/banking/callback` to the application's redirect URLs in the Enable Banking Control Panel.

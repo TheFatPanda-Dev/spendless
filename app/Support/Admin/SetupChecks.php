@@ -63,7 +63,7 @@ class SetupChecks
             $this->check('registration', 'New sign-ups',
                 AppSetting::registrationOpen() ? 'warn' : 'ok',
                 AppSetting::registrationOpen()
-                    ? 'Anyone can create an account. Free Enable Banking only works for accounts you linked yourself, so consider closing sign-ups below.'
+                    ? 'Anyone can create an account. Free Enable Banking only works for accounts you linked yourself, so consider closing sign-ups (the button at the top of the admin overview).'
                     : 'Closed. Only existing users can sign in.'),
 
             $this->connectionsCheck(),
