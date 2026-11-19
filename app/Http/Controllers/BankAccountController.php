@@ -55,6 +55,8 @@ class BankAccountController extends Controller
                 'institution_logo' => $bankAccount->connection?->logoUrl(),
                 'provider' => $bankAccount->connection?->provider,
                 'wallet_id' => $bankAccount->connection?->wallet_id,
+                'wallet_name' => $bankAccount->connection?->wallet?->name,
+                'siblings' => $this->walletAccounts($bankAccount),
                 'subtype' => $bankAccount->subtype,
                 'is_manual' => (bool) $bankAccount->connection?->isManual(),
                 'connection' => $bankAccount->connection?->toStatusArray(),
@@ -169,6 +171,35 @@ class BankAccountController extends Controller
             'start_date' => (string) $request->query('start_date', now()->startOfMonth()->toDateString()),
             'end_date' => (string) $request->query('end_date', now()->endOfMonth()->toDateString()),
         ])->with('success', $message);
+    }
+
+    /**
+     * Every account in the same wallet (EUR and GBP statements, say), for switching.
+     *
+     * @return list<array{id: int, name: string, currency: string|null}>
+     */
+    private function walletAccounts(BankAccount $bankAccount): array
+    {
+        $walletId = $bankAccount->connection?->wallet_id;
+
+        if ($walletId === null) {
+            return [];
+        }
+
+        return BankAccount::query()
+            ->whereIn('bank_connection_id', BankConnection::query()
+                ->where('wallet_id', $walletId)
+                ->where('status', '!=', BankConnection::STATUS_PENDING)
+                ->select('id'))
+            ->orderBy('id')
+            ->get(['id', 'name', 'display_name', 'currency'])
+            ->map(fn (BankAccount $account): array => [
+                'id' => $account->id,
+                'name' => (string) ($account->display_name ?: $account->name ?: 'Account'),
+                'currency' => $account->currency !== null ? strtoupper($account->currency) : null,
+            ])
+            ->values()
+            ->all();
     }
 
     private function cameFromElsewhere(Request $request): bool

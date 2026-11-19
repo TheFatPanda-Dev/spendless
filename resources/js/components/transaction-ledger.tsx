@@ -23,6 +23,14 @@ export type LedgerTransaction = {
     tag_ids: number[];
 };
 
+/** Icon, merchant, category, description, amount: shared by day headers and rows. */
+const COLUMNS =
+    'tablet:grid-cols-[2.5rem_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.6fr)_8.5rem]';
+
+/** Column titles, shown in the first day's header row from tablet up. */
+const COLUMN_LABEL =
+    'hidden text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase tablet:block';
+
 export function leafCategory(path: string): string {
     const parts = path.split(' / ');
 
@@ -103,16 +111,32 @@ export function TransactionLedger<T extends LedgerTransaction>({
                     aria-label={day === 'Undated' ? day : dayLabel(day, locale)}
                     className="border-border max-tablet:border-b max-tablet:pb-3 max-tablet:last:border-b-0"
                 >
-                    <h2
+                    <div
                         className={cn(
-                            'pt-6 pb-1 text-sm font-medium tracking-[0.1em] text-muted-foreground uppercase tablet:border-b tablet:border-border tablet:bg-muted/45 tablet:px-5 tablet:py-2.5',
+                            'pt-6 pb-1 tablet:grid tablet:items-center tablet:gap-x-4 tablet:border-b tablet:border-border tablet:bg-muted/45 tablet:px-5 tablet:py-2.5',
+                            COLUMNS,
                             groupIndex === 0
                                 ? 'max-tablet:pt-1'
                                 : 'tablet:border-t',
                         )}
                     >
-                        {day === 'Undated' ? day : dayLabel(day, locale)}
-                    </h2>
+                        <h2 className="text-sm font-medium tracking-[0.1em] text-muted-foreground uppercase tablet:col-span-2">
+                            {day === 'Undated' ? day : dayLabel(day, locale)}
+                        </h2>
+                        {groupIndex === 0 ? (
+                            <>
+                                <span className={COLUMN_LABEL}>Category</span>
+                                <span className={COLUMN_LABEL}>
+                                    Description
+                                </span>
+                                <span
+                                    className={cn(COLUMN_LABEL, 'text-right')}
+                                >
+                                    Amount
+                                </span>
+                            </>
+                        ) : null}
+                    </div>
                     <ul className="tablet:divide-y tablet:divide-border">
                         {items.map((transaction) => {
                             const open = openId === transaction.id;
@@ -152,7 +176,7 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                         }
                                         className={cn(
                                             '-mx-3 grid w-[calc(100%+1.5rem)] grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl px-3 py-3 text-left transition-colors tablet:mx-0 tablet:w-full tablet:rounded-none tablet:px-5 tablet:py-3.5',
-                                            'tablet:grid-cols-[2.5rem_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.6fr)_8.5rem]',
+                                            COLUMNS,
                                             open
                                                 ? 'bg-accent/40'
                                                 : 'hover:bg-muted/60',

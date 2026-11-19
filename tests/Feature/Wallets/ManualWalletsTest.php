@@ -55,10 +55,48 @@ class ManualWalletsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('wallets/show')
                 ->where('wallet.id', $wallet->id)
-                ->where('wallet.connections.0.transactions', fn ($transactions): bool => collect($transactions)->contains(
+                ->where('wallet.connections.0.accounts.0.id', $account->id)
+                ->missing('wallet.connections.0.transactions'));
+
+        // The transactions live on the account page, which the wallet opens to.
+        $this->actingAs($user)
+            ->get(route('wallets.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('wallets.0.first_account_id', $account->id));
+
+        $this->actingAs($user)
+            ->get(route('accounts.show', ['bankAccount' => $account, 'start_date' => $openingBalanceTransaction->date->startOfMonth()->toDateString(), 'end_date' => $openingBalanceTransaction->date->endOfMonth()->toDateString()]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('account.wallet_name', $wallet->name)
+                ->where('account.siblings.0.id', $account->id)
+                ->where('transactions', fn ($transactions): bool => collect($transactions)->contains(
                     fn (array $transaction): bool => $transaction['name'] === 'Opening balance'
                         && (float) $transaction['amount'] === 250.75,
                 )));
+    }
+
+    public function test_a_wallet_can_be_renamed_only_by_its_owner(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($owner)->post(route('wallets.manual.store'), [
+            'name' => 'Pocket Cash',
+            'currency' => 'EUR',
+            'starting_balance' => '0',
+        ]);
+        $wallet = BankAccount::query()->where('display_name', 'Pocket Cash')->sole()->connection->wallet;
+
+        $this->actingAs(User::factory()->create())
+            ->patch(route('wallets.update', $wallet), ['name' => 'Mine now'])
+            ->assertForbidden();
+
+        $this->actingAs($owner)
+            ->patch(route('wallets.update', $wallet), ['name' => '  Revolut  '])
+            ->assertSessionHas('success', 'Wallet renamed.');
+
+        $this->assertSame('Revolut', $wallet->fresh()->name);
+
+        $this->actingAs($owner)
+            ->patch(route('wallets.update', $wallet), ['name' => ''])
+            ->assertSessionHasErrors('name');
     }
 
     public function test_manual_wallet_is_visible_on_dashboard_and_wallet_settings(): void

@@ -24,6 +24,8 @@ type WalletSummary = {
     currency: string;
     last_synced_at: string | null;
     connections_count: number;
+    /** Opens this account's transactions; settings are one click further. */
+    first_account_id: number | null;
     accounts_count: number;
     balances: Array<{ currency: string; amount: number }>;
     connections: BankConnectionStatus[];
@@ -138,7 +140,11 @@ export default function WalletsIndex({
                     {wallets.map((wallet) => (
                         <Link
                             key={wallet.id}
-                            href={`/wallets/${wallet.id}`}
+                            href={
+                                wallet.first_account_id !== null
+                                    ? `/accounts/${wallet.first_account_id}`
+                                    : `/wallets/${wallet.id}`
+                            }
                             className="rounded-card border border-border bg-card p-5 transition-colors hover:bg-muted/40"
                         >
                             <div className="flex items-start justify-between gap-2">

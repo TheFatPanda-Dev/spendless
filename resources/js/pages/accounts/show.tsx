@@ -3,6 +3,7 @@ import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
 import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import Search from 'lucide-react/dist/esm/icons/search.js';
+import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal.js';
 import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert.js';
 import Upload from 'lucide-react/dist/esm/icons/upload.js';
 import { useMemo, useState } from 'react';
@@ -37,6 +38,9 @@ type Account = {
     institution_logo: string | null;
     provider: string | null;
     wallet_id?: number | null;
+    wallet_name?: string | null;
+    /** Every account in this wallet (e.g. EUR and GBP statements), for switching. */
+    siblings?: Array<{ id: number; name: string; currency: string | null }>;
     subtype?: string | null;
     is_manual: boolean;
     connection: BankConnectionStatus | null;
@@ -171,16 +175,11 @@ export default function AccountShow({
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Wallets', href: '/wallets' },
-        ...(account.wallet_id
-            ? [
-                  {
-                      title: account.institution_name ?? 'Wallet',
-                      href: `/wallets/${account.wallet_id}`,
-                  },
-              ]
-            : []),
         { title, href: `/accounts/${account.id}` },
     ];
+    const siblings = account.siblings ?? [];
+    const sameNames =
+        new Set(siblings.map((sibling) => sibling.name)).size < siblings.length;
 
     const status = account.connection?.status;
     const freshness = isImport
@@ -278,6 +277,23 @@ export default function AccountShow({
                             Add transaction
                         </Button>
                     ) : null}
+                    {!isAsset && account.wallet_id ? (
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="h-11 rounded-lg px-4 text-[15px]"
+                        >
+                            <Link href={`/wallets/${account.wallet_id}`}>
+                                <SlidersHorizontal
+                                    className="size-4"
+                                    strokeWidth={1.75}
+                                />
+                                {account.provider === 'ibkr'
+                                    ? 'Holdings & settings'
+                                    : 'Settings & history'}
+                            </Link>
+                        </Button>
+                    ) : null}
                     {isAsset && account.wallet_id ? (
                         <Button
                             asChild
@@ -292,6 +308,35 @@ export default function AccountShow({
                     ) : null}
                 </div>
             </div>
+
+            {siblings.length > 1 ? (
+                <nav
+                    aria-label={`Accounts in ${account.wallet_name ?? 'this wallet'}`}
+                    className="-mt-2 mb-6 flex flex-wrap gap-2"
+                >
+                    {siblings.map((sibling) => {
+                        const current = sibling.id === account.id;
+
+                        return (
+                            <Link
+                                key={sibling.id}
+                                href={`/accounts/${sibling.id}?start_date=${month.start}&end_date=${month.end}`}
+                                aria-current={current ? 'page' : undefined}
+                                className={cn(
+                                    'inline-flex h-10 items-center rounded-full border px-4 text-[15px] transition-colors',
+                                    current
+                                        ? 'border-transparent bg-accent font-medium text-accent-foreground'
+                                        : 'border-border bg-card text-muted-foreground hover:text-foreground',
+                                )}
+                            >
+                                {sameNames || !sibling.currency
+                                    ? (sibling.currency ?? sibling.name)
+                                    : `${sibling.name} · ${sibling.currency}`}
+                            </Link>
+                        );
+                    })}
+                </nav>
+            ) : null}
 
             <div className="space-y-5 desk:space-y-6">
                 {status === 'needs_reauth' ||

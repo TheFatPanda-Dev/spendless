@@ -46,7 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('wallets/manual', [WalletController::class, 'storeManual'])
         ->name('wallets.manual.store');
     Route::resource('wallets', WalletController::class)
-        ->only(['index', 'show']);
+        ->only(['index', 'show', 'update']);
     Route::get('accounts/{bankAccount}', [BankAccountController::class, 'show'])
         ->name('accounts.show');
     Route::post('accounts/{bankAccount}/manual-transactions', [BankAccountController::class, 'storeManualTransaction'])

@@ -1,4 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
+import Pencil from 'lucide-react/dist/esm/icons/pencil.js';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import Unplug from 'lucide-react/dist/esm/icons/unplug.js';
 import Upload from 'lucide-react/dist/esm/icons/upload.js';
@@ -8,17 +10,16 @@ import AssetAccountDialog from '@/components/asset-account-dialog';
 import type { IsaTerms } from '@/components/asset-account-dialog';
 import BankAlertsBanner from '@/components/bank-alerts-banner';
 import BankLogo from '@/components/bank-logo';
-import Heading from '@/components/heading';
 import IbkrConnectDialog from '@/components/ibkr-connect-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-refresh';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
 import { openBankPopup } from '@/lib/bank-popup';
 import { bankStatusLabel, bankStatusVariant } from '@/lib/bank-status';
 import { formatDisplayDate, formatLocalizedDateTime } from '@/lib/date-filters';
-import { formatMoney } from '@/lib/money';
 import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type SyncRun = {
@@ -31,16 +32,6 @@ type SyncRun = {
     started_at: string | null;
     finished_at: string | null;
     error_message: string | null;
-};
-
-type Transaction = {
-    id: number;
-    name: string | null;
-    merchant_name: string | null;
-    amount: number;
-    currency: string | null;
-    date: string | null;
-    pending: boolean;
 };
 
 type Account = {
@@ -140,7 +131,6 @@ type Connection = BankConnectionStatus & {
     asset: AssetData | null;
     investments: Investments | null;
     imports: StatementImport[];
-    transactions: Transaction[];
     sync_runs: SyncRun[];
 };
 
@@ -169,6 +159,143 @@ function runStatusVariant(
     }
 
     return 'secondary';
+}
+
+/** The wallet's name, renamed in place. */
+function WalletName({ wallet }: { wallet: Wallet }) {
+    const [editing, setEditing] = useState(false);
+    const [name, setName] = useState(wallet.name);
+
+    if (!editing) {
+        return (
+            <div className="flex min-w-0 items-center gap-2">
+                <h1 className="truncate text-screen-title font-normal text-foreground tablet:text-page-title">
+                    {wallet.name}
+                </h1>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setName(wallet.name);
+                        setEditing(true);
+                    }}
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Rename wallet"
+                >
+                    <Pencil className="size-5" strokeWidth={1.75} />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(event) => {
+                event.preventDefault();
+                router.patch(
+                    `/wallets/${wallet.id}`,
+                    { name },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => setEditing(false),
+                    },
+                );
+            }}
+        >
+            <label htmlFor="wallet-name" className="sr-only">
+                Wallet name
+            </label>
+            <Input
+                id="wallet-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={80}
+                autoFocus
+                className="h-12 w-72 max-w-full text-lg"
+            />
+            <Button type="submit" className="h-11 rounded-lg px-5">
+                Save
+            </Button>
+            <Button
+                type="button"
+                variant="ghost"
+                className="h-11 rounded-lg"
+                onClick={() => setEditing(false)}
+            >
+                Cancel
+            </Button>
+        </form>
+    );
+}
+
+/** An account's label, renamed in place (e.g. "Revolut EUR" and "Revolut GBP"). */
+function AccountName({ account }: { account: Account }) {
+    const [editing, setEditing] = useState(false);
+    const [name, setName] = useState(account.name ?? '');
+
+    if (!editing) {
+        return (
+            <p className="flex items-center gap-1 font-medium">
+                <span className="truncate">{account.name ?? 'Account'}</span>
+                {account.currency ? (
+                    <span className="font-normal text-muted-foreground">
+                        · {account.currency}
+                    </span>
+                ) : null}
+                <button
+                    type="button"
+                    onClick={() => {
+                        setName(account.name ?? '');
+                        setEditing(true);
+                    }}
+                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label={`Rename ${account.name ?? 'account'}`}
+                >
+                    <Pencil className="size-4" strokeWidth={1.75} />
+                </button>
+            </p>
+        );
+    }
+
+    return (
+        <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(event) => {
+                event.preventDefault();
+                router.patch(
+                    `/settings/wallets/accounts/${account.id}`,
+                    { display_name: name },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => setEditing(false),
+                    },
+                );
+            }}
+        >
+            <label htmlFor={`account-name-${account.id}`} className="sr-only">
+                Account name
+            </label>
+            <Input
+                id={`account-name-${account.id}`}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={120}
+                autoFocus
+                className="h-10 w-56 max-w-full"
+            />
+            <Button type="submit" className="h-10 rounded-lg px-4">
+                Save
+            </Button>
+            <Button
+                type="button"
+                variant="ghost"
+                className="h-10 rounded-lg"
+                onClick={() => setEditing(false)}
+            >
+                Cancel
+            </Button>
+        </form>
+    );
 }
 
 export default function WalletShow({ wallet }: { wallet: Wallet }) {
@@ -267,27 +394,24 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${wallet.name} Wallet`} />
+            <Head title={`${wallet.name} · settings`} />
 
             <div className="space-y-6">
                 <div>
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <Heading
-                                variant="page"
-                                title={wallet.name}
-                                description={
-                                    isCashWallet
-                                        ? 'A cash wallet you keep up to date yourself.'
-                                        : wallet.type === 'investment'
-                                          ? 'Account value, holdings, trades and dividends.'
-                                          : wallet.type === 'savings'
-                                            ? 'Fixed-term savings: the value grows with the profit earned.'
-                                            : wallet.type === 'pension'
-                                              ? 'Pension value, updated from your pension app.'
-                                              : 'Linked bank, its accounts and recent transactions.'
-                                }
-                            />
+                            <WalletName wallet={wallet} />
+                            <p className="mt-1 max-w-[65ch] text-[15px] text-muted-foreground">
+                                {isCashWallet
+                                    ? 'A cash wallet you keep up to date yourself.'
+                                    : wallet.type === 'investment'
+                                      ? 'Account value, holdings, trades and dividends.'
+                                      : wallet.type === 'savings'
+                                        ? 'Fixed-term savings: the value grows with the profit earned.'
+                                        : wallet.type === 'pension'
+                                          ? 'Pension value, updated from your pension app.'
+                                          : 'Settings and history: its accounts, statement imports and syncs. Transactions are one click away on each account.'}
+                            </p>
                             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                                 <WalletIcon className="size-4 text-brand" />
                                 <span>
@@ -996,10 +1120,10 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                             ) : null}
 
                             {connection.provider !== 'asset' ? (
-                                <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                                <div>
                                     <div className="space-y-2 border-t border-border pt-5">
                                         <h3 className="font-medium">
-                                            Linked Accounts
+                                            Accounts
                                         </h3>
                                         {connection.accounts.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">
@@ -1014,11 +1138,12 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                             className="border-b border-border py-3 last:border-b-0"
                                                         >
                                                             <div className="flex items-start justify-between gap-3">
-                                                                <div>
-                                                                    <p className="font-medium">
-                                                                        {account.name ??
-                                                                            'Account'}
-                                                                    </p>
+                                                                <div className="min-w-0">
+                                                                    <AccountName
+                                                                        account={
+                                                                            account
+                                                                        }
+                                                                    />
                                                                     {!account.is_active ? (
                                                                         <p className="text-xs text-muted-foreground">
                                                                             No
@@ -1043,7 +1168,20 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                         </p>
                                                                     ) : null}
                                                                 </div>
-                                                                <div className="text-right text-sm">
+                                                                <div className="shrink-0 text-right text-sm">
+                                                                    <Link
+                                                                        href={`/accounts/${account.id}`}
+                                                                        className="mb-1 inline-flex items-center gap-0.5 font-medium text-positive hover:underline"
+                                                                    >
+                                                                        View
+                                                                        transactions
+                                                                        <ChevronRight
+                                                                            className="size-4"
+                                                                            strokeWidth={
+                                                                                1.75
+                                                                            }
+                                                                        />
+                                                                    </Link>
                                                                     <p>
                                                                         {money(
                                                                             account
@@ -1072,73 +1210,13 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             </div>
                                         )}
                                     </div>
-
-                                    <div className="space-y-2 border-t border-border pt-5">
-                                        <h3 className="font-medium">
-                                            Recent Transactions
-                                        </h3>
-                                        {connection.transactions.length ===
-                                        0 ? (
-                                            <p className="text-sm text-muted-foreground">
-                                                No transactions synced yet.
-                                            </p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {connection.transactions
-                                                    .slice(0, 12)
-                                                    .map((transaction) => (
-                                                        <div
-                                                            key={transaction.id}
-                                                            className="border-b border-border py-3 last:border-b-0"
-                                                        >
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <div>
-                                                                    <p className="text-sm font-medium">
-                                                                        {transaction.merchant_name ??
-                                                                            transaction.name ??
-                                                                            'Transaction'}
-                                                                    </p>
-                                                                    <p className="text-xs text-muted-foreground">
-                                                                        {transaction.date
-                                                                            ? formatDisplayDate(
-                                                                                  transaction.date,
-                                                                                  numberLocale,
-                                                                              )
-                                                                            : 'Unknown date'}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-sm font-medium">
-                                                                        {formatMoney(
-                                                                            transaction.amount,
-                                                                            transaction.currency ??
-                                                                                wallet.currency,
-                                                                            numberLocale,
-                                                                            'always',
-                                                                        )}
-                                                                    </p>
-                                                                    {transaction.pending ? (
-                                                                        <Badge
-                                                                            variant="secondary"
-                                                                            className="mt-1"
-                                                                        >
-                                                                            Pending
-                                                                        </Badge>
-                                                                    ) : null}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             ) : null}
 
                             {connection.provider === 'import' ? (
                                 <div className="border-t border-border pt-5">
                                     <h3 className="mb-2 font-medium">
-                                        Recent Imports
+                                        Statement imports
                                     </h3>
                                     {connection.imports.length === 0 ? (
                                         <p className="text-sm text-muted-foreground">
@@ -1177,7 +1255,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                               connection.provider === 'asset' ? null : (
                                 <div className="border-t border-border pt-5">
                                     <h3 className="mb-2 font-medium">
-                                        Recent Sync Runs
+                                        Sync history
                                     </h3>
                                     {connection.sync_runs.length === 0 ? (
                                         <p className="text-sm text-muted-foreground">

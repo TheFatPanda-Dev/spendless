@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Transactions\ResolveBankTransactionCategory;
 use App\Actions\Wallets\CreateManualWallet;
 use App\Http\Requests\StoreManualWalletRequest;
 use App\Models\AssetValuation;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
 use App\Models\BankStatementImport;
-use App\Models\BankTransaction;
 use App\Models\InvestmentActivity;
 use App\Models\InvestmentPosition;
 use App\Models\Wallet;
@@ -42,6 +40,11 @@ class WalletController extends Controller
                 'currency' => $wallet->currency,
                 'last_synced_at' => $wallet->last_synced_at?->toIso8601String(),
                 'connections_count' => $wallet->bankConnections->count(),
+                // Clicking a wallet opens its transactions; settings live on wallets/show.
+                'first_account_id' => $wallet->bankConnections
+                    ->flatMap(fn (BankConnection $connection) => $connection->accounts)
+                    ->sortBy('id')
+                    ->first()?->id,
                 'accounts_count' => $wallet->bankConnections->sum('accounts_count'),
                 // What the wallet holds, per currency (money owed on cards is negative).
                 'balances' => $wallet->bankConnections
@@ -81,18 +84,13 @@ class WalletController extends Controller
     public function show(
         Request $request,
         Wallet $wallet,
-        ResolveBankTransactionCategory $resolveBankTransactionCategory,
     ): Response {
         Gate::authorize('view', $wallet);
 
         $wallet->load([
             'bankConnections' => fn ($query) => $query
                 ->where('status', '!=', BankConnection::STATUS_PENDING)
-                ->with(['accounts', 'syncRuns' => fn ($syncRunsQuery) => $syncRunsQuery->latest()->limit(5)]),
-            'bankConnections.transactions' => fn ($query) => $query
-                ->with('assignedCategory')
-                ->latest('date')
-                ->limit(50),
+                ->with(['accounts', 'syncRuns' => fn ($syncRunsQuery) => $syncRunsQuery->latest()->limit(15)]),
         ]);
 
         return Inertia::render('wallets/show', [
@@ -116,23 +114,6 @@ class WalletController extends Controller
                         'balances' => $account->balances_encrypted,
                         'last_synced_at' => $account->last_synced_at?->toIso8601String(),
                     ])->values(),
-                    'transactions' => $connection->transactions->map(function (BankTransaction $transaction) use ($request, $resolveBankTransactionCategory): array {
-                        $transactionType = ($transaction->assignedCategory
-                            ?? ($resolveBankTransactionCategory)($transaction, $request->user()))?->type
-                            ?? ResolveBankTransactionCategory::resolveTransactionType($transaction);
-
-                        return [
-                            'id' => $transaction->id,
-                            'name' => $transaction->name,
-                            'merchant_name' => $transaction->merchant_name,
-                            'amount' => $transactionType === 'income'
-                                ? abs((float) $transaction->amount)
-                                : -abs((float) $transaction->amount),
-                            'currency' => $transaction->currency,
-                            'date' => $transaction->date?->toDateString(),
-                            'pending' => $transaction->pending,
-                        ];
-                    })->values(),
                     'asset' => $connection->provider === BankConnection::PROVIDER_ASSET
                         ? $this->asset($connection)
                         : null,
@@ -143,7 +124,7 @@ class WalletController extends Controller
                         ? BankStatementImport::query()
                             ->whereIn('bank_account_id', $connection->accounts->pluck('id'))
                             ->latest()
-                            ->limit(5)
+                            ->limit(20)
                             ->get()
                             ->map(fn (BankStatementImport $import): array => $import->toSummaryArray())
                             ->values()
@@ -162,6 +143,19 @@ class WalletController extends Controller
                 ])->values(),
             ],
         ]);
+    }
+
+    public function update(Request $request, Wallet $wallet): RedirectResponse
+    {
+        Gate::authorize('update', $wallet);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:80'],
+        ]);
+
+        $wallet->update(['name' => trim($validated['name'])]);
+
+        return back()->with('success', 'Wallet renamed.');
     }
 
     /**
