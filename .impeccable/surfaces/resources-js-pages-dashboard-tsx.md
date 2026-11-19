@@ -35,12 +35,15 @@ recently, trusts it because each figure shows its period and source, and acts: a
 category, sync or reconnect a bank.
 
 FIRST VIEWPORT: Desktop 1440: fixed 230px rail (compact lockup, Overview selected as a mint pill, Activity, Budgets,
-Wallets, Tags, Imports; Settings at the foot). Main: "PERSONAL WORKSPACE" label over a 40px "Overview" title; month
-picker and the one primary "Add transaction" button top-right. Row 1: mint "Monthly budget" hero (left to spend in
+Wallets, Tags, Imports; Settings at the foot). Main: a 40px "Overview" title with no eyebrow label above it (the
+kit's "PERSONAL WORKSPACE" label is left out on purpose: the craft floor bans decorative eyebrows); month picker and
+the one primary "Add transaction" button top-right. Row 1: mint "Monthly budget" hero (left to spend in
 64px Light, open ring with % used, spent so far and budget below a divider) beside "Spending by category" (one
 stacked bar on a shared scale plus five labelled rows). Row 2: "Recent activity" table with icon tiles, category,
-date and right-aligned signed amounts. Phone 390: top bar with app tile, wordmark and a round "+" button; title and
-month; the hero; category bar; recent activity; bottom tabs Overview, Activity, Budgets, Wallets.
+date and right-aligned signed amounts. Phone 390: top bar with app tile, wordmark and a 44px "+" button (the screen's add
+action); title and month on one row ("Nov 2026" as quiet text); the hero without its "Monthly budget" heading
+(left to spend at 3.5rem Light, smaller ring); category bar; recent activity; bottom tabs Overview, Activity,
+Budgets, Wallets.
 
 FORM: The owner's SpendLess identity kit (design/identity-kit, guide/SpendLess-Brand-Guide.pdf and
 screens/web-overview-*.png), the category standard executed at full craft; quality bar YNAB and Lunch Money.

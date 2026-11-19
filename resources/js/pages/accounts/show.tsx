@@ -12,15 +12,19 @@ import type {
     CategoryOptionLite,
 } from '@/components/add-transaction-sheet';
 import BankLogo from '@/components/bank-logo';
-import { IconTile, MonthPicker, Panel, useLocale } from '@/components/kit';
-import { TagChip } from '@/components/tag-chip';
+import {
+    MonthPicker,
+    Panel,
+    PhoneAddButton,
+    useLocale,
+} from '@/components/kit';
 import type { TagColorOption, TagOption } from '@/components/tag-chip';
 import { TransactionEditor } from '@/components/transaction-editor';
+import { TransactionLedger } from '@/components/transaction-ledger';
 import { Button } from '@/components/ui/button';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
 import { formatDay, formatMonth, formatMoney } from '@/lib/money';
-import { cn } from '@/lib/utils';
 import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type Account = {
@@ -84,32 +88,6 @@ type Props = {
 
 const RELOAD = ['transactions', 'tags', 'account'];
 
-function leaf(path: string): string {
-    const parts = path.split(' / ');
-
-    return parts[parts.length - 1] ?? path;
-}
-
-function payee(transaction: Transaction): string {
-    return (
-        transaction.merchant_name ??
-        transaction.counterparty ??
-        transaction.name ??
-        'Transaction'
-    );
-}
-
-function dayLabel(date: string, locale: string): string {
-    const [year, month, day] = date.split('-').map(Number);
-
-    return new Intl.DateTimeFormat(locale, {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        timeZone: 'UTC',
-    }).format(new Date(Date.UTC(year, month - 1, day)));
-}
-
 function when(iso: string | null, locale: string): string | null {
     if (!iso) {
         return null;
@@ -145,14 +123,6 @@ export default function AccountShow({
         account.name ??
         account.official_name ??
         'Account';
-    const tagsById = useMemo(
-        () => new Map(tags.map((tag) => [tag.id, tag])),
-        [tags],
-    );
-    const colorMap = useMemo(
-        () => new Map(categoryColors.map((color) => [color.value, color])),
-        [categoryColors],
-    );
     const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
     const isImport = account.provider === 'import';
     const isAsset = account.provider === 'asset';
@@ -185,17 +155,6 @@ export default function AccountShow({
             ].some((value) => value?.toLowerCase().includes(needle));
         });
     }, [transactions, search, type]);
-
-    const groups = useMemo(() => {
-        const byDay = new Map<string, Transaction[]>();
-
-        for (const transaction of visible) {
-            const key = transaction.date ?? 'Undated';
-            byDay.set(key, [...(byDay.get(key) ?? []), transaction]);
-        }
-
-        return [...byDay.entries()];
-    }, [visible]);
 
     const totals = useMemo(
         () =>
@@ -234,7 +193,17 @@ export default function AccountShow({
             : null;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout
+            breadcrumbs={breadcrumbs}
+            phoneAction={
+                account.is_manual ? (
+                    <PhoneAddButton
+                        label="Add transaction"
+                        onClick={() => setAdding(true)}
+                    />
+                ) : undefined
+            }
+        >
             <Head title={title} />
 
             <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-4 desk:mb-8">
@@ -300,7 +269,7 @@ export default function AccountShow({
                     {account.is_manual ? (
                         <Button
                             type="button"
-                            className="h-11 rounded-lg px-5 text-[15px]"
+                            className="hidden h-11 rounded-lg px-5 text-[15px] tablet:inline-flex"
                             onClick={() => setAdding(true)}
                         >
                             <Plus className="size-5" strokeWidth={1.75} />
@@ -450,146 +419,25 @@ export default function AccountShow({
                         ) : null}
                     </div>
                 ) : (
-                    <div className="space-y-8">
-                        {groups.map(([day, items]) => (
-                            <section key={day}>
-                                <h2 className="mb-2 text-sm font-medium tracking-[0.1em] text-muted-foreground uppercase">
-                                    {day === 'Undated'
-                                        ? day
-                                        : dayLabel(day, locale)}
-                                </h2>
-                                <ul className="divide-y divide-border rounded-card border border-border bg-card">
-                                    {items.map((transaction) => {
-                                        const open = openId === transaction.id;
-                                        const income = transaction.amount > 0;
-
-                                        return (
-                                            <li
-                                                key={transaction.id}
-                                                className="first:rounded-t-card last:rounded-b-card"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    aria-expanded={open}
-                                                    onClick={() =>
-                                                        setOpenId(
-                                                            open
-                                                                ? null
-                                                                : transaction.id,
-                                                        )
-                                                    }
-                                                    className={cn(
-                                                        'grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 px-4 py-3.5 text-left transition-colors tablet:grid-cols-[auto_minmax(0,2fr)_minmax(0,1.3fr)_auto] tablet:px-5',
-                                                        open
-                                                            ? 'bg-accent/40'
-                                                            : 'hover:bg-muted/60',
-                                                    )}
-                                                >
-                                                    <IconTile
-                                                        icon={
-                                                            transaction.category_icon
-                                                        }
-                                                        income={income}
-                                                    />
-                                                    <span className="min-w-0">
-                                                        <span className="block truncate text-base font-medium text-foreground">
-                                                            {payee(transaction)}
-                                                        </span>
-                                                        <span className="block truncate text-sm text-muted-foreground">
-                                                            <span className="tablet:hidden">
-                                                                {leaf(
-                                                                    transaction.category,
-                                                                )}{' '}
-                                                                ·{' '}
-                                                            </span>
-                                                            {transaction.name &&
-                                                            transaction.name !==
-                                                                payee(
-                                                                    transaction,
-                                                                )
-                                                                ? transaction.name
-                                                                : null}
-                                                            {transaction.pending
-                                                                ? ' · pending'
-                                                                : ''}
-                                                        </span>
-                                                        {transaction.tag_ids
-                                                            .length > 0 ? (
-                                                            <span className="mt-1 flex flex-wrap gap-1">
-                                                                {transaction.tag_ids.map(
-                                                                    (id) => {
-                                                                        const tag =
-                                                                            tagsById.get(
-                                                                                id,
-                                                                            );
-
-                                                                        return tag ? (
-                                                                            <TagChip
-                                                                                key={
-                                                                                    id
-                                                                                }
-                                                                                tag={
-                                                                                    tag
-                                                                                }
-                                                                                colorMap={
-                                                                                    colorMap
-                                                                                }
-                                                                            />
-                                                                        ) : null;
-                                                                    },
-                                                                )}
-                                                            </span>
-                                                        ) : null}
-                                                    </span>
-                                                    <span className="hidden truncate text-base text-muted-foreground tablet:block">
-                                                        {leaf(
-                                                            transaction.category,
-                                                        )}
-                                                    </span>
-                                                    <span
-                                                        className={cn(
-                                                            'text-right text-base font-medium amount',
-                                                            income
-                                                                ? 'text-positive'
-                                                                : 'text-foreground',
-                                                        )}
-                                                    >
-                                                        {formatMoney(
-                                                            transaction.amount,
-                                                            transaction.currency,
-                                                            locale,
-                                                            'always',
-                                                        )}
-                                                    </span>
-                                                </button>
-                                                {open ? (
-                                                    <div className="px-3 pb-4 tablet:px-5">
-                                                        <TransactionEditor
-                                                            transaction={
-                                                                transaction
-                                                            }
-                                                            categories={
-                                                                categoryOptions
-                                                            }
-                                                            tags={tags}
-                                                            colors={
-                                                                categoryColors
-                                                            }
-                                                            reload={RELOAD}
-                                                            from="account"
-                                                            onClose={() =>
-                                                                setOpenId(null)
-                                                            }
-                                                        />
-                                                    </div>
-                                                ) : null}
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </section>
-                        ))}
-                    </div>
+                    <TransactionLedger
+                        transactions={visible}
+                        variant="account"
+                        openId={openId}
+                        onToggle={setOpenId}
+                        tags={tags}
+                        categoryColors={categoryColors}
+                        renderEditor={(transaction) => (
+                            <TransactionEditor
+                                transaction={transaction}
+                                categories={categoryOptions}
+                                tags={tags}
+                                colors={categoryColors}
+                                reload={RELOAD}
+                                from="account"
+                                onClose={() => setOpenId(null)}
+                            />
+                        )}
+                    />
                 )}
             </div>
 

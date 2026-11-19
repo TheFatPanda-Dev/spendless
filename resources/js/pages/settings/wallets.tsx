@@ -1,5 +1,4 @@
 import { Head, router } from '@inertiajs/react';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
 import Landmark from 'lucide-react/dist/esm/icons/landmark.js';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2.js';
@@ -278,7 +277,6 @@ export default function WalletSettings({
                                             ),
                                         )}
                                     </select>
-                                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 </div>
 
                                 <span className="text-xs text-muted-foreground">
@@ -324,7 +322,6 @@ export default function WalletSettings({
                                             ),
                                         )}
                                     </select>
-                                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 </div>
 
                                 <span className="text-xs text-muted-foreground">

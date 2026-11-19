@@ -1,0 +1,243 @@
+import { useMemo } from 'react';
+import type { ReactNode, Ref } from 'react';
+import { IconTile, useLocale } from '@/components/kit';
+import { TagChip } from '@/components/tag-chip';
+import type { TagColorOption, TagOption } from '@/components/tag-chip';
+import { formatMoney } from '@/lib/money';
+import { cn } from '@/lib/utils';
+
+export type LedgerTransaction = {
+    id: number;
+    account?: string | null;
+    name: string | null;
+    merchant_name: string | null;
+    counterparty: string | null;
+    category: string;
+    category_icon: string;
+    amount: number;
+    currency: string;
+    date: string | null;
+    pending: boolean;
+    tag_ids: number[];
+};
+
+export function leafCategory(path: string): string {
+    const parts = path.split(' / ');
+
+    return parts[parts.length - 1] ?? path;
+}
+
+export function payeeOf(transaction: LedgerTransaction): string {
+    return (
+        transaction.merchant_name ??
+        transaction.counterparty ??
+        transaction.name ??
+        'Transaction'
+    );
+}
+
+function dayLabel(date: string, locale: string): string {
+    const [year, month, day] = date.split('-').map(Number);
+
+    return new Intl.DateTimeFormat(locale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'UTC',
+    }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+/**
+ * The transaction list shared by Activity and an account page. From tablet up it is
+ * one panel with day headers as rows and fixed icon and amount columns, so category
+ * and wallet line up across days. On phones the rows sit on the canvas with a
+ * hairline between days (kit phone-activity). A row opens its editor in place.
+ *
+ * `variant` picks the third column: the wallet on Activity, nothing extra on an
+ * account page (the description moves under the payee instead).
+ */
+export function TransactionLedger<T extends LedgerTransaction>({
+    transactions,
+    variant,
+    openId,
+    onToggle,
+    renderEditor,
+    tags,
+    categoryColors,
+    openRowRef,
+}: {
+    transactions: T[];
+    variant: 'activity' | 'account';
+    openId: number | null;
+    onToggle: (id: number | null) => void;
+    renderEditor: (transaction: T) => ReactNode;
+    tags: TagOption[];
+    categoryColors: TagColorOption[];
+    openRowRef?: Ref<HTMLLIElement>;
+}) {
+    const locale = useLocale();
+    const tagsById = useMemo(
+        () => new Map(tags.map((tag) => [tag.id, tag])),
+        [tags],
+    );
+    const colorMap = useMemo(
+        () => new Map(categoryColors.map((color) => [color.value, color])),
+        [categoryColors],
+    );
+    const groups = useMemo(() => {
+        const byDay = new Map<string, T[]>();
+
+        for (const transaction of transactions) {
+            const key = transaction.date ?? 'Undated';
+            byDay.set(key, [...(byDay.get(key) ?? []), transaction]);
+        }
+
+        return [...byDay.entries()];
+    }, [transactions]);
+
+    const columns =
+        variant === 'activity'
+            ? 'tablet:grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_8.5rem]'
+            : 'tablet:grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1.2fr)_8.5rem]';
+
+    return (
+        <div className="tablet:overflow-hidden tablet:rounded-card tablet:border tablet:border-border tablet:bg-card">
+            {groups.map(([day, items], groupIndex) => (
+                <section
+                    key={day}
+                    aria-label={day === 'Undated' ? day : dayLabel(day, locale)}
+                    className="border-border max-tablet:border-b max-tablet:pb-3 max-tablet:last:border-b-0"
+                >
+                    <h2
+                        className={cn(
+                            'pt-6 pb-1 text-sm font-medium tracking-[0.1em] text-muted-foreground uppercase tablet:border-b tablet:border-border tablet:bg-muted/45 tablet:px-5 tablet:py-2.5',
+                            groupIndex === 0
+                                ? 'max-tablet:pt-1'
+                                : 'tablet:border-t',
+                        )}
+                    >
+                        {day === 'Undated' ? day : dayLabel(day, locale)}
+                    </h2>
+                    <ul className="tablet:divide-y tablet:divide-border">
+                        {items.map((transaction) => {
+                            const open = openId === transaction.id;
+                            const income = transaction.amount > 0;
+                            const payee = payeeOf(transaction);
+                            const category = leafCategory(transaction.category);
+                            const description =
+                                variant === 'account' &&
+                                transaction.name &&
+                                transaction.name !== payee
+                                    ? transaction.name
+                                    : null;
+                            const phoneMeta = [
+                                category,
+                                variant === 'activity'
+                                    ? transaction.account
+                                    : description,
+                                transaction.pending ? 'pending' : null,
+                            ]
+                                .filter(Boolean)
+                                .join(' · ');
+
+                            return (
+                                <li
+                                    key={transaction.id}
+                                    ref={open ? openRowRef : undefined}
+                                >
+                                    <button
+                                        type="button"
+                                        aria-expanded={open}
+                                        onClick={() =>
+                                            onToggle(
+                                                open ? null : transaction.id,
+                                            )
+                                        }
+                                        className={cn(
+                                            '-mx-3 grid w-[calc(100%+1.5rem)] grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl px-3 py-3 text-left transition-colors tablet:mx-0 tablet:w-full tablet:rounded-none tablet:px-5 tablet:py-3.5',
+                                            columns,
+                                            open
+                                                ? 'bg-accent/40'
+                                                : 'hover:bg-muted/60',
+                                        )}
+                                    >
+                                        <IconTile
+                                            icon={transaction.category_icon}
+                                            income={income}
+                                        />
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-base font-medium text-foreground">
+                                                {payee}
+                                            </span>
+                                            <span className="block truncate text-sm text-muted-foreground tablet:hidden">
+                                                {phoneMeta}
+                                            </span>
+                                            {description ? (
+                                                <span className="hidden truncate text-sm text-muted-foreground tablet:block">
+                                                    {description}
+                                                </span>
+                                            ) : null}
+                                            {transaction.tag_ids.length > 0 ? (
+                                                <span className="mt-1 flex flex-wrap gap-1">
+                                                    {transaction.tag_ids.map(
+                                                        (id) => {
+                                                            const tag =
+                                                                tagsById.get(
+                                                                    id,
+                                                                );
+
+                                                            return tag ? (
+                                                                <TagChip
+                                                                    key={id}
+                                                                    tag={tag}
+                                                                    colorMap={
+                                                                        colorMap
+                                                                    }
+                                                                />
+                                                            ) : null;
+                                                        },
+                                                    )}
+                                                </span>
+                                            ) : null}
+                                        </span>
+                                        <span className="hidden truncate text-base text-muted-foreground tablet:block">
+                                            {category}
+                                            {transaction.pending
+                                                ? ' · pending'
+                                                : ''}
+                                        </span>
+                                        {variant === 'activity' ? (
+                                            <span className="hidden truncate text-base text-muted-foreground tablet:block">
+                                                {transaction.account}
+                                            </span>
+                                        ) : null}
+                                        <span
+                                            className={cn(
+                                                'text-right text-base font-medium whitespace-nowrap amount',
+                                                income
+                                                    ? 'text-positive'
+                                                    : 'text-foreground',
+                                            )}
+                                        >
+                                            {formatMoney(
+                                                transaction.amount,
+                                                transaction.currency,
+                                                locale,
+                                                'always',
+                                            )}
+                                        </span>
+                                    </button>
+                                    {open ? (
+                                        <div className="pb-4 tablet:px-5">
+                                            {renderEditor(transaction)}
+                                        </div>
+                                    ) : null}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </section>
+            ))}
+        </div>
+    );
+}

@@ -6,6 +6,7 @@ import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import {
     BudgetRing,
+    HeroFigure,
     IconTile,
     MonthPicker,
     PageHeader,
@@ -148,7 +149,7 @@ function TotalHero({
 
     if (total === null || editing) {
         return (
-            <section className="rounded-card bg-hero p-6 text-hero-foreground tablet:p-8">
+            <section className="rounded-card bg-hero p-5 text-hero-foreground tablet:p-8">
                 <h2 className="text-section font-medium">Monthly budget</h2>
                 <p className="mt-2 max-w-[60ch] text-[15px] text-hero-muted">
                     {total === null
@@ -172,9 +173,14 @@ function TotalHero({
     const over = total.left < 0;
 
     return (
-        <section className="rounded-card bg-hero p-6 text-hero-foreground tablet:p-8">
+        <section className="rounded-card bg-hero p-5 text-hero-foreground tablet:p-8">
             <div className="flex items-center justify-between gap-4">
-                <h2 className="text-section font-medium">Monthly budget</h2>
+                <h2 className="text-section font-medium max-tablet:sr-only">
+                    Monthly budget
+                </h2>
+                <p className="text-lg text-hero-muted tablet:hidden">
+                    {over ? 'Over budget by' : 'Left to spend'}
+                </p>
                 <button
                     type="button"
                     onClick={() => setEditing(true)}
@@ -184,34 +190,38 @@ function TotalHero({
                     Change
                 </button>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                    <p className="text-lg text-hero-muted">
+            <div className="flex items-center justify-between gap-4 tablet:mt-4">
+                <div className="@container min-w-0 flex-1">
+                    <p className="hidden text-lg text-hero-muted tablet:block">
                         {over ? 'Over budget by' : 'Left to spend'}
                     </p>
-                    <p
-                        className={cn(
-                            'mt-1 text-[3rem] leading-none font-light tracking-[-0.02em] amount tablet:text-display',
-                            over && 'text-destructive',
+                    <HeroFigure
+                        value={formatMoney(
+                            Math.abs(total.left),
+                            currency,
+                            locale,
                         )}
-                    >
-                        {formatMoney(Math.abs(total.left), currency, locale)}
-                    </p>
+                        className={over ? 'text-destructive' : undefined}
+                    />
                 </div>
-                <BudgetRing percent={total.percent} size={132} />
+                <BudgetRing
+                    percent={total.percent}
+                    size={132}
+                    className="size-20 tablet:size-[132px]"
+                />
             </div>
-            <div className="mt-7 grid grid-cols-2 gap-6 border-t border-hero-foreground/15 pt-5">
+            <div className="mt-5 grid grid-cols-2 gap-6 border-t border-hero-foreground/15 pt-4 tablet:mt-7 tablet:pt-5">
                 <div>
                     <p className="text-[15px] text-hero-muted">
                         Spent in {monthName}
                     </p>
-                    <p className="mt-1 text-[1.75rem] leading-tight font-light amount">
+                    <p className="mt-1 text-[1.375rem] leading-tight font-light amount tablet:text-[1.75rem]">
                         {formatMoney(total.spent, currency, locale)}
                     </p>
                 </div>
                 <div>
                     <p className="text-[15px] text-hero-muted">Budget</p>
-                    <p className="mt-1 text-[1.75rem] leading-tight font-light amount">
+                    <p className="mt-1 text-[1.375rem] leading-tight font-light amount tablet:text-[1.75rem]">
                         {formatMoney(total.amount, currency, locale)}
                     </p>
                 </div>
@@ -220,13 +230,43 @@ function TotalHero({
     );
 }
 
+/**
+ * One category against its own budget: the track is the whole budget and the fill is
+ * what has gone out. Over budget the bar is all red, with a tick where the budget ran
+ * out. The row's text says the same in words.
+ */
+function BudgetBar({ spent, amount }: { spent: number; amount: number }) {
+    const over = amount > 0 && spent > amount;
+    const used = amount > 0 ? Math.min(spent / amount, 1) : spent > 0 ? 1 : 0;
+
+    return (
+        <div className="relative mt-2.5 h-2.5" aria-hidden>
+            <div className="absolute inset-0 overflow-hidden rounded-full bg-muted">
+                {used > 0 ? (
+                    <span
+                        className={cn(
+                            'absolute inset-y-0 left-0 rounded-full',
+                            over ? 'bg-destructive' : 'bg-plot',
+                        )}
+                        style={{ width: `max(${used * 100}%, 0.625rem)` }}
+                    />
+                ) : null}
+            </div>
+            {over ? (
+                <span
+                    className="absolute -inset-y-1 w-0.5 -translate-x-1/2 rounded-full bg-foreground"
+                    style={{ left: `${(amount / spent) * 100}%` }}
+                />
+            ) : null}
+        </div>
+    );
+}
+
 function CategoryRow({
     line,
-    scale,
     currency,
 }: {
     line: CategoryLine;
-    scale: number;
     currency: string;
 }) {
     const locale = useLocale();
@@ -236,38 +276,41 @@ function CategoryRow({
 
     return (
         <li className="py-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-start gap-4">
                 <IconTile icon={line.icon} />
                 <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                        <span className="text-base font-medium text-foreground">
-                            {line.name}
-                        </span>
-                        <span className="text-[15px] text-muted-foreground amount">
-                            <span className="text-foreground">
-                                {formatMoney(line.spent, currency, locale)}
-                            </span>{' '}
-                            of {formatMoney(line.amount, currency, locale)}
-                        </span>
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1 tablet:flex tablet:items-baseline tablet:justify-between tablet:gap-x-4">
+                            <p className="truncate text-base font-medium text-foreground">
+                                {line.name}
+                            </p>
+                            <p className="text-[15px] whitespace-nowrap text-muted-foreground amount">
+                                <span className="text-foreground">
+                                    {formatMoney(line.spent, currency, locale)}
+                                </span>{' '}
+                                of {formatMoney(line.amount, currency, locale)}
+                            </p>
+                        </div>
+                        <div className="-my-1.5 -mr-2 flex shrink-0 gap-0.5">
+                            <button
+                                type="button"
+                                onClick={() => setEditing((value) => !value)}
+                                className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                aria-label={`Change the ${line.name} budget`}
+                            >
+                                <Pencil className="size-4" strokeWidth={1.75} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setConfirming(true)}
+                                className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive"
+                                aria-label={`Remove the ${line.name} budget`}
+                            >
+                                <Trash2 className="size-4" strokeWidth={1.75} />
+                            </button>
+                        </div>
                     </div>
-                    <div
-                        className="relative mt-2.5 h-2.5 rounded-full bg-muted"
-                        aria-hidden
-                    >
-                        <span
-                            className="absolute inset-y-0 left-0 rounded-full bg-track"
-                            style={{ width: `${(line.amount / scale) * 100}%` }}
-                        />
-                        <span
-                            className={cn(
-                                'absolute inset-y-0 left-0 rounded-full',
-                                over ? 'bg-destructive' : 'bg-plot',
-                            )}
-                            style={{
-                                width: `${(Math.min(line.spent, scale) / scale) * 100}%`,
-                            }}
-                        />
-                    </div>
+                    <BudgetBar spent={line.spent} amount={line.amount} />
                     <p
                         className={cn(
                             'mt-2 text-sm',
@@ -278,24 +321,6 @@ function CategoryRow({
                             ? `${formatMoney(-line.left, currency, locale)} over budget · ${line.percent}% used`
                             : `${formatMoney(line.left, currency, locale)} left · ${line.percent}% used`}
                     </p>
-                </div>
-                <div className="flex shrink-0 gap-1">
-                    <button
-                        type="button"
-                        onClick={() => setEditing((value) => !value)}
-                        className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                        aria-label={`Change the ${line.name} budget`}
-                    >
-                        <Pencil className="size-4" strokeWidth={1.75} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setConfirming(true)}
-                        className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive"
-                        aria-label={`Remove the ${line.name} budget`}
-                    >
-                        <Trash2 className="size-4" strokeWidth={1.75} />
-                    </button>
                 </div>
             </div>
             {editing ? (
@@ -443,10 +468,6 @@ export default function BudgetsIndex({
     const locale = useLocale();
     const [preset, setPreset] = useState<number | null>(null);
     const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
-    const scale = Math.max(
-        1,
-        ...categories.map((line) => Math.max(line.amount, line.spent)),
-    );
 
     return (
         <AppLayout>
@@ -455,7 +476,7 @@ export default function BudgetsIndex({
             <PageHeader
                 title="Budgets"
                 description={`Amounts in ${baseCurrency}. Spending in other currencies is converted at the day's rate.`}
-                actions={<MonthPicker month={month} />}
+                actions={<MonthPicker month={month} quietOnPhone />}
             />
 
             <div className="space-y-5 desk:space-y-6">
@@ -478,7 +499,6 @@ export default function BudgetsIndex({
                                 <CategoryRow
                                     key={line.id}
                                     line={line}
-                                    scale={scale}
                                     currency={baseCurrency}
                                 />
                             ))}

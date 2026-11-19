@@ -173,7 +173,7 @@
     --chart-4: #8aa9bc;
     --chart-5: #abb6ac;
     --radius: 0.75rem;
-    --sidebar: #f6f7f2;
+    --sidebar: #ffffff;
     --sidebar-foreground: #151a18;
     --sidebar-primary: #006447;
     --sidebar-primary-foreground: #ffffff;
@@ -226,7 +226,7 @@
     --chart-3: #e5a251;
     --chart-4: #8aa9bc;
     --chart-5: #7d8a80;
-    --sidebar: #111714;
+    --sidebar: #1b231e;
     --sidebar-foreground: #f1f5ef;
     --sidebar-primary: #09c98c;
     --sidebar-primary-foreground: #092419;
@@ -270,6 +270,23 @@
         outline: 2px solid var(--ring);
         outline-offset: 2px;
     }
+}
+
+/*
+ * Native selects get the kit's drawn chevron (1.75 stroke), not the browser arrow.
+ * Unlayered on purpose: it must win over px-* utilities so text never runs under it.
+ */
+select:where(:not([multiple]):not([size])) {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23526158' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+.dark select:where(:not([multiple]):not([size])) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0c0b5' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 @utility amount {

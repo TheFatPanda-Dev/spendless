@@ -13,8 +13,10 @@ import BankLogo from '@/components/bank-logo';
 import {
     BudgetRing,
     IconTile,
+    HeroFigure,
     MonthPicker,
     PageHeader,
+    PhoneAddButton,
     Panel,
     StackedBar,
     seriesColor,
@@ -135,41 +137,42 @@ function payee(transaction: RecentTransaction): string {
     );
 }
 
-function freshness(wallet: WalletRow, locale: string): string {
-    if (wallet.status === 'needs_reauth') {
-        return 'Reconnect needed';
-    }
+/** Where a wallet's numbers come from and when: the source may truncate, the date never. */
+function freshness(
+    wallet: WalletRow,
+    locale: string,
+): { source: string | null; verb: string | null; when: string | null } {
+    const status = {
+        needs_reauth: 'Reconnect needed',
+        syncing: 'Syncing…',
+        sync_failed: 'Last sync failed',
+    }[wallet.status ?? ''];
 
-    if (wallet.status === 'syncing') {
-        return 'Syncing…';
-    }
-
-    if (wallet.status === 'sync_failed') {
-        return 'Last sync failed';
+    if (status) {
+        return { source: status, verb: null, when: null };
     }
 
     if (!wallet.last_synced_at) {
-        return wallet.institution ?? '';
+        return { source: wallet.institution ?? null, verb: null, when: null };
     }
 
-    const when = new Date(wallet.last_synced_at);
-    const sameDay = when.toDateString() === new Date().toDateString();
-    const label = sameDay
+    const date = new Date(wallet.last_synced_at);
+    const sameDay = date.toDateString() === new Date().toDateString();
+    const when = sameDay
         ? new Intl.DateTimeFormat(locale, {
               hour: '2-digit',
               minute: '2-digit',
-          }).format(when)
+          }).format(date)
         : new Intl.DateTimeFormat(locale, {
               day: 'numeric',
               month: 'short',
-          }).format(when);
+          }).format(date);
 
-    return [
-        wallet.institution,
-        wallet.provider === 'import' ? `imported ${label}` : `updated ${label}`,
-    ]
-        .filter(Boolean)
-        .join(' · ');
+    return {
+        source: wallet.institution ?? null,
+        verb: wallet.provider === 'import' ? 'imported' : 'updated',
+        when,
+    };
 }
 
 function BudgetHero({
@@ -188,12 +191,14 @@ function BudgetHero({
 
     if (budget === null) {
         return (
-            <section className="flex flex-col rounded-card bg-hero p-6 text-hero-foreground tablet:p-8">
-                <h2 className="text-section font-medium">Monthly budget</h2>
-                <p className="mt-6 text-lg text-hero-muted">Spent so far</p>
-                <p className="mt-1 text-[3rem] leading-none font-light tracking-[-0.02em] amount tablet:text-display">
-                    {formatMoney(spent, currency, locale)}
-                </p>
+            <section className="flex flex-col rounded-card bg-hero p-5 text-hero-foreground tablet:p-8">
+                <h2 className="hidden text-section font-medium tablet:block">
+                    Monthly budget
+                </h2>
+                <div className="@container tablet:mt-6">
+                    <p className="text-lg text-hero-muted">Spent so far</p>
+                    <HeroFigure value={formatMoney(spent, currency, locale)} />
+                </div>
                 <div className="mt-auto border-t border-hero-foreground/15 pt-5">
                     <p className="text-[15px] text-hero-muted">
                         No budget for {monthName} yet.
@@ -213,34 +218,40 @@ function BudgetHero({
     const over = budget.left < 0;
 
     return (
-        <section className="flex flex-col rounded-card bg-hero p-6 text-hero-foreground tablet:p-8">
-            <h2 className="text-section font-medium">Monthly budget</h2>
-            <div className="mt-6 flex items-center justify-between gap-4">
-                <div className="min-w-0">
+        <section className="flex flex-col rounded-card bg-hero p-5 text-hero-foreground tablet:p-8">
+            <h2 className="hidden text-section font-medium tablet:block">
+                Monthly budget
+            </h2>
+            <div className="flex items-center justify-between gap-4 tablet:mt-6">
+                <div className="@container min-w-0 flex-1">
                     <p className="text-lg text-hero-muted">
                         {over ? 'Over budget by' : 'Left to spend'}
                     </p>
-                    <p
-                        className={cn(
-                            'mt-1 text-[3rem] leading-none font-light tracking-[-0.02em] amount tablet:text-display',
-                            over && 'text-destructive',
+                    <HeroFigure
+                        value={formatMoney(
+                            Math.abs(budget.left),
+                            currency,
+                            locale,
                         )}
-                    >
-                        {formatMoney(Math.abs(budget.left), currency, locale)}
-                    </p>
+                        className={over ? 'text-destructive' : undefined}
+                    />
                 </div>
-                <BudgetRing percent={budget.percent} size={132} />
+                <BudgetRing
+                    percent={budget.percent}
+                    size={132}
+                    className="size-20 tablet:size-[132px]"
+                />
             </div>
-            <div className="mt-7 grid grid-cols-2 gap-6 border-t border-hero-foreground/15 pt-5">
+            <div className="mt-5 grid grid-cols-2 gap-6 border-t border-hero-foreground/15 pt-4 tablet:mt-7 tablet:pt-5">
                 <div>
                     <p className="text-[15px] text-hero-muted">Spent so far</p>
-                    <p className="mt-1 text-[1.75rem] leading-tight font-light amount">
+                    <p className="mt-1 text-[1.375rem] leading-tight font-light amount tablet:text-[1.75rem]">
                         {formatMoney(budget.spent, currency, locale)}
                     </p>
                 </div>
                 <div>
                     <p className="text-[15px] text-hero-muted">Budget</p>
-                    <p className="mt-1 text-[1.75rem] leading-tight font-light amount">
+                    <p className="mt-1 text-[1.375rem] leading-tight font-light amount tablet:text-[1.75rem]">
                         {formatMoney(budget.amount, currency, locale)}
                     </p>
                 </div>
@@ -540,59 +551,78 @@ function Wallets({
                 </p>
             ) : (
                 <ul className="grid grid-cols-[minmax(0,1fr)] gap-x-8 desk:grid-cols-[repeat(2,minmax(0,1fr))]">
-                    {wallets.map((wallet) => (
-                        <li
-                            key={wallet.id}
-                            className="border-b border-border last:border-b-0 desk:[&:nth-last-child(2):nth-child(odd)]:border-b-0"
-                        >
-                            <Link
-                                href={`/accounts/${wallet.id}`}
-                                className="-mx-2 flex min-h-16 items-center gap-4 rounded-lg px-2 py-3 hover:bg-muted/60"
+                    {wallets.map((wallet) => {
+                        const meta = freshness(wallet, locale);
+
+                        return (
+                            <li
+                                key={wallet.id}
+                                className="border-b border-border last:border-b-0 desk:[&:nth-last-child(2):nth-child(odd)]:border-b-0"
                             >
-                                <BankLogo
-                                    src={wallet.logo}
-                                    name={wallet.institution ?? wallet.name}
-                                    className="size-10 rounded-xl"
-                                />
-                                <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-base font-medium text-foreground">
-                                        {wallet.name}
-                                        {wallet.mask ? (
-                                            <span className="font-normal text-muted-foreground">
-                                                {' '}
-                                                ··{wallet.mask.slice(-4)}
-                                            </span>
-                                        ) : null}
+                                <Link
+                                    href={`/accounts/${wallet.id}`}
+                                    className="-mx-2 flex min-h-16 items-center gap-4 rounded-lg px-2 py-3 hover:bg-muted/60"
+                                >
+                                    <BankLogo
+                                        src={wallet.logo}
+                                        name={wallet.institution ?? wallet.name}
+                                        className="size-10 rounded-xl"
+                                    />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate text-base font-medium text-foreground">
+                                            {wallet.name}
+                                            {wallet.mask ? (
+                                                <span className="font-normal text-muted-foreground">
+                                                    {' '}
+                                                    ··{wallet.mask.slice(-4)}
+                                                </span>
+                                            ) : null}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                'flex min-w-0 items-center gap-1 text-sm',
+                                                wallet.status ===
+                                                    'needs_reauth' ||
+                                                    wallet.status ===
+                                                        'sync_failed'
+                                                    ? 'text-warning'
+                                                    : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            {wallet.status === 'needs_reauth' ||
+                                            wallet.status === 'sync_failed' ? (
+                                                <TriangleAlert
+                                                    className="size-3.5 shrink-0"
+                                                    strokeWidth={1.75}
+                                                />
+                                            ) : null}
+                                            {meta.source ? (
+                                                <span className="min-w-0 truncate">
+                                                    {meta.source}
+                                                </span>
+                                            ) : null}
+                                            {meta.when ? (
+                                                <span className="shrink-0 whitespace-nowrap">
+                                                    {meta.source ? '· ' : ''}
+                                                    <span className="hidden tablet:inline">
+                                                        {meta.verb}{' '}
+                                                    </span>
+                                                    {meta.when}
+                                                </span>
+                                            ) : null}
+                                        </span>
                                     </span>
-                                    <span
-                                        className={cn(
-                                            'flex items-center gap-1.5 truncate text-sm',
-                                            wallet.status === 'needs_reauth' ||
-                                                wallet.status === 'sync_failed'
-                                                ? 'text-warning'
-                                                : 'text-muted-foreground',
+                                    <span className="text-right text-base font-medium text-foreground amount">
+                                        {formatMoney(
+                                            wallet.balance,
+                                            wallet.currency,
+                                            locale,
                                         )}
-                                    >
-                                        {wallet.status === 'needs_reauth' ||
-                                        wallet.status === 'sync_failed' ? (
-                                            <TriangleAlert
-                                                className="size-3.5 shrink-0"
-                                                strokeWidth={1.75}
-                                            />
-                                        ) : null}
-                                        {freshness(wallet, locale)}
                                     </span>
-                                </span>
-                                <span className="text-right text-base font-medium text-foreground amount">
-                                    {formatMoney(
-                                        wallet.balance,
-                                        wallet.currency,
-                                        locale,
-                                    )}
-                                </span>
-                            </Link>
-                        </li>
-                    ))}
+                                </Link>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </Panel>
@@ -606,18 +636,25 @@ export default function Dashboard(props: Props) {
     const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
 
     return (
-        <AppLayout>
+        <AppLayout
+            phoneAction={
+                <PhoneAddButton
+                    label="Add transaction"
+                    onClick={() => setAdding(true)}
+                />
+            }
+        >
             <Head title="Overview" />
 
             <PageHeader
                 title="Overview"
                 actions={
                     <>
-                        <MonthPicker month={month} />
+                        <MonthPicker month={month} quietOnPhone />
                         <Button
                             type="button"
                             onClick={() => setAdding(true)}
-                            className="h-11 rounded-lg px-5 text-[15px] font-medium"
+                            className="hidden h-11 rounded-lg px-5 text-[15px] font-medium tablet:inline-flex"
                         >
                             <Plus className="size-5" strokeWidth={1.75} />
                             Add transaction
@@ -660,7 +697,7 @@ export default function Dashboard(props: Props) {
                     </div>
                 ))}
 
-                <div className="grid gap-5 desk:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desk:gap-6">
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-5 desk:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desk:gap-6">
                     <BudgetHero
                         month={month}
                         budget={props.budget}

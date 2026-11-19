@@ -342,6 +342,7 @@ function Toast({
 export default function AppSidebarLayout({
     children,
     breadcrumbs = [],
+    phoneAction,
 }: AppLayoutProps & { children: ReactNode }) {
     useInactivityLogout();
 
@@ -359,6 +360,7 @@ export default function AppSidebarLayout({
                     <Link href="/dashboard" aria-label="SpendLess overview">
                         <BrandLockup className="[&_img]:h-10" />
                     </Link>
+                    {phoneAction}
                 </header>
 
                 <main className="mx-auto w-full max-w-[1200px] flex-1 px-5 pt-6 pb-28 tablet:px-6 tablet:pt-8 tablet:pb-12 desk:px-10 desk:pt-12">

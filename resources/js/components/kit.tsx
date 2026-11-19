@@ -3,7 +3,8 @@ import CalendarIcon from 'lucide-react/dist/esm/icons/calendar.js';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left.js';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
-import type { ReactNode } from 'react';
+import Plus from 'lucide-react/dist/esm/icons/plus.js';
+import type { CSSProperties, ReactNode } from 'react';
 import { CategoryIcon } from '@/components/category-icon';
 import {
     DropdownMenu,
@@ -35,21 +36,21 @@ export function PageHeader({
     actions?: ReactNode;
 }) {
     return (
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 desk:mb-8">
-            <div className="min-w-0">
-                <h1 className="text-screen-title font-normal tracking-[-0.01em] text-foreground tablet:text-page-title">
+        <div className="mb-6 desk:mb-8">
+            <div className="flex items-center justify-between gap-x-4 gap-y-4 tablet:flex-wrap tablet:gap-x-6">
+                <h1 className="min-w-0 text-screen-title font-normal tracking-[-0.01em] text-foreground tablet:text-page-title">
                     {title}
                 </h1>
-                {description ? (
-                    <p className="mt-2 max-w-[65ch] text-[15px] text-muted-foreground">
-                        {description}
-                    </p>
+                {actions ? (
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                        {actions}
+                    </div>
                 ) : null}
             </div>
-            {actions ? (
-                <div className="flex flex-wrap items-center gap-3">
-                    {actions}
-                </div>
+            {description ? (
+                <p className="mt-2 max-w-[65ch] text-[15px] text-muted-foreground">
+                    {description}
+                </p>
             ) : null}
         </div>
     );
@@ -91,6 +92,71 @@ export function Panel({
     );
 }
 
+/** Rough Roboto Light advance widths, in em, for fitting a figure to its box. */
+function figureEms(text: string): number {
+    let ems = 0;
+
+    for (const char of text) {
+        if (/[0-9]/.test(char)) {
+            ems += 0.565;
+        } else if (/[.,'\s]/.test(char)) {
+            ems += 0.25;
+        } else {
+            ems += 0.64;
+        }
+    }
+
+    return Math.max(ems * 1.05, 1);
+}
+
+/**
+ * The hero figure ("Left to spend"): the kit's 3.5rem Light on phones and 4rem from
+ * tablet up, shrinking only as far as needed so long amounts never clip. Its parent
+ * must be a size container (`@container`).
+ */
+export function HeroFigure({
+    value,
+    className,
+}: {
+    value: string;
+    className?: string;
+}) {
+    return (
+        <p
+            className={cn(
+                'mt-1 leading-none font-light tracking-[-0.02em] whitespace-nowrap amount',
+                'text-[length:min(3.5rem,calc(100cqi/var(--figure-ems)))] tablet:text-[length:min(4rem,calc(100cqi/var(--figure-ems)))]',
+                className,
+            )}
+            style={
+                { '--figure-ems': figureEms(value).toFixed(2) } as CSSProperties
+            }
+        >
+            {value}
+        </p>
+    );
+}
+
+/** The phone top bar's 44px "+" (kit phone screens). */
+export function PhoneAddButton({
+    label,
+    onClick,
+}: {
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-label={label}
+            className="inline-flex size-11 items-center justify-center rounded-[14px] bg-primary text-primary-foreground transition-[transform,background-color] hover:bg-primary/90 active:scale-[0.96]"
+        >
+            <Plus className="size-6" strokeWidth={1.75} />
+        </button>
+    );
+}
+
 const controlClasses =
     'inline-flex h-11 items-center gap-2 rounded-lg border border-control/70 bg-card px-3.5 text-[15px] text-foreground transition-colors hover:bg-muted';
 
@@ -101,9 +167,12 @@ const controlClasses =
 export function MonthPicker({
     month,
     query = {},
+    quietOnPhone = false,
 }: {
     month: { start: string; end: string };
     query?: Record<string, string | number | null | undefined>;
+    /** Page-header use: plain "Nov 2026 ⌄" text beside the title on phones. */
+    quietOnPhone?: boolean;
 }) {
     const locale = useLocale();
     const today = new Date();
@@ -138,7 +207,10 @@ export function MonthPicker({
         <div className="flex items-center gap-1.5">
             <button
                 type="button"
-                className={cn(controlClasses, 'w-11 justify-center px-0')}
+                className={cn(
+                    controlClasses,
+                    'hidden w-11 justify-center px-0 tablet:inline-flex',
+                )}
                 onClick={() => go(shiftMonthStart(month.start, -1))}
                 aria-label="Previous month"
             >
@@ -150,12 +222,17 @@ export function MonthPicker({
                         type="button"
                         className={cn(
                             controlClasses,
-                            'min-w-[11rem] justify-between',
+                            'min-w-[10.5rem] justify-between tablet:min-w-[11rem]',
+                            quietOnPhone &&
+                                'max-tablet:min-w-0 max-tablet:border-transparent max-tablet:bg-transparent max-tablet:px-2 max-tablet:text-lg max-tablet:text-muted-foreground',
                         )}
                     >
                         <span className="flex items-center gap-2.5">
                             <CalendarIcon
-                                className="size-5 text-muted-foreground"
+                                className={cn(
+                                    'size-5 text-muted-foreground',
+                                    quietOnPhone && 'max-tablet:hidden',
+                                )}
                                 strokeWidth={1.75}
                             />
                             {formatMonth(month.start, locale)}
@@ -188,7 +265,10 @@ export function MonthPicker({
             </DropdownMenu>
             <button
                 type="button"
-                className={cn(controlClasses, 'w-11 justify-center px-0')}
+                className={cn(
+                    controlClasses,
+                    'hidden w-11 justify-center px-0 tablet:inline-flex',
+                )}
                 onClick={() => go(shiftMonthStart(month.start, 1))}
                 aria-label="Next month"
             >
@@ -232,10 +312,13 @@ export function BudgetRing({
     percent,
     size = 148,
     label = 'used',
+    className,
 }: {
     percent: number;
     size?: number;
     label?: string;
+    /** Sizes the ring responsively (e.g. "size-28 tablet:size-[132px]"); the drawing scales. */
+    className?: string;
 }) {
     const stroke = size * 0.075;
     const radius = (size - stroke) / 2;
@@ -246,14 +329,14 @@ export function BudgetRing({
 
     return (
         <div
-            className="relative shrink-0"
-            style={{ width: size, height: size }}
+            className={cn('@container relative shrink-0', className)}
+            style={className ? undefined : { width: size, height: size }}
             role="img"
             aria-label={`${percent}% ${label}`}
         >
             <svg
-                width={size}
-                height={size}
+                width="100%"
+                height="100%"
                 viewBox={`0 0 ${size} ${size}`}
                 className="-rotate-90"
                 aria-hidden
@@ -285,10 +368,12 @@ export function BudgetRing({
                 ) : null}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-hero-foreground">
-                <span className="text-[1.875rem] leading-none font-normal amount">
+                <span className="text-[length:clamp(1.25rem,23cqi,1.875rem)] leading-none font-normal amount">
                     {percent}%
                 </span>
-                <span className="mt-1 text-sm text-hero-muted">{label}</span>
+                <span className="mt-1 text-[length:clamp(0.75rem,10.5cqi,0.875rem)] text-hero-muted">
+                    {label}
+                </span>
             </div>
         </div>
     );
