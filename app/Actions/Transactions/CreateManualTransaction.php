@@ -14,14 +14,17 @@ class CreateManualTransaction
     public function __construct(private readonly TagRules $tagRules) {}
 
     /**
-     * @param  array{category: Category, amount: float, date: string, merchant_name: string|null, transaction_name: string|null}  $attributes
+     * @param  array{category: Category, amount: float, date: string, merchant_name: string|null, transaction_name: string|null, direction?: 'in'|'out'|null}  $attributes
      */
     public function __invoke(BankAccount $bankAccount, array $attributes): BankTransaction
     {
         return DB::transaction(function () use ($bankAccount, $attributes): BankTransaction {
             $category = $attributes['category'];
             $amount = round((float) $attributes['amount'], 2);
-            $signedAmount = $category->type === 'income' ? $amount : -$amount;
+            $incoming = ($attributes['direction'] ?? null) !== null
+                ? $attributes['direction'] === 'in'
+                : $category->type === 'income';
+            $signedAmount = $incoming ? $amount : -$amount;
             $currency = (string) ($bankAccount->currency ?: 'EUR');
             $merchantName = $attributes['merchant_name'];
             $transactionName = $attributes['transaction_name'] ?: $merchantName ?: 'Manual transaction';

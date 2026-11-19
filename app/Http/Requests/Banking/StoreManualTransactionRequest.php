@@ -37,6 +37,8 @@ class StoreManualTransactionRequest extends FormRequest
             'merchant_name' => ['nullable', 'string', 'max:255'],
             'transaction_name' => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'gt:0', 'between:0.01,999999999999.99'],
+            // "in" with a spending category records money back (e.g. a friend's cash).
+            'direction' => ['nullable', 'in:in,out'],
         ];
     }
 }

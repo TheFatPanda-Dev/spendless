@@ -403,6 +403,9 @@ function RecentActivity({
                     <ul className="divide-y divide-border">
                         {transactions.map((transaction) => {
                             const income = transaction.amount > 0;
+                            const paidBack =
+                                income &&
+                                transaction.category_type === 'expense';
 
                             return (
                                 <li key={transaction.id}>
@@ -426,6 +429,9 @@ function RecentActivity({
                                                 </span>
                                                 <span className="block truncate text-sm text-muted-foreground tablet:hidden">
                                                     {leaf(transaction.category)}
+                                                    {paidBack
+                                                        ? ' · paid back'
+                                                        : ''}
                                                     {transaction.pending
                                                         ? ' · pending'
                                                         : ''}
@@ -434,6 +440,7 @@ function RecentActivity({
                                         </span>
                                         <span className="hidden truncate text-base text-muted-foreground tablet:block">
                                             {leaf(transaction.category)}
+                                            {paidBack ? ' · paid back' : ''}
                                             {transaction.pending
                                                 ? ' · pending'
                                                 : ''}

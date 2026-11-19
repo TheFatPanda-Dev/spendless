@@ -61,6 +61,13 @@ export function AddTransactionSheet({
         account_id: options.accounts[0] ? String(options.accounts[0].id) : '',
     });
     const categories = options.categories[form.data.type];
+    // In Income mode, spending categories are offered as money back (a friend's share
+    // in cash, a refund): saved as money in that lowers that category's spending.
+    const moneyBack =
+        form.data.type === 'income' ? options.categories.expense : [];
+    const isMoneyBack = moneyBack.some(
+        (category) => String(category.id) === form.data.category_id,
+    );
     const account = options.accounts.find(
         (candidate) => String(candidate.id) === form.data.account_id,
     );
@@ -93,6 +100,7 @@ export function AddTransactionSheet({
             date: data.date,
             merchant_name: data.merchant_name.trim() || null,
             transaction_name: data.merchant_name.trim() || null,
+            direction: data.type === 'income' ? 'in' : 'out',
         }));
         form.post(`/accounts/${account.id}/manual-transactions?from=${from}`, {
             preserveScroll: true,
@@ -241,15 +249,42 @@ export function AddTransactionSheet({
                                 className={fieldClasses}
                             >
                                 <option value="">Choose a category</option>
-                                {categories.map((category) => (
-                                    <option
-                                        key={category.id}
-                                        value={category.id}
-                                    >
-                                        {`${' '.repeat(category.depth ?? 0)}${category.name}`}
-                                    </option>
-                                ))}
+                                <optgroup
+                                    label={
+                                        form.data.type === 'income'
+                                            ? 'Income'
+                                            : 'Expense'
+                                    }
+                                >
+                                    {categories.map((category) => (
+                                        <option
+                                            key={category.id}
+                                            value={category.id}
+                                        >
+                                            {`${' '.repeat(category.depth ?? 0)}${category.name}`}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                {moneyBack.length > 0 ? (
+                                    <optgroup label="Money back · lowers spending">
+                                        {moneyBack.map((category) => (
+                                            <option
+                                                key={category.id}
+                                                value={category.id}
+                                            >
+                                                {`${' '.repeat(category.depth ?? 0)}${category.name}`}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ) : null}
                             </select>
+                            {isMoneyBack ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Saved as money back: it lowers this
+                                    category&apos;s spending and doesn&apos;t
+                                    count as income.
+                                </p>
+                            ) : null}
                             <InputError message={form.errors.category_id} />
                         </div>
 
@@ -315,6 +350,8 @@ export function AddTransactionSheet({
                                 </>
                             ) : form.data.type === 'expense' ? (
                                 'Save expense'
+                            ) : isMoneyBack ? (
+                                'Save money back'
                             ) : (
                                 'Save income'
                             )}

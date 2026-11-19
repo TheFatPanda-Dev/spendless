@@ -80,15 +80,18 @@ class MonthlySpending
             $amount = $this->toBase((float) $transaction->amount, (string) ($transaction->currency ?: $base), $base);
             $count++;
 
-            if ($amount >= 0) {
+            $category = $transaction->category_id !== null
+                ? $categories->get($transaction->category_id)
+                : ($amount < 0 ? ($this->resolveCategory)($transaction, $user) : null);
+
+            // Money in under a spending category is money back (a friend paying their
+            // share, a refund): it lowers that category's spending and is not income.
+            if ($amount >= 0 && ! ($category instanceof Category && $category->type === 'expense')) {
                 $income += $amount;
 
                 continue;
             }
 
-            $category = $transaction->category_id !== null
-                ? $categories->get($transaction->category_id)
-                : ($this->resolveCategory)($transaction, $user);
             $main = $category instanceof Category ? $this->mainCategory($category, $categories) : null;
             $key = $main?->id ?? 0;
 

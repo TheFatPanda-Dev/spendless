@@ -151,9 +151,14 @@ class BankAccountController extends Controller
             'date' => $request->validated('date'),
             'merchant_name' => $request->validated('merchant_name'),
             'transaction_name' => $request->validated('transaction_name'),
+            'direction' => $request->validated('direction'),
         ]);
 
-        $message = $category->type === 'income' ? 'Income saved.' : 'Expense saved.';
+        $message = match (true) {
+            $request->validated('direction') === 'in' && $category->type === 'expense' => 'Money back saved.',
+            ($request->validated('direction') ?? ($category->type === 'income' ? 'in' : 'out')) === 'in' => 'Income saved.',
+            default => 'Expense saved.',
+        };
 
         if ($this->cameFromElsewhere($request)) {
             return back()->with('success', $message);

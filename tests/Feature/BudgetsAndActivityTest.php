@@ -47,6 +47,50 @@ class BudgetsAndActivityTest extends TestCase
                 ->has('recent', 3));
     }
 
+    public function test_friends_paying_back_their_share_lowers_spending_and_is_not_income(): void
+    {
+        [$user, $cash] = $this->owner(name: 'Cash');
+        [, $bank] = $this->owner($user, 'Revolut');
+        $food = $this->category($user, 'Food & Drink');
+        $workLunch = Category::query()->create(['user_id' => $user->id, 'parent_id' => $food->id, 'name' => 'Work Lunch', 'type' => 'expense', 'icon' => 'sandwich', 'color' => 'amber']);
+
+        $this->transaction($bank, 'Maharaja', -51.70, $workLunch);
+        $this->transaction($bank, 'Transfer from ADAM STRADOVNIK', 13.90, $workLunch);
+        $this->transaction($bank, 'Transfer from BOSTJAN OBLAK', 13.90, $workLunch);
+        $this->transaction($bank, 'Payment from employer', 2000, $this->category($user, 'Wages & Salary', 'income'));
+
+        // The third share came in cash: money in, recorded against the same category.
+        $this->actingAs($user)
+            ->post("/accounts/{$cash->id}/manual-transactions?from=activity", [
+                'category_id' => $workLunch->id,
+                'amount' => '13.90',
+                'date' => '2026-11-10',
+                'merchant_name' => 'Luka',
+                'direction' => 'in',
+            ])
+            ->assertSessionHas('success', 'Money back saved.');
+
+        $this->assertSame('13.90', BankTransaction::query()->where('merchant_name', 'Luka')->sole()->amount);
+        $this->assertSame(13.9, (float) $cash->fresh()->balances_encrypted['current']);
+
+        $this->actingAs($user)->get(route('dashboard', self::MONTH))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('spent', 10)
+                ->where('income', 2000)
+                ->where('categories.0.name', 'Food & Drink')
+                ->where('categories.0.amount', 10));
+
+        $activity = fn (array $query = []) => $this->actingAs($user)->get(route('activity.index', [...self::MONTH, ...$query]));
+
+        $activity()->assertInertia(fn (Assert $page) => $page
+            ->where('totals.0.out', -10)
+            ->where('totals.0.in', 2000));
+        $activity(['type' => 'expense'])->assertInertia(fn (Assert $page) => $page->has('transactions', 4));
+        $activity(['type' => 'income'])->assertInertia(fn (Assert $page) => $page
+            ->has('transactions', 1)
+            ->where('transactions.0.name', 'Payment from employer'));
+    }
+
     public function test_saving_the_monthly_budget_again_changes_it_instead_of_adding_another(): void
     {
         [$user] = $this->owner();

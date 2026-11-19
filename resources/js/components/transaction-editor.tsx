@@ -17,6 +17,7 @@ export type EditableTransaction = {
     merchant_name: string | null;
     category_id: number | null;
     category_type: 'expense' | 'income';
+    amount: number;
     tag_ids: number[];
 };
 
@@ -34,16 +35,23 @@ function CategoryList({
     options,
     selectedId,
     onSelect,
+    incoming = false,
 }: {
     options: { expense: CategoryOptionLite[]; income: CategoryOptionLite[] };
     selectedId: number | null;
     onSelect: (option: CategoryOptionLite) => void;
+    /** Money coming in: income first, spending categories offered as money back. */
+    incoming?: boolean;
 }) {
     const [query, setQuery] = useState('');
     const groups = useMemo(() => {
         const needle = query.trim().toLowerCase();
 
-        return (['expense', 'income'] as const).map((type) => ({
+        const order = incoming
+            ? (['income', 'expense'] as const)
+            : (['expense', 'income'] as const);
+
+        return order.map((type) => ({
             type,
             items:
                 needle === ''
@@ -52,7 +60,7 @@ function CategoryList({
                           option.path.toLowerCase().includes(needle),
                       ),
         }));
-    }, [options, query]);
+    }, [options, query, incoming]);
 
     return (
         <div className="rounded-xl border border-border bg-card">
@@ -74,9 +82,11 @@ function CategoryList({
                     group.items.length === 0 ? null : (
                         <div key={group.type} className="mb-1">
                             <p className="px-2.5 pt-2 pb-1 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                                {group.type === 'expense'
-                                    ? 'Expense'
-                                    : 'Income'}
+                                {group.type === 'income'
+                                    ? 'Income'
+                                    : incoming
+                                      ? 'Money back · lowers spending'
+                                      : 'Expense'}
                             </p>
                             {group.items.map((option) => {
                                 const selected = option.id === selectedId;
@@ -228,6 +238,7 @@ export function TransactionEditor({
                     options={categories}
                     selectedId={categoryId}
                     onSelect={(option) => setCategoryId(option.id)}
+                    incoming={transaction.amount > 0}
                 />
             </div>
             <div className="grid content-start gap-4">

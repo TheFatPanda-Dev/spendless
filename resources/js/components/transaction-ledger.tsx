@@ -15,6 +15,7 @@ export type LedgerTransaction = {
     category: string;
     category_icon: string;
     category_color?: string | null;
+    category_type?: 'expense' | 'income';
     amount: number;
     currency: string;
     date: string | null;
@@ -124,8 +125,12 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                     payee.trim().toLowerCase()
                                     ? transaction.name
                                     : null;
+                            // Money in under a spending category: a friend's share, a refund.
+                            const paidBack =
+                                transaction.amount > 0 &&
+                                transaction.category_type === 'expense';
                             const phoneMeta = [
-                                category,
+                                paidBack ? `${category} · paid back` : category,
                                 description,
                                 transaction.pending ? 'pending' : null,
                             ]
@@ -190,6 +195,7 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                         </span>
                                         <span className="hidden truncate text-base text-muted-foreground tablet:block">
                                             {category}
+                                            {paidBack ? ' · paid back' : ''}
                                             {transaction.pending
                                                 ? ' · pending'
                                                 : ''}
