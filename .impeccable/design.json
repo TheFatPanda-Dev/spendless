@@ -526,7 +526,7 @@
       "Do lead every money screen with the amount left to spend, in the Light display figure inside the mint hero card.",
       "Do format every amount with `formatMoney` and the `amount` utility: two decimals, \"−\" for outflows, \"+\" for inflows, the amount's own currency.",
       "Do keep every interactive element at least 44px (h-11), including icon buttons, picker arrows and sheet close buttons.",
-      "Do use the semantic roles (`bg-card`, `text-muted-foreground`, `border-control/70`, `bg-hero`) so light and dark both work; never hard-code hex in components.",
+      "Do use the semantic roles (`bg-card`, `text-muted-foreground`, `border-control` at 70% opacity, `bg-hero`) so light and dark both work; never hard-code hex in components.",
       "Do colour categories by spend rank with chart-1..5 and keep one shared scale per chart.",
       "Do separate content with 1px hairlines and tonal steps; reserve shadow for floating layers.",
       "Do collapse dense controls on phones into a sheet (Filters, More) rather than wrapping rows of selects."

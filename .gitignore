@@ -31,3 +31,6 @@ yarn-error.log
 /.zed
 scripts/rsync-build.sh
 .env.before_lerd
+
+# Claude Code per-developer settings (the Impeccable design hook lives here)
+/.claude/settings.local.json
