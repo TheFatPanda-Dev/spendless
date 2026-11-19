@@ -1,163 +1,359 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import { buildDashboardHref } from '@/lib/date-filters';
-import { dashboard, login, register } from '@/routes';
+import { Head, Link } from '@inertiajs/react';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right.js';
+import type { ReactNode } from 'react';
+import { BudgetRing, HeroFigure, SERIES, StackedBar } from '@/components/kit';
+import { formatMoney } from '@/lib/money';
+import { login, privacy, register, terms } from '@/routes';
+
+/**
+ * Illustrative figures from the identity kit's reference overview. They are shown
+ * with an "Example" label and never stand for anyone's real data.
+ */
+const exampleCategories = [
+    { name: 'Home', amount: 680 },
+    { name: 'Groceries', amount: 295.4 },
+    { name: 'Dining', amount: 148 },
+    { name: 'Transport', amount: 84 },
+    { name: 'Other', amount: 58 },
+];
+
+const exampleBudget = { left: 734.6, spent: 1265.4, amount: 2000, percent: 63 };
+
+const plumbing = [
+    {
+        term: 'EU banks',
+        detail: 'Synced through open banking, four times a day.',
+    },
+    {
+        term: 'UK banks',
+        detail: 'Synced through Plaid where it is available, or imported from a statement file (CSV, OFX or XLSX) with a preview first.',
+    },
+    {
+        term: 'Investments and savings',
+        detail: 'Interactive Brokers updates daily. A Cash ISA and a pension are tracked by value.',
+    },
+    {
+        term: 'Euros and pounds',
+        detail: 'Side by side, each amount in its own currency.',
+    },
+    {
+        term: 'Categories',
+        detail: 'Sorted automatically, with Slovenian and UK merchant names. A category you pick by hand is never overwritten.',
+    },
+];
+
+const focusRing =
+    'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wordmark-mint';
 
 export default function Welcome({
     canRegister = true,
 }: {
     canRegister?: boolean;
 }) {
-    const { auth } = usePage().props;
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const dashboardHref = buildDashboardHref(dashboard());
-
     return (
         <>
-            <Head title="SpendLess" />
+            <Head title="Money made simple" />
 
-            <div className="relative flex min-h-screen items-center overflow-hidden bg-background text-foreground">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(16,185,129,0.18),transparent_40%),radial-gradient(circle_at_80%_85%,rgba(16,185,129,0.12),transparent_45%)]" />
-
-                <header className="absolute inset-x-0 top-0 z-20 p-4 sm:p-8">
-                    <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2.5 sm:gap-3"
-                        >
-                            <img
-                                src="/images/spendless_logo.png"
-                                alt="SpendLess logo"
-                                className="h-10 w-10 rounded-full object-contain ring-1 ring-border/70"
-                            />
-                            <span className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
-                                <span>Spend</span>
-                                <span className="text-brand">Less</span>
-                            </span>
-                        </Link>
-
-                        <nav className="hidden items-center gap-3 md:flex">
-                            {auth.user ? (
-                                <Link
-                                    href={dashboardHref}
-                                    className="rounded-full border border-border bg-card/70 px-5 py-2 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand"
-                                >
-                                    Dashboard
-                                </Link>
-                            ) : (
-                                <>
-                                    <Link
-                                        href={login()}
-                                        className="rounded-full border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-                                    >
-                                        Log in
-                                    </Link>
-                                    {canRegister && (
-                                        <Link
-                                            href={register()}
-                                            className="rounded-full border border-border bg-card/70 px-5 py-2 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand"
-                                        >
-                                            Register
-                                        </Link>
-                                    )}
-                                </>
-                            )}
-                        </nav>
-
-                        <button
-                            type="button"
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/70 text-foreground md:hidden"
-                            aria-label="Toggle navigation menu"
-                            aria-expanded={isMobileMenuOpen}
-                            onClick={() => setIsMobileMenuOpen((open) => !open)}
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-5 w-5"
-                            >
-                                {isMobileMenuOpen ? (
-                                    <path d="M18 6 6 18M6 6l12 12" />
-                                ) : (
-                                    <path d="M4 6h16M4 12h16M4 18h16" />
-                                )}
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div
-                        className={`mx-auto mt-3 w-full max-w-7xl transition-all duration-200 md:hidden ${
-                            isMobileMenuOpen
-                                ? 'translate-y-0 opacity-100'
-                                : 'pointer-events-none -translate-y-1 opacity-0'
-                        }`}
-                    >
-                        <nav className="flex justify-end">
-                            <div className="min-w-42.5 rounded-2xl border border-border bg-background/95 p-2 shadow-lg">
-                                {auth.user ? (
-                                    <Link
-                                        href={dashboardHref}
-                                        className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
-                                        onClick={() =>
-                                            setIsMobileMenuOpen(false)
-                                        }
-                                    >
-                                        Dashboard
-                                    </Link>
-                                ) : (
-                                    <>
-                                        <Link
-                                            href={login()}
-                                            className="block rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
-                                            onClick={() =>
-                                                setIsMobileMenuOpen(false)
-                                            }
-                                        >
-                                            Log in
-                                        </Link>
-                                        {canRegister && (
-                                            <Link
-                                                href={register()}
-                                                className="mt-1 block rounded-xl bg-brand px-3 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-                                                onClick={() =>
-                                                    setIsMobileMenuOpen(false)
-                                                }
-                                            >
-                                                Register
-                                            </Link>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </nav>
-                    </div>
-                </header>
-
-                <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pt-28 pb-16 sm:px-10 sm:pt-32 lg:px-16">
-                    <div className="max-w-2xl">
-                        <img
-                            src="/images/spendless_logo.png"
-                            alt="SpendLess logo"
-                            className="h-24 w-24 rounded-full object-contain ring-1 ring-border/70 sm:h-28 sm:w-28"
-                        />
-
-                        <h1 className="mt-8 text-5xl font-extrabold tracking-tight sm:text-7xl md:text-8xl">
-                            <span className="block text-foreground">Spend</span>
-                            <span className="block text-brand">Less</span>
-                        </h1>
-
-                        <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-                            Budget smarter, track every movement, and stay in
-                            control with a clean modern money dashboard.
-                        </p>
-                    </div>
-                </main>
+            <div className="min-h-svh bg-background text-foreground">
+                <Poster canRegister={canRegister} />
+                <PromiseSection />
+                <Plumbing />
+                <Closing canRegister={canRegister} />
             </div>
         </>
+    );
+}
+
+function Poster({ canRegister }: { canRegister: boolean }) {
+    return (
+        <section className="grid bg-campaign text-campaign-foreground desk:min-h-svh desk:grid-cols-2">
+            <div className="flex flex-col px-5 pt-6 pb-12 tablet:px-12 tablet:pt-10 tablet:pb-16 desk:px-16 desk:pb-20">
+                <img
+                    src="/images/brand/lockup-on-dark.svg"
+                    alt="SpendLess"
+                    width={179}
+                    height={48}
+                    className="h-10 w-auto self-start tablet:h-12"
+                />
+
+                <div className="mt-14 animate-in duration-700 ease-out-quart fade-in slide-in-from-bottom-3 motion-reduce:animate-none tablet:mt-24 desk:mt-auto">
+                    <h1 className="max-w-[11ch] text-[length:clamp(3.25rem,9vw,6rem)] leading-[0.98] font-light tracking-[-0.03em]">
+                        Money made simple
+                    </h1>
+
+                    <div className="mt-8 border-t border-campaign-rule pt-6 tablet:mt-10">
+                        <p className="text-xl leading-snug text-campaign-foreground tablet:text-[1.375rem]">
+                            See what went out. Know what’s left.
+                        </p>
+                        <p className="mt-3 max-w-md text-base leading-relaxed text-pretty text-campaign-muted">
+                            Your banks, investments and savings in the EU and
+                            the UK, in one place, in euros and pounds.
+                        </p>
+                    </div>
+
+                    <Actions canRegister={canRegister} className="mt-8" />
+                </div>
+            </div>
+
+            <div className="relative h-[22rem] overflow-hidden tablet:h-[30rem] desk:h-auto">
+                <img
+                    src="/images/brand/paper-curls.webp"
+                    alt=""
+                    width={1254}
+                    height={1254}
+                    className="absolute inset-0 size-full object-cover object-center"
+                />
+            </div>
+        </section>
+    );
+}
+
+function Actions({
+    canRegister,
+    className,
+}: {
+    canRegister: boolean;
+    className?: string;
+}) {
+    return (
+        <div
+            className={`flex flex-wrap items-center gap-x-6 gap-y-4 ${className ?? ''}`}
+        >
+            <Link
+                href={login()}
+                className={`inline-flex h-12 items-center rounded-lg bg-wordmark-mint px-7 text-base font-medium text-wordmark-mint-foreground transition-[background-color,transform] hover:bg-wordmark-mint-hover active:scale-[0.98] ${focusRing}`}
+            >
+                Log in
+            </Link>
+
+            {canRegister ? (
+                <Link
+                    href={register()}
+                    className={`group inline-flex items-center gap-1.5 rounded-sm text-base font-medium text-campaign-foreground underline-offset-4 hover:underline ${focusRing}`}
+                >
+                    Create an account
+                    <ArrowRight
+                        className="size-4 transition-transform group-hover:translate-x-0.5"
+                        strokeWidth={1.75}
+                        aria-hidden
+                    />
+                </Link>
+            ) : (
+                <p className="text-[15px] text-campaign-muted">
+                    Sign-ups are closed for now.
+                </p>
+            )}
+        </div>
+    );
+}
+
+function ExampleLabel({ className }: { className?: string }) {
+    return (
+        <span
+            className={`rounded-full border px-2.5 py-0.5 text-sm leading-5 ${className ?? ''}`}
+        >
+            Example
+        </span>
+    );
+}
+
+function PromiseHalf({
+    title,
+    detail,
+    children,
+}: {
+    title: string;
+    detail: string;
+    children: ReactNode;
+}) {
+    return (
+        <div className="flex flex-col">
+            <h2 className="text-screen-title font-normal tracking-[-0.01em] tablet:text-page-title">
+                {title}
+            </h2>
+            <p className="mt-3 max-w-md text-base leading-relaxed text-pretty text-muted-foreground tablet:text-lg">
+                {detail}
+            </p>
+            <div className="mt-8 flex flex-1 flex-col">{children}</div>
+        </div>
+    );
+}
+
+function PromiseSection() {
+    const total = exampleCategories.reduce(
+        (sum, category) => sum + category.amount,
+        0,
+    );
+
+    return (
+        <section className="mx-auto grid w-full max-w-[75rem] gap-16 px-5 py-20 tablet:px-12 tablet:py-28 desk:grid-cols-2 desk:gap-12 desk:px-16">
+            <PromiseHalf
+                title="See what went out."
+                detail="Every transaction lands in a category, so a month reads as a few lines, ranked by what cost the most."
+            >
+                <div className="flex flex-1 flex-col rounded-card border border-border bg-card p-5 text-card-foreground tablet:p-7">
+                    <div className="mb-5 flex items-center justify-between gap-4">
+                        <p className="text-section font-medium">
+                            Spending by category
+                        </p>
+                        <ExampleLabel className="border-border text-muted-foreground" />
+                    </div>
+                    <StackedBar
+                        parts={exampleCategories.map((category, index) => ({
+                            key: category.name,
+                            amount: category.amount,
+                            color: SERIES[index],
+                            label: `${category.name} ${Math.round((category.amount / total) * 100)}%`,
+                        }))}
+                    />
+                    <ul className="mt-5">
+                        {exampleCategories.map((category, index) => (
+                            <li
+                                key={category.name}
+                                className="flex items-center justify-between gap-4 border-t border-border py-3 text-base first:border-t-0"
+                            >
+                                <span className="flex items-center gap-3">
+                                    <span
+                                        className="size-2.5 rounded-full"
+                                        style={{
+                                            backgroundColor: SERIES[index],
+                                        }}
+                                        aria-hidden
+                                    />
+                                    {category.name}
+                                </span>
+                                <span className="amount">
+                                    {formatMoney(category.amount, 'EUR')}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </PromiseHalf>
+
+            <PromiseHalf
+                title="Know what’s left."
+                detail="Set a monthly budget and the first number you see is what you can still spend, with the period and the budget beside it."
+            >
+                <div className="flex flex-1 flex-col rounded-card bg-hero p-5 text-hero-foreground tablet:p-7">
+                    <div className="flex items-center justify-between gap-4">
+                        <p className="text-section font-medium">
+                            Monthly budget
+                        </p>
+                        <ExampleLabel className="border-hero-foreground/20 text-hero-muted" />
+                    </div>
+                    <div className="mt-6 mb-8 flex items-center justify-between gap-4">
+                        <div className="@container min-w-0 flex-1">
+                            <p className="text-lg text-hero-muted">
+                                Left to spend
+                            </p>
+                            <HeroFigure
+                                value={formatMoney(exampleBudget.left, 'EUR')}
+                            />
+                        </div>
+                        <BudgetRing
+                            percent={exampleBudget.percent}
+                            size={132}
+                            className="size-24 tablet:size-[132px]"
+                        />
+                    </div>
+                    <div className="mt-auto grid grid-cols-2 gap-6 border-t border-hero-foreground/15 pt-5">
+                        <div>
+                            <p className="text-[15px] text-hero-muted">
+                                Spent so far
+                            </p>
+                            <p className="mt-1 text-[1.375rem] leading-tight font-light amount tablet:text-[1.75rem]">
+                                {formatMoney(exampleBudget.spent, 'EUR')}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-[15px] text-hero-muted">
+                                Budget
+                            </p>
+                            <p className="mt-1 text-[1.375rem] leading-tight font-light amount tablet:text-[1.75rem]">
+                                {formatMoney(exampleBudget.amount, 'EUR')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </PromiseHalf>
+        </section>
+    );
+}
+
+function Plumbing() {
+    return (
+        <section className="border-t border-border">
+            <div className="mx-auto grid w-full max-w-[75rem] gap-10 px-5 py-20 tablet:px-12 tablet:py-28 desk:grid-cols-[5fr_7fr] desk:gap-12 desk:px-16">
+                <div>
+                    <h2 className="max-w-[14ch] text-screen-title font-normal tracking-[-0.01em] text-balance tablet:text-page-title">
+                        Made for money in two countries
+                    </h2>
+                    <p className="mt-4 max-w-sm text-base leading-relaxed text-pretty text-muted-foreground">
+                        EU banks and investments update in the background; UK
+                        statements import from a file, with a preview first.
+                    </p>
+                </div>
+
+                <dl>
+                    {plumbing.map((row) => (
+                        <div
+                            key={row.term}
+                            className="grid gap-1 border-t border-border py-5 tablet:grid-cols-[13rem_1fr] tablet:gap-6"
+                        >
+                            <dt className="text-base font-medium">
+                                {row.term}
+                            </dt>
+                            <dd className="max-w-xl text-base leading-relaxed text-pretty text-muted-foreground">
+                                {row.detail}
+                            </dd>
+                        </div>
+                    ))}
+                </dl>
+            </div>
+        </section>
+    );
+}
+
+function Closing({ canRegister }: { canRegister: boolean }) {
+    return (
+        <footer className="bg-campaign text-campaign-foreground">
+            <div className="mx-auto w-full max-w-[75rem] px-5 pt-20 pb-10 tablet:px-12 tablet:pt-24 desk:px-16">
+                <div className="flex flex-col gap-10 desk:flex-row desk:items-end desk:justify-between">
+                    <p className="max-w-[16ch] text-[length:clamp(2.25rem,5vw,3.5rem)] leading-[1.05] font-light tracking-[-0.02em] text-balance">
+                        All your money, in one place.
+                    </p>
+                    <Actions canRegister={canRegister} />
+                </div>
+
+                <div className="mt-20 flex flex-col gap-6 border-t border-campaign-rule pt-8 tablet:flex-row tablet:items-center tablet:justify-between">
+                    <img
+                        src="/images/brand/lockup-on-dark.svg"
+                        alt="SpendLess"
+                        width={179}
+                        height={48}
+                        className="h-9 w-auto self-start"
+                    />
+                    <nav
+                        aria-label="Legal"
+                        className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[15px] text-campaign-muted"
+                    >
+                        <Link
+                            href={privacy()}
+                            className={`rounded-sm underline-offset-4 hover:text-campaign-foreground hover:underline ${focusRing}`}
+                        >
+                            Privacy
+                        </Link>
+                        <Link
+                            href={terms()}
+                            className={`rounded-sm underline-offset-4 hover:text-campaign-foreground hover:underline ${focusRing}`}
+                        >
+                            Terms
+                        </Link>
+                        <span>© {new Date().getFullYear()} SpendLess</span>
+                    </nav>
+                </div>
+            </div>
+        </footer>
     );
 }

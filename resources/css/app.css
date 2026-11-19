@@ -60,6 +60,15 @@
 
     --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 
+    /* Kit campaign colours (communications/link-preview): fixed in both themes. */
+    --color-campaign: #080808;
+    --color-campaign-foreground: #fafafa;
+    --color-campaign-muted: #a9b4ad;
+    --color-campaign-rule: #2c302e;
+    --color-wordmark-mint: #09c98c;
+    --color-wordmark-mint-foreground: #092419;
+    --color-wordmark-mint-hover: #3fd9a6;
+
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 

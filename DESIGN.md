@@ -206,7 +206,8 @@ Rules:
 - The Category Colour Rule (owner's decision, 2026-11-19). Every category icon sits in a round tile tinted with the category's own colour (picked on the Categories page; subcategories inherit the parent's): 14% tint over the card and the icon darkened to 70% in light mode, 18% tint and the full colour in dark. The category bar and its legend use the same colours; the ranked series is only the fallback for categories without one.
 - The Logo Rule. Wallets show the bank's or company's own logo: the provider's when it sends one, otherwise one the server fetched once for a known institution (`banking:fetch-logos`, stored under /storage/institution-logos, never SVG). Fallback is a drawn bank, or a wallet for cash.
 - The Tabular Money Rule. Every amount uses the `amount` utility (tabular, lining figures) and `formatMoney`: two decimals always, a true minus sign "−" (U+2212) for outflows, "+" for inflows where the sign carries meaning, and the currency of the amount itself (€, £, US$...
-- The Light Is For Money Rule. Weight 300 is used only for large monetary figures.
+- The Light Is For Money Rule. Weight 300 is used only for large monetary figures, except on campaign panels (below).
+- The Campaign Panel Rule (owner's decision, 2026-11-19). Public pages (the welcome page) may use the kit's campaign look from communications/link-preview: kit black #080808 panels with snow #fafafa text, Roboto Light display lines ("Money made simple"), a #2c302e hairline, the paper-curls photo, and one filled wordmark-mint #09c98c action with #092419 text (hover #3fd9a6). Tokens: `campaign`, `campaign-foreground`, `campaign-muted`, `campaign-rule`, `wordmark-mint`, `wordmark-mint-foreground`, `wordmark-mint-hover`; fixed in both themes. Never inside the signed-in app.
 - The Hairline Not Shadow Rule. Separation between content is a 1px hairline or a tonal step.
 Elevation:
 - Float: 0 8px 24px -12px rgb(0 0 0 / 0.35)
@@ -215,7 +216,7 @@ Don't:
 - Don't add a second filled deep-green button to a screen.
 - Don't show a negative amount in ink: money out is always rose with "−".
 - Don't use a grey icon tile for a category that has a colour.
-- Don't use Roboto Light for text, or swap Roboto for another family; the kit pins it.
+- Don't use Roboto Light for text outside money figures and campaign panels, or swap Roboto for another family; the kit pins it.
 - Don't add shadows to cards, panels or the rail.
 - Don't use a hyphen-minus for negative amounts, or drop the cents.
 - Don't use unicode glyphs as icons; use lucide outlines at 1.75 stroke.

@@ -41,6 +41,18 @@
         <meta name="theme-color" content="#111714" media="(prefers-color-scheme: dark)">
         <link rel="preload" href="/fonts/roboto/Roboto-Regular.ttf" as="font" type="font/ttf" crossorigin>
 
+        @if (request()->routeIs('home'))
+            <meta name="description" content="SpendLess brings your banks, investments and savings in the EU and the UK into one place, in euros and pounds. See what went out. Know what's left.">
+            <meta property="og:type" content="website">
+            <meta property="og:title" content="SpendLess — Money made simple">
+            <meta property="og:description" content="See what went out. Know what's left.">
+            <meta property="og:url" content="{{ url('/') }}">
+            <meta property="og:image" content="{{ url('/images/brand/link-preview.png') }}">
+            <meta property="og:image:width" content="1200">
+            <meta property="og:image:height" content="630">
+            <meta name="twitter:card" content="summary_large_image">
+        @endif
+
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead
