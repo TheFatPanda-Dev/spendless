@@ -14,12 +14,12 @@ import {
     BudgetRing,
     IconTile,
     HeroFigure,
+    categoryColor,
     MonthPicker,
     PageHeader,
     PhoneAddButton,
     Panel,
     StackedBar,
-    seriesColor,
     useLocale,
 } from '@/components/kit';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-ref
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
 import { openBankPopup } from '@/lib/bank-popup';
-import { formatDay, formatMonth, formatMoney } from '@/lib/money';
+import { amountTone, formatDay, formatMonth, formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 type Month = { start: string; end: string };
@@ -44,6 +44,7 @@ type CategorySpend = {
     id: number | null;
     name: string;
     icon: string;
+    color?: string | null;
     amount: number;
     other?: boolean;
 };
@@ -57,6 +58,7 @@ type RecentTransaction = {
     counterparty: string | null;
     category: string;
     category_icon: string;
+    category_color?: string | null;
     category_type: 'expense' | 'income';
     amount: number;
     currency: string;
@@ -298,7 +300,11 @@ function CategorySpending({
                         parts={categories.map((category, index) => ({
                             key: `${category.id ?? 'x'}-${category.name}`,
                             amount: category.amount,
-                            color: seriesColor(index, category.other),
+                            color: categoryColor(
+                                category.color,
+                                index,
+                                category.other,
+                            ),
                             label: `${category.name} ${formatMoney(category.amount, currency, locale)}`,
                         }))}
                     />
@@ -306,18 +312,19 @@ function CategorySpending({
                         {categories.map((category, index) => {
                             const row = (
                                 <>
-                                    <span className="flex items-center gap-3">
-                                        <span
-                                            className="size-2.5 shrink-0 rounded-full"
-                                            style={{
-                                                backgroundColor: seriesColor(
-                                                    index,
-                                                    category.other,
-                                                ),
-                                            }}
-                                            aria-hidden
+                                    <span className="flex min-w-0 items-center gap-3">
+                                        <IconTile
+                                            icon={category.icon}
+                                            tint={categoryColor(
+                                                category.color,
+                                                index,
+                                                category.other,
+                                            )}
+                                            size="sm"
                                         />
-                                        {category.name}
+                                        <span className="truncate">
+                                            {category.name}
+                                        </span>
                                     </span>
                                     <span className="amount">
                                         {formatMoney(
@@ -408,6 +415,9 @@ function RecentActivity({
                                         <span className="flex min-w-0 items-center gap-4 tablet:col-auto">
                                             <IconTile
                                                 icon={transaction.category_icon}
+                                                tint={
+                                                    transaction.category_color
+                                                }
                                                 income={income}
                                             />
                                             <span className="min-w-0">
@@ -439,9 +449,7 @@ function RecentActivity({
                                         <span
                                             className={cn(
                                                 'text-right text-base font-medium amount',
-                                                income
-                                                    ? 'text-positive'
-                                                    : 'text-foreground',
+                                                amountTone(transaction.amount),
                                             )}
                                         >
                                             {formatMoney(
@@ -512,7 +520,10 @@ function Wallets({
                 {netWorth.by_currency.map((row) => (
                     <p
                         key={row.currency}
-                        className="text-[1.75rem] leading-tight font-light text-foreground amount"
+                        className={cn(
+                            'text-[1.75rem] leading-tight font-light amount',
+                            amountTone(row.amount, false),
+                        )}
                     >
                         {formatMoney(row.amount, row.currency, locale)}
                     </p>
@@ -566,6 +577,7 @@ function Wallets({
                                     <BankLogo
                                         src={wallet.logo}
                                         name={wallet.institution ?? wallet.name}
+                                        provider={wallet.provider}
                                         className="size-10 rounded-xl"
                                     />
                                     <span className="min-w-0 flex-1">
@@ -612,7 +624,12 @@ function Wallets({
                                             ) : null}
                                         </span>
                                     </span>
-                                    <span className="text-right text-base font-medium text-foreground amount">
+                                    <span
+                                        className={cn(
+                                            'text-right text-base font-medium amount',
+                                            amountTone(wallet.balance, false),
+                                        )}
+                                    >
                                         {formatMoney(
                                             wallet.balance,
                                             wallet.currency,

@@ -17,6 +17,7 @@ colors:
   hairline: "#d6ded7"
   control-grey: "#718079"
   budget-red: "#a02d33"
+  money-out: "#cf1746"
   error-surface: "#ffe5e6"
   amber-warning: "#784500"
   warning-surface: "#ffe9c9"
@@ -39,6 +40,7 @@ colors:
   dark-positive: "#66e8a9"
   dark-ring: "#69f0b7"
   dark-red: "#ffb0b3"
+  dark-money-out: "#fb7185"
   dark-amber: "#ffd096"
 typography:
   display:
@@ -170,9 +172,9 @@ components:
     backgroundColor: "{colors.mint-wash}"
     textColor: "{colors.deep-green}"
   icon-tile:
-    backgroundColor: "{colors.card-white}"
-    textColor: "{colors.muted-ink}"
-    rounded: "{rounded.control}"
+    backgroundColor: "category colour at 14% over card-white (18% in dark)"
+    textColor: "category colour, 70% toward black (full colour in dark)"
+    rounded: "9999px"
     size: "40px"
   icon-tile-income:
     backgroundColor: "{colors.mint-hero}"
@@ -200,8 +202,9 @@ Radius: bar 4px, sm 8px, md 10px, control 12px, phone-add 14px, toast 16px, card
 North Star: "The Quiet Ledger"
 Rules:
 - The One Green Action Rule. Each screen has exactly one filled deep-green button.
-- The Meaning-Only Colour Rule. Red appears only when a budget is exceeded or something failed.
-- The Ranked Series Rule. Category colours follow spend rank (chart-1 is the largest category this period), not a fixed category-to-colour mapping, so the biggest share is always the darkest green.
+- The Money Direction Rule (owner's decision, 2026-11-19). Money out is rose (`text-negative`: #cf1746 light, #fb7185 dark) with a true minus sign, wherever an amount is negative: transactions, out totals, negative balances. Money in is green with "+". Over budget and failures keep the deeper budget-red.
+- The Category Colour Rule (owner's decision, 2026-11-19). Every category icon sits in a round tile tinted with the category's own colour (picked on the Categories page; subcategories inherit the parent's): 14% tint over the card and the icon darkened to 70% in light mode, 18% tint and the full colour in dark. The category bar and its legend use the same colours; the ranked series is only the fallback for categories without one.
+- The Logo Rule. Wallets show the bank's or company's own logo: the provider's when it sends one, otherwise one the server fetched once for a known institution (`banking:fetch-logos`, stored under /storage/institution-logos, never SVG). Fallback is a drawn bank, or a wallet for cash.
 - The Tabular Money Rule. Every amount uses the `amount` utility (tabular, lining figures) and `formatMoney`: two decimals always, a true minus sign "−" (U+2212) for outflows, "+" for inflows where the sign carries meaning, and the currency of the amount itself (€, £, US$...
 - The Light Is For Money Rule. Weight 300 is used only for large monetary figures.
 - The Hairline Not Shadow Rule. Separation between content is a 1px hairline or a tonal step.
@@ -210,7 +213,8 @@ Elevation:
 Don't:
 - Don't put an eyebrow or kicker label above page titles; the kit's "PERSONAL WORKSPACE" label is deliberately omitted.
 - Don't add a second filled deep-green button to a screen.
-- Don't colour ordinary spending red or use a red/green ticker for amounts; red means over budget or failure.
+- Don't show a negative amount in ink: money out is always rose with "−".
+- Don't use a grey icon tile for a category that has a colour.
 - Don't use Roboto Light for text, or swap Roboto for another family; the kit pins it.
 - Don't add shadows to cards, panels or the rail.
 - Don't use a hyphen-minus for negative amounts, or drop the cents.

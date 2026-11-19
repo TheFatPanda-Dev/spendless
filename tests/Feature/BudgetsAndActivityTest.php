@@ -123,7 +123,7 @@ class BudgetsAndActivityTest extends TestCase
             ->where('totals.0.in', 2500)
             ->where('totals.0.out', -57.2));
         $page(['type' => 'income'])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.name', 'Salary'));
-        $page(['category' => $transport->id])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.name', 'OMV Ljubljana'));
+        $page(['category' => $transport->id])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.name', 'OMV Ljubljana')->where('transactions.0.category_color', 'rgb(14 165 233)'));
         $page(['tag' => $golf->id])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.tag_ids', [$golf->id]));
         $page(['q' => 'market'])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.account', 'Pocket cash'));
     }

@@ -3,7 +3,7 @@ import type { ReactNode, Ref } from 'react';
 import { IconTile, useLocale } from '@/components/kit';
 import { TagChip } from '@/components/tag-chip';
 import type { TagColorOption, TagOption } from '@/components/tag-chip';
-import { formatMoney } from '@/lib/money';
+import { amountTone, formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 export type LedgerTransaction = {
@@ -14,6 +14,7 @@ export type LedgerTransaction = {
     counterparty: string | null;
     category: string;
     category_icon: string;
+    category_color?: string | null;
     amount: number;
     currency: string;
     date: string | null;
@@ -163,6 +164,7 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                     >
                                         <IconTile
                                             icon={transaction.category_icon}
+                                            tint={transaction.category_color}
                                             income={income}
                                         />
                                         <span className="min-w-0">
@@ -214,9 +216,7 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                         <span
                                             className={cn(
                                                 'text-right text-base font-medium whitespace-nowrap amount',
-                                                income
-                                                    ? 'text-positive'
-                                                    : 'text-foreground',
+                                                amountTone(transaction.amount),
                                             )}
                                         >
                                             {formatMoney(

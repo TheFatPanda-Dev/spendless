@@ -36,7 +36,7 @@ class WalletAccountController extends Controller
                 'name' => $account->name,
                 'official_name' => $account->official_name,
                 'institution_name' => $account->connection?->institution_name,
-                'institution_logo' => $account->connection?->institution_logo,
+                'institution_logo' => $account->connection?->logoUrl(),
                 'wallet_name' => $account->connection?->wallet?->name,
                 'mask' => $account->maskForDisplay(),
                 'currency' => $account->currency,

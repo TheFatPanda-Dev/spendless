@@ -10,6 +10,7 @@ use App\Models\Budget;
 use App\Models\Category;
 use App\Models\User;
 use App\Services\Currency\FreeCurrencyApi;
+use App\Support\Categories\CategoryOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -95,6 +96,7 @@ class MonthlySpending
                 'id' => $main?->id,
                 'name' => $main?->name ?? 'Uncategorised',
                 'icon' => $main?->icon ?? 'package',
+                'color' => CategoryOptions::tint($main?->color),
                 'amount' => 0.0,
             ];
             $spentByCategory[$key]['amount'] += -$amount;
@@ -127,7 +129,7 @@ class MonthlySpending
      */
     public function budgets(User $user, array $summary): array
     {
-        $budgets = Budget::query()->where('user_id', $user->id)->with('category:id,name,icon')->get();
+        $budgets = Budget::query()->where('user_id', $user->id)->with('category:id,name,icon,color')->get();
         $spentByCategory = collect($summary['by_category'])->keyBy('id');
         $total = $budgets->firstWhere('category_id', null);
 
@@ -141,6 +143,7 @@ class MonthlySpending
                     'category_id' => (int) $budget->category_id,
                     'name' => (string) $budget->category->name,
                     'icon' => (string) $budget->category->icon,
+                    'color' => CategoryOptions::tint($budget->category->color),
                 ])
                 ->sortByDesc(fn (array $line): float => $line['spent'] / max($line['amount'], 0.01))
                 ->values()

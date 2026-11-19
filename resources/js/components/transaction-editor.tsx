@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import Check from 'lucide-react/dist/esm/icons/check.js';
 import Search from 'lucide-react/dist/esm/icons/search.js';
 import { useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { CategoryOptionLite } from '@/components/add-transaction-sheet';
 import { CategoryIcon } from '@/components/category-icon';
 import type { TagColorOption, TagOption } from '@/components/tag-chip';
@@ -95,11 +96,26 @@ function CategoryList({
                                             paddingLeft: `${0.625 + (query.trim() === '' ? (option.depth ?? 0) * 1.25 : 0)}rem`,
                                         }}
                                     >
-                                        <CategoryIcon
-                                            name={option.icon}
-                                            iconSize={16}
-                                            strokeWidth={1.75}
-                                        />
+                                        <span
+                                            className={
+                                                option.tint
+                                                    ? 'text-[color-mix(in_srgb,var(--tint)_70%,black)] dark:text-[var(--tint)]'
+                                                    : 'text-muted-foreground'
+                                            }
+                                            style={
+                                                option.tint
+                                                    ? ({
+                                                          '--tint': option.tint,
+                                                      } as CSSProperties)
+                                                    : undefined
+                                            }
+                                        >
+                                            <CategoryIcon
+                                                name={option.icon}
+                                                iconSize={16}
+                                                strokeWidth={1.75}
+                                            />
+                                        </span>
                                         <span className="flex-1 truncate">
                                             {query.trim() === ''
                                                 ? option.name

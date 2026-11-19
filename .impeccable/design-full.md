@@ -197,7 +197,7 @@ components:
 
 SpendLess is a calm sage-and-green workspace that answers one question first: how much is left to spend this month. Everything else (where the money went, what happened lately, where it sits) follows in white cards on a warm sage canvas, separated by hairlines rather than shadows. The look is the owner's SpendLess identity kit (`design/identity-kit/`), executed as a category-standard finance app at the quality bar of YNAB and Lunch Money. The kit is binding; this document records how the shipped code implements it.
 
-Density is moderate: generous 20px-radius cards, 44px controls, one primary action per screen. Numbers carry the hierarchy, not decoration: the remaining budget is the only Light 64px figure on a screen, amounts are tabular and signed with a true minus, and colour is reserved for meaning (green for money in and the primary action, red only for over budget, amber for warnings). The direction contract refuses the dark neon dashboard tile wall and the trading-app red/green ticker; spending is not painted red.
+Density is moderate: generous 20px-radius cards, 44px controls, one primary action per screen. Numbers carry the hierarchy, not decoration: the remaining budget is the only Light 64px figure on a screen, amounts are tabular and signed with a true minus, and colour carries meaning: green for money in and the primary action, rose for money out, deeper red for over budget, amber for warnings, and each category in its own colour. The owner chose rose money-out and coloured category tiles on 2026-11-19, over the kit's original ink-only spending; the direction contract still refuses the dark neon dashboard tile wall.
 
 The system has a light theme (sage) and a dark theme (deep green-black with a mint action), switched by the `.dark` class from the user's appearance setting. Both share every token role; only values change.
 
@@ -242,9 +242,11 @@ A restrained green family on warm sage neutrals, with one amber and one red held
 ### Named Rules
 **The One Green Action Rule.** Each screen has exactly one filled deep-green button. Secondary actions are outline buttons or green text buttons.
 
-**The Meaning-Only Colour Rule.** Red appears only when a budget is exceeded or something failed. Ordinary spending is ink with a minus sign, never red; income is green with a plus sign.
+**The Money Direction Rule.** (Owner's decision, 2026-11-19.) Money out is rose (`text-negative`: #cf1746 light, 4.8:1 or better on every surface; #fb7185 dark) with a true minus sign, wherever an amount is negative: transactions, out totals, negative balances and net worth. Money in is green with "+". Over budget and failures keep the deeper budget-red, so they still read as a different, stronger signal. `amountTone(amount, signed)` in resources/js/lib/money.ts applies it.
 
-**The Ranked Series Rule.** Category colours follow spend rank (chart-1 is the largest category this period), not a fixed category-to-colour mapping, so the biggest share is always the darkest green.
+**The Category Colour Rule.** (Owner's decision, 2026-11-19.) Every category icon sits in a round 40px tile (32px in compact lists) tinted with the category's own colour, picked on the Categories page; subcategories inherit the parent's. Light mode: 14% tint over the card, 30% border, icon at 70% toward black. Dark mode: 18% tint, 34% border, icon in the full colour. The server sends the colour as `category_color` / `color` / `tint`. The Overview category bar and its legend use the same colours; the ranked series (chart-1..5) is only the fallback for categories without one, and for Other.
+
+**The Logo Rule.** Wallets show the bank's or company's own logo: the provider's when it sends one (Enable Banking), otherwise one the server fetched once for a known institution (`App\Support\Banking\InstitutionLogos`, hourly `banking:fetch-logos`, stored under /storage/institution-logos). SVG is refused, because it would be served from the app's own origin. The fallback is a drawn bank, or a wallet for cash wallets.
 
 ## Typography
 
@@ -298,7 +300,7 @@ Flat by default. Depth comes from tonal layering (sage canvas, white card, mint 
 
 ## Shapes
 
-Soft, consistent rounding in two main steps: 12px for controls (buttons, inputs, selects, nav items, notices, icon tiles at `rounded-xl`) and 20px for cards and sheet tops (`rounded-card`). The phone "+" is 14px, toasts 16px. Pills (fully round) are reserved for the active bottom-tab indicator, budget bars, tag chips and legend dots. The budget ring is an open three-quarter arc with round caps. Icons are lucide outlines at 1.75 stroke, 20–24px, always inside a 44px target when interactive; native selects get the same 1.75-stroke chevron drawn in CSS.
+Soft, consistent rounding in two main steps: 12px for controls (buttons, inputs, selects, nav items, notices) and 20px for cards and sheet tops (`rounded-card`). The phone "+" is 14px, toasts 16px. Fully round shapes are for category icon tiles, the active bottom-tab indicator, budget bars and tag chips. The budget ring is an open three-quarter arc with round caps. Icons are lucide outlines at 1.75 stroke, 20–24px, always inside a 44px target when interactive; native selects get the same 1.75-stroke chevron drawn in CSS.
 
 ## Components
 
@@ -334,7 +336,7 @@ Quiet and solid; one filled button per screen.
 The shared transaction list on Activity and Account pages.
 - **Desk and tablet:** one panel. Day headers are full-width rows tinted sage-tint at 45% with the group-label type and hairlines above and below. Rows are a grid with a fixed 2.5rem icon column and a fixed 8.5rem right-aligned amount column, so category and wallet columns align across days. Rows have hairline dividers, hover sage-tint, and open their editor in place (open row tinted mint-wash at 40%).
 - **Phone:** no panel; rows sit on the canvas, category and wallet collapse into one meta line under the payee, and a hairline separates day groups.
-- **Row:** 40px icon tile (card fill with hairline for spending; mint-hero with green icon for income), payee in 16px Medium, amount in 16px Medium tabular, green with "+" for income and ink with "−" for spending.
+- **Row:** 40px round icon tile tinted with the category's colour (neutral, or mint for income, when a category has none), payee in 16px Medium, amount in 16px Medium tabular, green with "+" for income and rose with "−" for spending.
 
 ### Budget Ring
 An open three-quarter ring (stroke 7.5% of its size, round caps) on the ring-track, filled with plot-green in proportion to budget used. The percentage and "used" sit in the centre, scaled by container query. Over 100% the arc caps at full, turns budget-red, and the text states the real percentage.
@@ -361,7 +363,8 @@ An open three-quarter ring (stroke 7.5% of its size, round caps) on the ring-tra
 ### Don't:
 - **Don't** put an eyebrow or kicker label above page titles; the kit's "PERSONAL WORKSPACE" label is deliberately omitted.
 - **Don't** add a second filled deep-green button to a screen.
-- **Don't** colour ordinary spending red or use a red/green ticker for amounts; red means over budget or failure.
+- **Don't** show a negative amount in ink: money out is always rose with "−".
+- **Don't** use a grey icon tile for a category that has a colour.
 - **Don't** use Roboto Light for text, or swap Roboto for another family; the kit pins it.
 - **Don't** add shadows to cards, panels or the rail.
 - **Don't** use a hyphen-minus for negative amounts, or drop the cents.

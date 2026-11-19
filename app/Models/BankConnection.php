@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Plaid\PlaidUsage;
+use App\Support\Banking\InstitutionLogos;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -118,6 +119,15 @@ class BankConnection extends Model
         return $this->provider === self::PROVIDER_MANUAL;
     }
 
+    /**
+     * The provider's logo, or one stored for a known institution (imports, IBKR, ISA,
+     * pension), or null.
+     */
+    public function logoUrl(): ?string
+    {
+        return $this->institution_logo ?: InstitutionLogos::url($this->institution_name, $this->provider);
+    }
+
     public function consentExpiresSoon(): bool
     {
         return $this->consent_valid_until !== null
@@ -136,7 +146,7 @@ class BankConnection extends Model
             'provider' => $this->provider,
             'status' => $this->status,
             'institution_name' => $this->institution_name,
-            'institution_logo' => $this->institution_logo,
+            'institution_logo' => $this->logoUrl(),
             'last_synced_at' => $this->last_synced_at?->toIso8601String(),
             'next_sync_at' => $this->next_sync_at?->toIso8601String(),
             'consent_valid_until' => $this->consent_valid_until?->toIso8601String(),

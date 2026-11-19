@@ -8,6 +8,7 @@ use App\Models\BankConnection;
 use App\Models\BankTransaction;
 use App\Models\Category;
 use App\Models\User;
+use App\Support\Categories\CategoryOptions;
 use Illuminate\Support\Collection;
 
 /**
@@ -55,6 +56,7 @@ class TransactionPresenter
             'category_id' => $category?->id,
             'assigned_category_id' => $transaction->category_id,
             'category_icon' => $category?->icon ?? ($type === 'income' ? 'banknote' : 'package'),
+            'category_color' => $category instanceof Category ? $this->tint($category) : null,
             'category_type' => $type,
             'category_source' => $transaction->category_manually_set ? 'manual' : ($category instanceof Category ? 'automatic' : 'fallback'),
             'amount' => (float) $transaction->amount,
@@ -101,6 +103,24 @@ class TransactionPresenter
             ->all();
     }
 
+    /**
+     * The category's tile colour; subcategories without their own take their parent's.
+     */
+    public function tint(Category $category): ?string
+    {
+        $current = $category;
+
+        for ($depth = 0; $current instanceof Category && $depth < 6; $depth++) {
+            if (($tint = CategoryOptions::tint($current->color)) !== null) {
+                return $tint;
+            }
+
+            $current = $current->parent_id !== null ? $this->categories()->get($current->parent_id) : null;
+        }
+
+        return null;
+    }
+
     public function path(Category $category): string
     {
         $segments = [];
@@ -131,6 +151,7 @@ class TransactionPresenter
                     'type' => $type,
                     'icon' => $category->icon,
                     'color' => $category->color,
+                    'tint' => $this->tint($category),
                     'depth' => count($trail),
                 ],
                 ...$this->options($type, $category->id, [...$trail, $category->name]),

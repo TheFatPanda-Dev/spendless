@@ -93,6 +93,29 @@ class CategoryOptions
     }
 
     /**
+     * The colour a category's icon tile is tinted with: a preset's swatch, or the
+     * category's own hex colour. Null when it has none.
+     */
+    public static function tint(?string $color): ?string
+    {
+        if ($color === null || $color === '') {
+            return null;
+        }
+
+        if (preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i', $color) === 1) {
+            return strtolower($color);
+        }
+
+        foreach (self::colors() as $preset) {
+            if ($preset['value'] === $color) {
+                return $preset['background'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return array<int, string>
      */
     public static function typeValues(): array

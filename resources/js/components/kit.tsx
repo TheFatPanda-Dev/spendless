@@ -278,28 +278,43 @@ export function MonthPicker({
     );
 }
 
-/** Icon tile for a transaction row: neutral for spending, mint for income. */
+/**
+ * A category's round icon tile, tinted with the category's own colour (picked on the
+ * Categories page). Without a colour it falls back to neutral, or mint for income.
+ */
 export function IconTile({
     icon,
+    tint,
     income = false,
+    size = 'md',
     className,
 }: {
     icon: string;
+    tint?: string | null;
     income?: boolean;
+    size?: 'md' | 'sm';
     className?: string;
 }) {
     return (
         <span
             className={cn(
-                'flex size-10 shrink-0 items-center justify-center rounded-xl border',
-                income
-                    ? 'border-transparent bg-hero text-positive'
-                    : 'border-border bg-card text-muted-foreground',
+                'flex shrink-0 items-center justify-center rounded-full border',
+                size === 'sm' ? 'size-8' : 'size-10',
+                tint
+                    ? 'border-[color-mix(in_srgb,var(--tint)_30%,transparent)] bg-[color-mix(in_srgb,var(--tint)_14%,var(--card))] text-[color-mix(in_srgb,var(--tint)_70%,black)] dark:border-[color-mix(in_srgb,var(--tint)_34%,transparent)] dark:bg-[color-mix(in_srgb,var(--tint)_18%,transparent)] dark:text-[var(--tint)]'
+                    : income
+                      ? 'border-transparent bg-hero text-positive'
+                      : 'border-border bg-card text-muted-foreground',
                 className,
             )}
+            style={tint ? ({ '--tint': tint } as CSSProperties) : undefined}
             aria-hidden
         >
-            <CategoryIcon name={icon} iconSize={20} strokeWidth={1.75} />
+            <CategoryIcon
+                name={icon}
+                iconSize={size === 'sm' ? 16 : 20}
+                strokeWidth={1.75}
+            />
         </span>
     );
 }
@@ -392,6 +407,15 @@ export function seriesColor(index: number, isOther = false): string {
     return isOther
         ? 'var(--chart-5)'
         : SERIES[Math.min(index, SERIES.length - 1)];
+}
+
+/** A category's own colour, or the ranked series colour when it has none. */
+export function categoryColor(
+    tint: string | null | undefined,
+    index: number,
+    isOther = false,
+): string {
+    return !isOther && tint ? tint : seriesColor(index, isOther);
 }
 
 export function StackedBar({

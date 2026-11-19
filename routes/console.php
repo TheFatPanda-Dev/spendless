@@ -18,6 +18,7 @@ Schedule::call(fn () => Cache::forever('scheduler:last_run_at', now()->toIso8601
 Schedule::command('banking:dispatch-due-syncs')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('banking:send-access-reminders')->dailyAt('09:00')->withoutOverlapping();
 Schedule::command('assets:refresh')->dailyAt('00:30')->withoutOverlapping();
+Schedule::command('banking:fetch-logos')->hourly()->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [BankSyncRun::class]])->daily();
 Schedule::command('queue:prune-failed', ['--hours' => 24 * 30])->daily();
 

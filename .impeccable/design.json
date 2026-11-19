@@ -288,6 +288,11 @@
           "#e1c5ab",
           "#fbebde"
         ]
+      },
+      "money-out": {
+        "value": "#cf1746",
+        "dark": "#fb7185",
+        "role": "Negative amounts (money out)"
       }
     },
     "typographyMeta": {
@@ -458,7 +463,7 @@
       "name": "Ledger Row",
       "kind": "custom",
       "refersTo": "icon-tile",
-      "description": "Transaction row: icon tile, payee, category, signed tabular amount, under a tinted day header.",
+      "description": "Transaction row: icon tile, payee, category, signed tabular amount, under a tinted day header. Category icon in a round tile tinted with the category's colour; negative amounts in rose.",
       "html": "<div class=\"ds-ledger\"><h3>Tuesday 17 November</h3><button class=\"ds-row\"><span class=\"ds-tile\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M5 11l4-7M9 11l1 9\"/></svg></span><span class=\"ds-payee\">Hofer</span><span class=\"ds-cat\">Groceries</span><span class=\"ds-amt\">−€32.15</span></button><button class=\"ds-row\"><span class=\"ds-tile is-income\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/></svg></span><span class=\"ds-payee\">Opening balance</span><span class=\"ds-cat\">Other Income</span><span class=\"ds-amt is-in\">+€120.00</span></button></div>",
       "css": ".ds-ledger{overflow:hidden;border:1px solid var(--border,#d6ded7);border-radius:20px;background:var(--card,#fff);font-family:Roboto,system-ui,sans-serif}.ds-ledger h3{margin:0;padding:10px 20px;border-bottom:1px solid var(--border,#d6ded7);background:color-mix(in srgb,var(--muted,#edf1ec) 45%,transparent);color:var(--muted-foreground,#526158);font:500 14px Roboto,system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase}.ds-row{display:grid;grid-template-columns:2.5rem minmax(0,2fr) minmax(0,1.2fr) 8.5rem;align-items:center;gap:16px;width:100%;padding:14px 20px;border:none;border-bottom:1px solid var(--border,#d6ded7);background:none;text-align:left;cursor:pointer;color:var(--foreground,#151a18);font:inherit;transition:background-color 150ms}.ds-row:last-child{border-bottom:none}.ds-row:hover{background:color-mix(in srgb,var(--muted,#edf1ec) 60%,transparent)}.ds-row:focus-visible{outline:2px solid var(--ring,#006447);outline-offset:-2px}.ds-tile{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--border,#d6ded7);border-radius:12px;color:var(--muted-foreground,#526158)}.ds-tile.is-income{border-color:transparent;background:var(--hero,#daf4e5);color:var(--positive,#006447)}.ds-payee{font-weight:500;font-size:16px}.ds-cat{color:var(--muted-foreground,#526158);font-size:16px}.ds-amt{text-align:right;font-weight:500;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}.ds-amt.is-in{color:var(--positive,#006447)}"
     },
@@ -497,14 +502,19 @@
         "section": "colors"
       },
       {
-        "name": "The Meaning-Only Colour Rule",
-        "body": "Red appears only when a budget is exceeded or something failed. Ordinary spending is ink with a minus sign, never red; income is green with a plus sign.",
-        "section": "colors"
+        "name": "The Money Direction Rule",
+        "section": "colors",
+        "body": "Owner's decision, 2026-11-19. Money out is rose (text-negative: #cf1746 light, #fb7185 dark) with a true minus sign, wherever an amount is negative. Money in is green with \"+\". Over budget and failures keep the deeper budget-red."
       },
       {
-        "name": "The Ranked Series Rule",
-        "body": "Category colours follow spend rank (chart-1 is the largest category this period), not a fixed category-to-colour mapping, so the biggest share is always the darkest green.",
-        "section": "colors"
+        "name": "The Category Colour Rule",
+        "section": "colors",
+        "body": "Owner's decision, 2026-11-19. Every category icon sits in a round tile tinted with the category's own colour (subcategories inherit the parent's): 14% tint and the icon at 70% toward black in light mode, 18% tint and the full colour in dark. The category bar and legend use the same colours; the ranked series is the fallback."
+      },
+      {
+        "name": "The Logo Rule",
+        "section": "components",
+        "body": "Wallets show the bank's or company's own logo: the provider's, or one the server fetched once for a known institution (banking:fetch-logos, never SVG). Fallback is a drawn bank, or a wallet for cash."
       },
       {
         "name": "The Tabular Money Rule",
@@ -534,11 +544,12 @@
     "donts": [
       "Don't put an eyebrow or kicker label above page titles; the kit's \"PERSONAL WORKSPACE\" label is deliberately omitted.",
       "Don't add a second filled deep-green button to a screen.",
-      "Don't colour ordinary spending red or use a red/green ticker for amounts; red means over budget or failure.",
       "Don't use Roboto Light for text, or swap Roboto for another family; the kit pins it.",
       "Don't add shadows to cards, panels or the rail.",
       "Don't use a hyphen-minus for negative amounts, or drop the cents.",
-      "Don't use unicode glyphs as icons; use lucide outlines at 1.75 stroke."
+      "Don't use unicode glyphs as icons; use lucide outlines at 1.75 stroke.",
+      "Don't show a negative amount in ink: money out is always rose with \"−\".",
+      "Don't use a grey icon tile for a category that has a colour."
     ]
   }
 }

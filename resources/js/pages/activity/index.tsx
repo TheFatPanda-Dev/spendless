@@ -28,7 +28,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
-import { formatMonth, formatMoney } from '@/lib/money';
+import { amountTone, formatMonth, formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 type Month = { start: string; end: string };
@@ -540,7 +540,7 @@ export default function ActivityIndex(props: Props) {
                                 )}
                             </span>
                             {' in · '}
-                            <span className="text-foreground amount">
+                            <span className={cn('amount', amountTone(row.out))}>
                                 {formatMoney(
                                     row.out,
                                     row.currency,

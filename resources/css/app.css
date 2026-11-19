@@ -118,6 +118,7 @@
     --color-track: var(--track);
     --color-plot: var(--plot);
     --color-positive: var(--positive);
+    --color-negative: var(--negative);
     --color-control: var(--control);
     --color-warning-surface: var(--warning-surface);
     --color-error-surface: var(--error-surface);
@@ -163,6 +164,7 @@
     --track: #a9ceb7;
     --plot: #08754f;
     --positive: #006447;
+    --negative: #cf1746;
     --warning-surface: #ffe9c9;
     --error-surface: #ffe5e6;
     --tile: #edf1ec;
@@ -218,6 +220,7 @@
     --track: #426f55;
     --plot: #57fe90;
     --positive: #66e8a9;
+    --negative: #fb7185;
     --warning-surface: #452e18;
     --error-surface: #44252a;
     --tile: #243029;

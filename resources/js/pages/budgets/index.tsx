@@ -28,7 +28,12 @@ type Line = {
     percent: number;
 };
 
-type CategoryLine = Line & { category_id: number; name: string; icon: string };
+type CategoryLine = Line & {
+    category_id: number;
+    name: string;
+    icon: string;
+    color?: string | null;
+};
 
 type Props = {
     month: Month;
@@ -40,6 +45,7 @@ type Props = {
         id: number;
         name: string;
         icon: string;
+        color?: string | null;
         amount: number;
     }>;
     options: Array<{ id: number; name: string; icon: string }>;
@@ -277,7 +283,7 @@ function CategoryRow({
     return (
         <li className="py-4">
             <div className="flex items-start gap-4">
-                <IconTile icon={line.icon} />
+                <IconTile icon={line.icon} tint={line.color} />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1 tablet:flex tablet:items-baseline tablet:justify-between tablet:gap-x-4">
@@ -520,7 +526,10 @@ export default function BudgetsIndex({
                                     key={row.id}
                                     className="flex min-h-16 items-center gap-4 py-3"
                                 >
-                                    <IconTile icon={row.icon} />
+                                    <IconTile
+                                        icon={row.icon}
+                                        tint={row.color}
+                                    />
                                     <span className="min-w-0 flex-1 text-base text-foreground">
                                         {row.name}
                                     </span>

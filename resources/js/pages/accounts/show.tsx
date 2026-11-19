@@ -24,7 +24,8 @@ import { TransactionLedger } from '@/components/transaction-ledger';
 import { Button } from '@/components/ui/button';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
-import { formatDay, formatMonth, formatMoney } from '@/lib/money';
+import { amountTone, formatDay, formatMonth, formatMoney } from '@/lib/money';
+import { cn } from '@/lib/utils';
 import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type Account = {
@@ -211,6 +212,7 @@ export default function AccountShow({
                     <BankLogo
                         src={account.institution_logo}
                         name={account.institution_name ?? title}
+                        provider={account.provider}
                         className="size-12 rounded-xl"
                     />
                     <div className="min-w-0">
@@ -322,7 +324,15 @@ export default function AccountShow({
                                     ? 'Balance owed'
                                     : 'Current balance'}
                             </p>
-                            <p className="mt-1 text-[2.75rem] leading-none font-light tracking-[-0.02em] text-foreground amount">
+                            <p
+                                className={cn(
+                                    'mt-1 text-[2.75rem] leading-none font-light tracking-[-0.02em] amount',
+                                    amountTone(
+                                        Number(account.balances?.current ?? 0),
+                                        false,
+                                    ),
+                                )}
+                            >
                                 {formatMoney(
                                     Number(account.balances?.current ?? 0),
                                     currency,
@@ -357,7 +367,12 @@ export default function AccountShow({
                             </p>
                             <p className="text-muted-foreground">
                                 Out{' '}
-                                <span className="text-foreground amount">
+                                <span
+                                    className={cn(
+                                        'amount',
+                                        amountTone(totals.out),
+                                    )}
+                                >
                                     {formatMoney(
                                         totals.out,
                                         currency,

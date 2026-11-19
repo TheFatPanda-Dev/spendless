@@ -52,7 +52,7 @@ class BankAccountController extends Controller
                 'name' => $bankAccount->name,
                 'official_name' => $bankAccount->official_name,
                 'institution_name' => $bankAccount->connection?->institution_name,
-                'institution_logo' => $bankAccount->connection?->institution_logo,
+                'institution_logo' => $bankAccount->connection?->logoUrl(),
                 'provider' => $bankAccount->connection?->provider,
                 'wallet_id' => $bankAccount->connection?->wallet_id,
                 'subtype' => $bankAccount->subtype,

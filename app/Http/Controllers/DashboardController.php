@@ -49,7 +49,7 @@ class DashboardController extends Controller
                 'wallet_id' => $account->connection?->wallet_id,
                 'name' => (string) ($account->display_name ?: $account->name ?: 'Account'),
                 'institution' => $account->connection?->institution_name,
-                'logo' => $account->connection?->institution_logo,
+                'logo' => $account->connection?->logoUrl(),
                 'provider' => $account->connection?->provider,
                 'status' => $account->connection?->status,
                 'mask' => $account->maskForDisplay(),
@@ -81,7 +81,7 @@ class DashboardController extends Controller
         $rest = $categories->slice(self::CATEGORY_ROWS);
 
         if ($rest->isNotEmpty()) {
-            $shown->push(['id' => null, 'name' => 'Other', 'icon' => 'package', 'amount' => round((float) $rest->sum('amount'), 2), 'other' => true]);
+            $shown->push(['id' => null, 'name' => 'Other', 'icon' => 'package', 'color' => null, 'amount' => round((float) $rest->sum('amount'), 2), 'other' => true]);
         }
 
         $overBudget = collect($budgets['categories'])

@@ -113,3 +113,15 @@ export function shiftMonthStart(date: string, direction: -1 | 1): string {
 
     return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}-01`;
 }
+
+/**
+ * Colour for an amount: money out (negative) is rose everywhere; money in is green
+ * only where the amount is shown signed ("+€20.00"), otherwise plain.
+ */
+export function amountTone(amount: number, signed = true): string {
+    if (amount < 0) {
+        return 'text-negative';
+    }
+
+    return signed && amount > 0 ? 'text-positive' : 'text-foreground';
+}

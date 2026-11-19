@@ -19,6 +19,7 @@ export type CategoryOptionLite = {
     path: string;
     type: 'expense' | 'income';
     icon: string;
+    tint?: string | null;
     depth?: number;
 };
 
