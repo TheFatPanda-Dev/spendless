@@ -73,6 +73,26 @@ class InstitutionLogosTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_a_new_wallet_gets_its_logo_right_after_the_response(): void
+    {
+        config(['services.institution_logos.fetch_on_save' => true]);
+        $png = "\x89PNG\r\n\x1a\n".str_repeat('x', 200);
+
+        Http::fake([
+            'https://assets.revolut.com/*' => Http::response($png, 200, ['Content-Type' => 'image/png']),
+            '*' => Http::response('', 403),
+        ]);
+
+        $connection = $this->connection('Revolut', BankConnection::PROVIDER_IMPORT);
+        Http::assertNothingSent();
+
+        $this->app->terminate();
+
+        Storage::disk('public')->assertExists('institution-logos/revolut.com.png');
+        $this->assertSame('/storage/institution-logos/revolut.com.png', $connection->fresh()->logoUrl());
+        Http::assertSentCount(1);
+    }
+
     public function test_unknown_domains_are_never_fetched(): void
     {
         Http::fake();

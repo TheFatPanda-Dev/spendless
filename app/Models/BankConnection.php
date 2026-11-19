@@ -89,6 +89,11 @@ class BankConnection extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(fn (BankConnection $connection) => InstitutionLogos::fetchSoon($connection));
+    }
+
     public function wallet(): BelongsTo
     {
         return $this->belongsTo(Wallet::class);

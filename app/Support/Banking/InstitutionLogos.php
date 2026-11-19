@@ -61,6 +61,15 @@ class InstitutionLogos
         'gorenjska banka' => 'gbkr.si',
     ];
 
+    /**
+     * Sharp icons on sites whose pages refuse automated visits; tried first.
+     *
+     * @var array<string, list<string>>
+     */
+    public const DIRECT_ICONS = [
+        'revolut.com' => ['https://assets.revolut.com/assets/favicons/apple-touch-icon.png'],
+    ];
+
     private const MAX_BYTES = 512_000;
 
     private const RETRY_AFTER_DAYS = 7;
@@ -127,9 +136,27 @@ class InstitutionLogos
             return false;
         }
 
+        // Known direct icons first; the site's own page is only loaded when needed.
+        if (self::storeFirst($domain, self::DIRECT_ICONS[$domain] ?? []) || self::storeFirst($domain, self::candidates($domain))) {
+            return true;
+        }
+
+        $disk = Storage::disk('public');
+        $disk->put(self::DIRECTORY.'/'.$domain.'.miss', now()->toIso8601String());
+
+        return false;
+    }
+
+    /**
+     * Store the first usable image among these addresses.
+     *
+     * @param  list<string>  $urls
+     */
+    private static function storeFirst(string $domain, array $urls): bool
+    {
         $disk = Storage::disk('public');
 
-        foreach (self::candidates($domain) as $url) {
+        foreach ($urls as $url) {
             try {
                 $response = self::client()->get($url);
             } catch (Throwable) {
@@ -163,9 +190,30 @@ class InstitutionLogos
             return true;
         }
 
-        $disk->put(self::DIRECTORY.'/'.$domain.'.miss', now()->toIso8601String());
-
         return false;
+    }
+
+    /**
+     * Fetch a new or renamed wallet's logo once the response has gone out, so it
+     * shows without waiting for the hourly run (and works before the cron is set).
+     */
+    public static function fetchSoon(BankConnection $connection): void
+    {
+        if (
+            ! config('services.institution_logos.fetch_on_save', true)
+            || filled($connection->institution_logo)
+            || ! ($connection->wasRecentlyCreated || $connection->wasChanged('institution_name'))
+        ) {
+            return;
+        }
+
+        $domain = self::domainFor($connection->institution_name, $connection->provider);
+
+        if ($domain === null || self::has($domain) || self::recentlyMissed($domain)) {
+            return;
+        }
+
+        dispatch(fn () => self::fetch($domain))->afterResponse();
     }
 
     public static function forget(): void

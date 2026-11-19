@@ -47,6 +47,11 @@ return [
         'redirect' => env('GITHUB_REDIRECT_URI'),
     ],
 
+    'institution_logos' => [
+        // Fetch a wallet's logo right after it is created (see InstitutionLogos).
+        'fetch_on_save' => (bool) env('INSTITUTION_LOGOS_FETCH', true),
+    ],
+
     'enable_banking' => [
         'base_url' => env('ENABLE_BANKING_BASE_URL', 'https://api.enablebanking.com'),
         'app_id' => env('ENABLE_BANKING_APP_ID'),
