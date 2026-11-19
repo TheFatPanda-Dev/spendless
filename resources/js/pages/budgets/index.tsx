@@ -3,6 +3,7 @@ import Pencil from 'lucide-react/dist/esm/icons/pencil.js';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2.js';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { CategoryPicker } from '@/components/category-picker';
 import InputError from '@/components/input-error';
 import {
     BudgetRing,
@@ -48,7 +49,12 @@ type Props = {
         color?: string | null;
         amount: number;
     }>;
-    options: Array<{ id: number; name: string; icon: string }>;
+    options: Array<{
+        id: number;
+        name: string;
+        icon: string;
+        tint?: string | null;
+    }>;
 };
 
 const inputClasses =
@@ -410,21 +416,22 @@ function AddCategoryBudget({
                 <label htmlFor="budget-category" className="sr-only">
                     Category
                 </label>
-                <select
+                <CategoryPicker
                     id="budget-category"
-                    value={form.data.category_id}
-                    onChange={(event) =>
-                        form.setData('category_id', event.target.value)
+                    size="lg"
+                    groups={[{ key: 'expense', options }]}
+                    value={
+                        form.data.category_id === ''
+                            ? null
+                            : Number(form.data.category_id)
                     }
-                    className="h-12 w-full rounded-lg border border-control/70 bg-card px-4 text-base text-foreground"
-                >
-                    <option value="">Choose a category</option>
-                    {options.map((option) => (
-                        <option key={option.id} value={option.id}>
-                            {option.name}
-                        </option>
-                    ))}
-                </select>
+                    onChange={(id) =>
+                        form.setData(
+                            'category_id',
+                            id === null ? '' : String(id),
+                        )
+                    }
+                />
                 <InputError
                     message={form.errors.category_id}
                     className="mt-2"

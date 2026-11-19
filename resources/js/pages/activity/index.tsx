@@ -10,6 +10,8 @@ import type {
     AddTransactionOptions,
     CategoryOptionLite,
 } from '@/components/add-transaction-sheet';
+import { CategoryPicker } from '@/components/category-picker';
+import type { PickerGroup } from '@/components/category-picker';
 import {
     MonthPicker,
     PageHeader,
@@ -135,7 +137,7 @@ function FilterSheet({
     onOpenChange: (open: boolean) => void;
     filters: Filters;
     accounts: Props['accounts'];
-    categories: CategoryOptionLite[];
+    categories: PickerGroup[];
     tags: TagOption[];
     onApply: (filters: Filters) => void;
 }) {
@@ -236,29 +238,21 @@ function FilterSheet({
                         </select>
                     </label>
 
-                    <label className="grid gap-1.5">
+                    <div className="grid gap-1.5">
                         <span className="text-[15px] text-muted-foreground">
                             Category
                         </span>
-                        <select
-                            value={draft.category ?? ''}
-                            onChange={(event) =>
-                                setDraft({
-                                    ...draft,
-                                    category: toId(event.target.value),
-                                })
+                        <CategoryPicker
+                            size="lg"
+                            inDialog
+                            groups={categories}
+                            clearLabel="All categories"
+                            value={draft.category}
+                            onChange={(id) =>
+                                setDraft({ ...draft, category: id })
                             }
-                            className={cn(selectClasses, 'w-full text-base')}
-                        >
-                            <option value="">All categories</option>
-                            {categories.map((option) => (
-                                <option
-                                    key={option.id}
-                                    value={option.id}
-                                >{`${' '.repeat(option.depth ?? 0)}${option.name}`}</option>
-                            ))}
-                        </select>
-                    </label>
+                        />
+                    </div>
 
                     {tags.length > 0 ? (
                         <label className="grid gap-1.5">
@@ -328,8 +322,15 @@ export default function ActivityIndex(props: Props) {
     const [filtering, setFiltering] = useState(false);
     const [search, setSearch] = useState(filters.q);
     const openRowRef = useRef<HTMLLIElement | null>(null);
-    const allCategories = useMemo(
-        () => [...categoryOptions.expense, ...categoryOptions.income],
+    const categoryGroups = useMemo<PickerGroup[]>(
+        () => [
+            {
+                key: 'expense',
+                label: 'Expense',
+                options: categoryOptions.expense,
+            },
+            { key: 'income', label: 'Income', options: categoryOptions.income },
+        ],
         [categoryOptions],
     );
 
@@ -458,25 +459,14 @@ export default function ActivityIndex(props: Props) {
                         </option>
                     ))}
                 </select>
-                <label className="sr-only" htmlFor="filter-category">
-                    Category
-                </label>
-                <select
+                <CategoryPicker
                     id="filter-category"
-                    value={filters.category ?? ''}
-                    onChange={(event) =>
-                        apply({ category: toId(event.target.value) })
-                    }
-                    className={cn(selectClasses, 'max-w-[14rem]')}
-                >
-                    <option value="">All categories</option>
-                    {allCategories.map((option) => (
-                        <option
-                            key={option.id}
-                            value={option.id}
-                        >{`${' '.repeat(option.depth ?? 0)}${option.name}`}</option>
-                    ))}
-                </select>
+                    groups={categoryGroups}
+                    clearLabel="All categories"
+                    value={filters.category}
+                    onChange={(id) => apply({ category: id })}
+                    className="w-56"
+                />
                 {tags.length > 0 ? (
                     <>
                         <label className="sr-only" htmlFor="filter-tag">
@@ -603,7 +593,7 @@ export default function ActivityIndex(props: Props) {
                 onOpenChange={setFiltering}
                 filters={filters}
                 accounts={accounts}
-                categories={allCategories}
+                categories={categoryGroups}
                 tags={tags}
                 onApply={apply}
             />

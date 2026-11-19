@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
 import { useMemo } from 'react';
 import type { FormEvent } from 'react';
+import { CategoryPicker } from '@/components/category-picker';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -237,47 +238,37 @@ export function AddTransactionSheet({
                             >
                                 Category
                             </label>
-                            <select
+                            <CategoryPicker
                                 id="add-category"
-                                value={form.data.category_id}
-                                onChange={(event) =>
+                                size="lg"
+                                inDialog
+                                groups={[
+                                    {
+                                        key: form.data.type,
+                                        label:
+                                            form.data.type === 'income'
+                                                ? 'Income'
+                                                : 'Expense',
+                                        options: categories,
+                                    },
+                                    {
+                                        key: 'money-back',
+                                        label: 'Money back · lowers spending',
+                                        options: moneyBack,
+                                    },
+                                ]}
+                                value={
+                                    form.data.category_id === ''
+                                        ? null
+                                        : Number(form.data.category_id)
+                                }
+                                onChange={(id) =>
                                     form.setData(
                                         'category_id',
-                                        event.target.value,
+                                        id === null ? '' : String(id),
                                     )
                                 }
-                                className={fieldClasses}
-                            >
-                                <option value="">Choose a category</option>
-                                <optgroup
-                                    label={
-                                        form.data.type === 'income'
-                                            ? 'Income'
-                                            : 'Expense'
-                                    }
-                                >
-                                    {categories.map((category) => (
-                                        <option
-                                            key={category.id}
-                                            value={category.id}
-                                        >
-                                            {`${' '.repeat(category.depth ?? 0)}${category.name}`}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                                {moneyBack.length > 0 ? (
-                                    <optgroup label="Money back · lowers spending">
-                                        {moneyBack.map((category) => (
-                                            <option
-                                                key={category.id}
-                                                value={category.id}
-                                            >
-                                                {`${' '.repeat(category.depth ?? 0)}${category.name}`}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ) : null}
-                            </select>
+                            />
                             {isMoneyBack ? (
                                 <p className="text-sm text-muted-foreground">
                                     Saved as money back: it lowers this

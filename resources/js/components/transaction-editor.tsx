@@ -1,14 +1,11 @@
 import { router } from '@inertiajs/react';
-import Check from 'lucide-react/dist/esm/icons/check.js';
-import Search from 'lucide-react/dist/esm/icons/search.js';
 import { useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
 import type { CategoryOptionLite } from '@/components/add-transaction-sheet';
-import { CategoryIcon } from '@/components/category-icon';
+import { CategoryOptionList } from '@/components/category-picker';
+import type { PickerCategory, PickerGroup } from '@/components/category-picker';
 import type { TagColorOption, TagOption } from '@/components/tag-chip';
 import { TransactionTagPicker } from '@/components/transaction-tag-picker';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export type EditableTransaction = {
     id: number;
@@ -30,7 +27,7 @@ function sameIds(left: number[], right: number[]): boolean {
     );
 }
 
-/** Searchable category list: type to filter, click to pick. */
+/** The editor's category list: income first for money in, with spending as money back. */
 function CategoryList({
     options,
     selectedId,
@@ -39,120 +36,31 @@ function CategoryList({
 }: {
     options: { expense: CategoryOptionLite[]; income: CategoryOptionLite[] };
     selectedId: number | null;
-    onSelect: (option: CategoryOptionLite) => void;
-    /** Money coming in: income first, spending categories offered as money back. */
+    onSelect: (option: PickerCategory) => void;
     incoming?: boolean;
 }) {
-    const [query, setQuery] = useState('');
-    const groups = useMemo(() => {
-        const needle = query.trim().toLowerCase();
+    const groups = useMemo<PickerGroup[]>(() => {
+        const expense = {
+            key: 'expense',
+            label: incoming ? 'Money back · lowers spending' : 'Expense',
+            options: options.expense,
+        };
+        const income = {
+            key: 'income',
+            label: 'Income',
+            options: options.income,
+        };
 
-        const order = incoming
-            ? (['income', 'expense'] as const)
-            : (['expense', 'income'] as const);
-
-        return order.map((type) => ({
-            type,
-            items:
-                needle === ''
-                    ? options[type]
-                    : options[type].filter((option) =>
-                          option.path.toLowerCase().includes(needle),
-                      ),
-        }));
-    }, [options, query, incoming]);
+        return incoming ? [income, expense] : [expense, income];
+    }, [options, incoming]);
 
     return (
-        <div className="rounded-xl border border-border bg-card">
-            <div className="flex items-center gap-2 border-b border-border px-3">
-                <Search
-                    className="size-4 text-muted-foreground"
-                    strokeWidth={1.75}
-                />
-                <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search categories"
-                    aria-label="Search categories"
-                    className="h-11 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
-                />
-            </div>
-            <div className="max-h-64 overflow-y-auto p-1.5">
-                {groups.map((group) =>
-                    group.items.length === 0 ? null : (
-                        <div key={group.type} className="mb-1">
-                            <p className="px-2.5 pt-2 pb-1 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                                {group.type === 'income'
-                                    ? 'Income'
-                                    : incoming
-                                      ? 'Money back · lowers spending'
-                                      : 'Expense'}
-                            </p>
-                            {group.items.map((option) => {
-                                const selected = option.id === selectedId;
-
-                                return (
-                                    <button
-                                        key={option.id}
-                                        type="button"
-                                        onClick={() => onSelect(option)}
-                                        className={cn(
-                                            'flex min-h-10 w-full items-center gap-2.5 rounded-lg pr-2.5 text-left text-[15px]',
-                                            selected
-                                                ? 'bg-accent text-accent-foreground'
-                                                : 'text-foreground hover:bg-muted',
-                                        )}
-                                        style={{
-                                            paddingLeft: `${0.625 + (query.trim() === '' ? (option.depth ?? 0) * 1.25 : 0)}rem`,
-                                        }}
-                                    >
-                                        <span
-                                            className={
-                                                option.tint
-                                                    ? 'text-[color-mix(in_srgb,var(--tint)_70%,black)] dark:text-[var(--tint)]'
-                                                    : 'text-muted-foreground'
-                                            }
-                                            style={
-                                                option.tint
-                                                    ? ({
-                                                          '--tint': option.tint,
-                                                      } as CSSProperties)
-                                                    : undefined
-                                            }
-                                        >
-                                            <CategoryIcon
-                                                name={option.icon}
-                                                iconSize={16}
-                                                strokeWidth={1.75}
-                                            />
-                                        </span>
-                                        <span className="flex-1 truncate">
-                                            {query.trim() === ''
-                                                ? option.name
-                                                : option.path.replaceAll(
-                                                      ' / ',
-                                                      ' › ',
-                                                  )}
-                                        </span>
-                                        {selected ? (
-                                            <Check
-                                                className="size-4"
-                                                strokeWidth={2}
-                                            />
-                                        ) : null}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ),
-                )}
-                {groups.every((group) => group.items.length === 0) ? (
-                    <p className="px-2.5 py-3 text-[15px] text-muted-foreground">
-                        No category matches “{query}”.
-                    </p>
-                ) : null}
-            </div>
-        </div>
+        <CategoryOptionList
+            groups={groups}
+            selectedId={selectedId}
+            onSelect={(option) => (option ? onSelect(option) : undefined)}
+            className="max-h-80 rounded-xl border border-border bg-card"
+        />
     );
 }
 

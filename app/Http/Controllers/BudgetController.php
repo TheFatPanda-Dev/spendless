@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Services\Reports\MonthlySpending;
+use App\Support\Categories\CategoryOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,7 @@ class BudgetController extends Controller
             ->whereNull('parent_id')
             ->where('type', 'expense')
             ->orderBy('name')
-            ->get(['id', 'name', 'icon']);
+            ->get(['id', 'name', 'icon', 'color']);
 
         return Inertia::render('budgets/index', [
             'month' => ['start' => $from->toDateString(), 'end' => $to->toDateString()],
@@ -42,7 +43,7 @@ class BudgetController extends Controller
                 ->values(),
             'options' => $mainExpense
                 ->reject(fn (Category $category): bool => in_array($category->id, $budgeted, true))
-                ->map(fn (Category $category): array => ['id' => $category->id, 'name' => $category->name, 'icon' => $category->icon])
+                ->map(fn (Category $category): array => ['id' => $category->id, 'name' => $category->name, 'icon' => $category->icon, 'tint' => CategoryOptions::tint($category->color)])
                 ->values(),
         ]);
     }
