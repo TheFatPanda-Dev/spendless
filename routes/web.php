@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AssetAccountController;
 use App\Http\Controllers\Auth\GithubAuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Auth\OAuthRegistrationController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Banking\EnableBankingConnectionController;
 use App\Http\Controllers\Banking\PlaidConnectionController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IbkrConnectionController;
 use App\Http\Controllers\StatementImportController;
@@ -51,6 +53,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('accounts.transactions.manual.store');
     Route::patch('accounts/{bankAccount}/transactions/{bankTransaction}', [BankAccountController::class, 'update'])
         ->name('accounts.transactions.update');
+
+    Route::get('activity', ActivityController::class)->name('activity.index');
+    Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::post('budgets', [BudgetController::class, 'store'])->name('budgets.store');
+    Route::delete('budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     Route::get('tags', [TagController::class, 'index'])->name('tags.index');
     Route::post('tags', [TagController::class, 'store'])->name('tags.store');

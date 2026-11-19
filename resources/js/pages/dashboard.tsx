@@ -1,758 +1,694 @@
-import { Head, Link, router } from '@inertiajs/react';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right.js';
-import Building2 from 'lucide-react/dist/esm/icons/building-2.js';
-import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days.js';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
+import { Head, Link } from '@inertiajs/react';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2.js';
+import Plus from 'lucide-react/dist/esm/icons/plus.js';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw.js';
+import TriangleAlert from 'lucide-react/dist/esm/icons/triangle-alert.js';
 import { useCallback, useState } from 'react';
 import AddNewWalletMenu from '@/components/add-new-wallet-menu';
+import { AddTransactionSheet } from '@/components/add-transaction-sheet';
+import type { AddTransactionOptions } from '@/components/add-transaction-sheet';
 import BankAlertsBanner from '@/components/bank-alerts-banner';
+import BankLogo from '@/components/bank-logo';
+import {
+    BudgetRing,
+    IconTile,
+    MonthPicker,
+    PageHeader,
+    Panel,
+    StackedBar,
+    seriesColor,
+    useLocale,
+} from '@/components/kit';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useBankAccountLinkedRefresh } from '@/hooks/use-bank-account-linked-refresh';
 import { useSyncAllConnections } from '@/hooks/use-sync-all-connections';
 import AppLayout from '@/layouts/app-layout';
 import { openBankPopup } from '@/lib/bank-popup';
-import {
-    buildDashboardHref,
-    formatDisplayDate,
-    shiftMonthRange,
-} from '@/lib/date-filters';
-import { dashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
+import { formatDay, formatMonth, formatMoney } from '@/lib/money';
+import { cn } from '@/lib/utils';
 
-type DashboardAccount = {
+type Month = { start: string; end: string };
+
+type BudgetLine = {
     id: number;
-    display_name: string | null;
+    amount: number;
+    spent: number;
+    left: number;
+    percent: number;
+};
+
+type CategorySpend = {
+    id: number | null;
+    name: string;
+    icon: string;
+    amount: number;
+    other?: boolean;
+};
+
+type RecentTransaction = {
+    id: number;
+    account_id: number;
+    account: string | null;
     name: string | null;
-    official_name: string | null;
-    institution_name: string | null;
-    mask: string | null;
-    type: string | null;
-    subtype: string | null;
+    merchant_name: string | null;
+    counterparty: string | null;
+    category: string;
+    category_icon: string;
+    category_type: 'expense' | 'income';
+    amount: number;
     currency: string;
-    current_balance: number;
-    available_balance: number | null;
+    date: string | null;
+    pending: boolean;
+};
+
+type WalletRow = {
+    id: number;
+    wallet_id: number | null;
+    name: string;
+    institution: string | null;
+    logo: string | null;
+    provider: string | null;
+    status: string | null;
+    mask: string | null;
+    currency: string;
+    balance: number;
     last_synced_at: string | null;
 };
 
-type DashboardFilters = {
-    start_date: string;
-    end_date: string;
-};
-
-type DashboardExchangeRates = {
-    eur_per_unit: Record<string, number>;
-};
-
-type DashboardPeriodBreakdown = {
-    change_by_currency: Record<string, number>;
-    expenses_by_currency: Record<string, number>;
-    income_by_currency: Record<string, number>;
-};
-
 type Props = {
-    accounts: DashboardAccount[];
-    filters: DashboardFilters;
-    base_currency: string;
-    number_locale: string;
-    exchange_rates: DashboardExchangeRates;
-    period_breakdown: DashboardPeriodBreakdown;
+    month: Month;
+    baseCurrency: string;
+    budget: BudgetLine | null;
+    spent: number;
+    income: number;
+    categories: CategorySpend[];
+    overBudget: Array<{ name: string; category_id: number; over: number }>;
+    recent: RecentTransaction[];
+    wallets: WalletRow[];
+    netWorth: {
+        by_currency: Array<{ currency: string; amount: number }>;
+        total: number;
+    };
+    addTransaction: AddTransactionOptions;
 };
 
-const dashboardShellClasses =
-    'relative flex h-full flex-1 flex-col gap-6 overflow-x-hidden rounded-[28px] border border-brand/25 bg-linear-to-br from-brand/12 via-card to-card p-3 shadow-[0_32px_90px_-54px_rgba(16,185,129,0.42)] sm:p-5 lg:p-7 dark:border-brand/20 dark:from-brand/12 dark:via-card dark:to-card dark:shadow-none';
+const REFRESH_PROPS = [
+    'budget',
+    'spent',
+    'income',
+    'categories',
+    'overBudget',
+    'recent',
+    'wallets',
+    'netWorth',
+    'bankAlerts',
+];
 
-const dashboardPanelClasses =
-    'rounded-2xl border border-brand/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,250,247,0.98))] shadow-[0_14px_36px_-24px_rgba(15,23,42,0.18)] dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card dark:shadow-[0_16px_36px_-24px_rgba(2,6,23,0.85)]';
+function leaf(path: string): string {
+    const parts = path.split(' / ');
 
-const dashboardControlClasses =
-    'border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,251,249,0.98))] text-foreground shadow-sm hover:bg-brand/6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card dark:text-foreground dark:hover:bg-card';
-
-const DEFAULT_EUR_PER_UNIT: Record<string, number> = {
-    EUR: 1,
-    GBP: 1.17,
-    USD: 0.92,
-};
-
-const DEFAULT_BASE_CURRENCY = 'EUR';
-
-function normalizeCurrencyCode(currency: string | null | undefined): string {
-    return (currency ?? DEFAULT_BASE_CURRENCY).toUpperCase();
+    return parts[parts.length - 1] ?? path;
 }
 
-function convertAmount(
-    amount: number,
-    fromCurrency: string,
-    toCurrency: string,
-    eurPerUnit: Record<string, number>,
-): number {
-    const normalizedFrom = normalizeCurrencyCode(fromCurrency);
-    const normalizedTo = normalizeCurrencyCode(toCurrency);
-    const fromRate = eurPerUnit[normalizedFrom];
-    const toRate = eurPerUnit[normalizedTo];
+function activityHref(
+    month: Month,
+    extra: Record<string, string | number> = {},
+): string {
+    const query = new URLSearchParams({
+        start_date: month.start,
+        end_date: month.end,
+        ...Object.fromEntries(
+            Object.entries(extra).map(([key, value]) => [key, String(value)]),
+        ),
+    });
 
-    if (!fromRate || !toRate) {
-        return amount;
+    return `/activity?${query.toString()}`;
+}
+
+function payee(transaction: RecentTransaction): string {
+    return (
+        transaction.merchant_name ??
+        transaction.counterparty ??
+        transaction.name ??
+        'Transaction'
+    );
+}
+
+function freshness(wallet: WalletRow, locale: string): string {
+    if (wallet.status === 'needs_reauth') {
+        return 'Reconnect needed';
     }
 
-    const amountInEur = amount * fromRate;
+    if (wallet.status === 'syncing') {
+        return 'Syncing…';
+    }
 
-    return amountInEur / toRate;
+    if (wallet.status === 'sync_failed') {
+        return 'Last sync failed';
+    }
+
+    if (!wallet.last_synced_at) {
+        return wallet.institution ?? '';
+    }
+
+    const when = new Date(wallet.last_synced_at);
+    const sameDay = when.toDateString() === new Date().toDateString();
+    const label = sameDay
+        ? new Intl.DateTimeFormat(locale, {
+              hour: '2-digit',
+              minute: '2-digit',
+          }).format(when)
+        : new Intl.DateTimeFormat(locale, {
+              day: 'numeric',
+              month: 'short',
+          }).format(when);
+
+    return [
+        wallet.institution,
+        wallet.provider === 'import' ? `imported ${label}` : `updated ${label}`,
+    ]
+        .filter(Boolean)
+        .join(' · ');
 }
 
-function convertTotalsByCurrency(
-    totalsByCurrency: Record<string, number>,
-    toCurrency: string,
-    eurPerUnit: Record<string, number>,
-): number {
-    return Object.entries(totalsByCurrency).reduce(
-        (sum, [currency, value]) =>
-            sum + convertAmount(value, currency, toCurrency, eurPerUnit),
-        0,
-    );
-}
+function BudgetHero({
+    month,
+    budget,
+    spent,
+    currency,
+}: {
+    month: Month;
+    budget: BudgetLine | null;
+    spent: number;
+    currency: string;
+}) {
+    const locale = useLocale();
+    const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
 
-function formatCurrency(
-    value: number,
-    currency: string,
-    numberLocale: string,
-): string {
-    const sign = value > 0 ? '+' : '';
-
-    return `${sign}${value.toLocaleString(numberLocale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })} ${currency}`;
-}
-
-function formatNumber(value: number, numberLocale: string): string {
-    return value.toLocaleString(numberLocale);
-}
-
-function applyDateFilter(startDate: string, endDate: string): void {
-    router.get(
-        dashboard(),
-        {
-            start_date: startDate,
-            end_date: endDate,
-        },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            preserveUrl: true,
-            replace: true,
-            showProgress: false,
-            only: ['filters', 'accounts', 'exchange_rates', 'period_breakdown'],
-        },
-    );
-}
-
-export default function Dashboard({
-    accounts,
-    filters,
-    base_currency,
-    number_locale,
-    exchange_rates,
-    period_breakdown,
-}: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Dashboard',
-            href: buildDashboardHref(dashboard()),
-        },
-    ];
-
-    const [connectError, setConnectError] = useState<string | null>(null);
-    const [showPendingNewAccount, setShowPendingNewAccount] = useState(false);
-    const [mobileAccountsOpen, setMobileAccountsOpen] = useState(false);
-    const [selectedMobileAccountId, setSelectedMobileAccountId] = useState<
-        number | null
-    >(accounts[0]?.id ?? null);
-    const previousMonthRange = shiftMonthRange(filters.start_date, -1);
-    const nextMonthRange = shiftMonthRange(filters.start_date, 1);
-
-    const selectedMobileAccount =
-        accounts.find((account) => account.id === selectedMobileAccountId) ??
-        accounts[0] ??
-        null;
-
-    const eurPerUnit = {
-        ...DEFAULT_EUR_PER_UNIT,
-        ...Object.fromEntries(
-            Object.entries(exchange_rates.eur_per_unit).map(
-                ([currency, value]) => [normalizeCurrencyCode(currency), value],
-            ),
-        ),
-    };
-
-    const baseCurrency = normalizeCurrencyCode(base_currency);
-    const numberLocale = number_locale;
-
-    const totalConvertedBalance = accounts.reduce((sum, account) => {
+    if (budget === null) {
         return (
-            sum +
-            convertAmount(
-                account.current_balance,
-                account.currency,
-                baseCurrency,
-                eurPerUnit,
-            )
+            <section className="flex flex-col rounded-card bg-hero p-6 text-hero-foreground tablet:p-8">
+                <h2 className="text-section font-medium">Monthly budget</h2>
+                <p className="mt-6 text-lg text-hero-muted">Spent so far</p>
+                <p className="mt-1 text-[3rem] leading-none font-light tracking-[-0.02em] amount tablet:text-display">
+                    {formatMoney(spent, currency, locale)}
+                </p>
+                <div className="mt-auto border-t border-hero-foreground/15 pt-5">
+                    <p className="text-[15px] text-hero-muted">
+                        No budget for {monthName} yet.
+                    </p>
+                    <Link
+                        href={`/budgets?start_date=${month.start}&end_date=${month.end}`}
+                        className="mt-1 inline-flex items-center gap-0.5 text-[15px] font-medium text-positive hover:underline"
+                    >
+                        Set a monthly budget
+                        <ChevronRight className="size-4" strokeWidth={1.75} />
+                    </Link>
+                </div>
+            </section>
         );
-    }, 0);
+    }
 
-    const convertedPeriodChange = convertTotalsByCurrency(
-        period_breakdown.change_by_currency,
-        baseCurrency,
-        eurPerUnit,
-    );
-    const convertedPeriodExpenses = convertTotalsByCurrency(
-        period_breakdown.expenses_by_currency,
-        baseCurrency,
-        eurPerUnit,
-    );
-    const convertedPeriodIncome = convertTotalsByCurrency(
-        period_breakdown.income_by_currency,
-        baseCurrency,
-        eurPerUnit,
-    );
-
-    const { isRefreshing } = useBankAccountLinkedRefresh({
-        only: [
-            'accounts',
-            'summary',
-            'period_breakdown',
-            'exchange_rates',
-            'bankAlerts',
-        ],
-        onLinked: () => {
-            setShowPendingNewAccount(true);
-        },
-        onRefreshFinished: () => {
-            setShowPendingNewAccount(false);
-        },
-    });
-
-    const {
-        isSyncing,
-        successMessage: syncSuccessMessage,
-        errorMessage: syncErrorMessage,
-        startSyncAll,
-        clearSuccessMessage,
-        clearErrorMessage,
-    } = useSyncAllConnections({
-        only: [
-            'accounts',
-            'summary',
-            'period_breakdown',
-            'exchange_rates',
-            'bankAlerts',
-        ],
-    });
-
-    const handleConnectBank = useCallback((): void => {
-        setConnectError(
-            openBankPopup()
-                ? null
-                : 'Popup was blocked. Please allow popups for this site and try again.',
-        );
-    }, []);
+    const over = budget.left < 0;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+        <section className="flex flex-col rounded-card bg-hero p-6 text-hero-foreground tablet:p-8">
+            <h2 className="text-section font-medium">Monthly budget</h2>
+            <div className="mt-6 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                    <p className="text-lg text-hero-muted">
+                        {over ? 'Over budget by' : 'Left to spend'}
+                    </p>
+                    <p
+                        className={cn(
+                            'mt-1 text-[3rem] leading-none font-light tracking-[-0.02em] amount tablet:text-display',
+                            over && 'text-destructive',
+                        )}
+                    >
+                        {formatMoney(Math.abs(budget.left), currency, locale)}
+                    </p>
+                </div>
+                <BudgetRing percent={budget.percent} size={132} />
+            </div>
+            <div className="mt-7 grid grid-cols-2 gap-6 border-t border-hero-foreground/15 pt-5">
+                <div>
+                    <p className="text-[15px] text-hero-muted">Spent so far</p>
+                    <p className="mt-1 text-[1.75rem] leading-tight font-light amount">
+                        {formatMoney(budget.spent, currency, locale)}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-[15px] text-hero-muted">Budget</p>
+                    <p className="mt-1 text-[1.75rem] leading-tight font-light amount">
+                        {formatMoney(budget.amount, currency, locale)}
+                    </p>
+                </div>
+            </div>
+        </section>
+    );
+}
 
-            <div className={dashboardShellClasses}>
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(16,185,129,0.12)_0%,rgba(16,185,129,0.05)_28%,rgba(16,185,129,0.02)_52%,transparent_78%)] dark:bg-[linear-gradient(180deg,rgba(16,185,129,0.1)_0%,rgba(16,185,129,0.05)_24%,rgba(16,185,129,0.02)_48%,transparent_74%)]" />
-                <div className="pointer-events-none absolute top-0 left-0 h-56 w-full bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.1),transparent_60%)] lg:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_62%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_64%)]" />
-                <div className="pointer-events-none absolute inset-x-[18%] top-12 h-40 bg-[radial-gradient(circle,rgba(16,185,129,0.08),transparent_68%)] blur-2xl dark:bg-[radial-gradient(circle,rgba(16,185,129,0.06),transparent_70%)]" />
+function CategorySpending({
+    month,
+    categories,
+    currency,
+}: {
+    month: Month;
+    categories: CategorySpend[];
+    currency: string;
+}) {
+    const locale = useLocale();
+    const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
 
-                <section className="relative animate-in duration-500 fade-in-0 slide-in-from-top-2">
-                    <div className="mb-4 empty:hidden">
-                        <BankAlertsBanner />
-                    </div>
-
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            Accounts
-                        </h2>
-
-                        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:grid-cols-1 sm:items-center">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className={`w-full sm:w-auto ${dashboardControlClasses}`}
-                                onClick={() => {
-                                    void startSyncAll();
-                                }}
-                                disabled={isSyncing}
-                            >
-                                <RefreshCw
-                                    className={`size-4 ${isSyncing ? 'animate-spin' : ''}`}
-                                />
-                                Sync All
-                            </Button>
-
-                            <AddNewWalletMenu
-                                onConnectBank={handleConnectBank}
-                            />
-                        </div>
-                    </div>
-
-                    {connectError ? (
-                        <div className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                            {connectError}
-                        </div>
-                    ) : null}
-
-                    {syncErrorMessage ? (
-                        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                            <span>{syncErrorMessage}</span>
-                            <button
-                                type="button"
-                                className="text-xs font-semibold"
-                                onClick={clearErrorMessage}
-                            >
-                                Dismiss
-                            </button>
-                        </div>
-                    ) : null}
-
-                    {syncSuccessMessage ? (
-                        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-emerald-300/60 bg-emerald-100/60 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-                            <span>{syncSuccessMessage}</span>
-                            <button
-                                type="button"
-                                className="text-xs font-semibold"
-                                onClick={clearSuccessMessage}
-                            >
-                                Dismiss
-                            </button>
-                        </div>
-                    ) : null}
-
-                    <div className="space-y-3 sm:hidden">
-                        {accounts.length > 0 ? (
-                            <>
-                                {selectedMobileAccount ? (
-                                    <>
-                                        <button
-                                            type="button"
-                                            className={`w-full rounded-2xl border border-brand/30 bg-[linear-gradient(140deg,rgba(3,10,9,0.98),rgba(4,15,13,0.95)_38%,rgba(2,7,8,0.98))] p-4 text-left shadow-[0_18px_48px_-30px_rgba(16,185,129,0.62)] transition hover:border-brand/45 ${dashboardPanelClasses}`}
-                                            onClick={() => {
-                                                setMobileAccountsOpen(
-                                                    (currentOpen) =>
-                                                        !currentOpen,
-                                                );
+    return (
+        <Panel
+            title="Spending by category"
+            action={
+                categories.length > 0 ? (
+                    <Link
+                        href={activityHref(month, { type: 'expense' })}
+                        className="inline-flex items-center gap-0.5 text-[15px] font-medium text-positive hover:underline"
+                    >
+                        Details
+                        <ChevronRight className="size-4" strokeWidth={1.75} />
+                    </Link>
+                ) : null
+            }
+            className="flex flex-col"
+        >
+            {categories.length === 0 ? (
+                <p className="text-base text-muted-foreground">
+                    No expenses in {monthName} yet.
+                </p>
+            ) : (
+                <>
+                    <StackedBar
+                        parts={categories.map((category, index) => ({
+                            key: `${category.id ?? 'x'}-${category.name}`,
+                            amount: category.amount,
+                            color: seriesColor(index, category.other),
+                            label: `${category.name} ${formatMoney(category.amount, currency, locale)}`,
+                        }))}
+                    />
+                    <ul className="mt-5 divide-y divide-border">
+                        {categories.map((category, index) => {
+                            const row = (
+                                <>
+                                    <span className="flex items-center gap-3">
+                                        <span
+                                            className="size-2.5 shrink-0 rounded-full"
+                                            style={{
+                                                backgroundColor: seriesColor(
+                                                    index,
+                                                    category.other,
+                                                ),
                                             }}
-                                            aria-expanded={mobileAccountsOpen}
-                                            aria-controls="mobile-accounts-list"
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <div className="inline-flex items-center rounded-full border border-brand/35 bg-brand/12 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-brand/90">
-                                                        Portfolio Snapshot
-                                                    </div>
-                                                    <p
-                                                        className={`mt-3 text-[2.45rem] leading-none font-semibold tracking-[-0.02em] sm:text-5xl ${
-                                                            totalConvertedBalance >
-                                                            0
-                                                                ? 'text-emerald-600 dark:text-emerald-400'
-                                                                : totalConvertedBalance <
-                                                                    0
-                                                                  ? 'text-[#ff6f61] dark:text-[#ff8b80]'
-                                                                  : 'text-muted-foreground dark:text-slate-400'
-                                                        }`}
-                                                    >
-                                                        {formatCurrency(
-                                                            totalConvertedBalance,
-                                                            baseCurrency,
-                                                            numberLocale,
-                                                        )}
-                                                    </p>
-                                                    <p className="mt-2 text-xs text-slate-400">
-                                                        Open to see all wallets
-                                                        (
-                                                        {formatNumber(
-                                                            accounts.length,
-                                                            numberLocale,
-                                                        )}
-                                                        )
-                                                    </p>
-                                                </div>
-
-                                                <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full border border-brand/35 bg-brand/10">
-                                                    <ChevronDown
-                                                        className={`size-5 text-slate-300 transition-transform duration-300 ${
-                                                            mobileAccountsOpen
-                                                                ? 'rotate-180'
-                                                                : 'rotate-0'
-                                                        }`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </button>
-
-                                        <div
-                                            id="mobile-accounts-list"
-                                            className={`overflow-hidden transition-all duration-300 ease-out ${
-                                                mobileAccountsOpen
-                                                    ? 'max-h-[30rem] opacity-100'
-                                                    : 'max-h-0 opacity-0'
-                                            }`}
-                                        >
-                                            <div className="space-y-2 pt-1">
-                                                {accounts.map((account) => {
-                                                    const title =
-                                                        account.display_name ??
-                                                        account.name ??
-                                                        account.official_name ??
-                                                        'Linked Account';
-                                                    const subtitle =
-                                                        account.institution_name ??
-                                                        account.subtype ??
-                                                        account.type ??
-                                                        'Bank account';
-                                                    const isSelected =
-                                                        selectedMobileAccount.id ===
-                                                        account.id;
-
-                                                    return (
-                                                        <Link
-                                                            key={account.id}
-                                                            href={`/accounts/${account.id}?start_date=${filters.start_date}&end_date=${filters.end_date}`}
-                                                            className={`block w-full rounded-xl border px-3 py-2 text-left transition ${
-                                                                isSelected
-                                                                    ? 'border-brand/40 bg-brand/8'
-                                                                    : 'border-brand/15 bg-card'
-                                                            }`}
-                                                            onClick={() => {
-                                                                setSelectedMobileAccountId(
-                                                                    account.id,
-                                                                );
-                                                                setMobileAccountsOpen(
-                                                                    false,
-                                                                );
-                                                            }}
-                                                        >
-                                                            <div className="flex items-start justify-between gap-3">
-                                                                <p className="truncate text-sm font-medium text-foreground">
-                                                                    {title}
-                                                                </p>
-                                                                <p
-                                                                    className={`shrink-0 text-sm font-semibold ${
-                                                                        convertAmount(
-                                                                            account.current_balance,
-                                                                            account.currency,
-                                                                            baseCurrency,
-                                                                            eurPerUnit,
-                                                                        ) > 0
-                                                                            ? 'text-emerald-600 dark:text-emerald-400'
-                                                                            : convertAmount(
-                                                                                    account.current_balance,
-                                                                                    account.currency,
-                                                                                    baseCurrency,
-                                                                                    eurPerUnit,
-                                                                                ) <
-                                                                                0
-                                                                              ? 'text-[#ff6f61] dark:text-[#ff8b80]'
-                                                                              : 'text-muted-foreground dark:text-slate-400'
-                                                                    }`}
-                                                                >
-                                                                    {formatCurrency(
-                                                                        convertAmount(
-                                                                            account.current_balance,
-                                                                            account.currency,
-                                                                            baseCurrency,
-                                                                            eurPerUnit,
-                                                                        ),
-                                                                        baseCurrency,
-                                                                        numberLocale,
-                                                                    )}
-                                                                </p>
-                                                            </div>
-                                                            <div className="mt-0.5 flex items-center justify-between gap-3">
-                                                                <p className="truncate text-xs text-muted-foreground">
-                                                                    {subtitle}
-                                                                    {account.mask
-                                                                        ? ` • **** ${account.mask}`
-                                                                        : ''}
-                                                                </p>
-                                                                {normalizeCurrencyCode(
-                                                                    account.currency,
-                                                                ) !==
-                                                                baseCurrency ? (
-                                                                    <p className="shrink-0 text-[11px] text-muted-foreground">
-                                                                        {formatCurrency(
-                                                                            account.current_balance,
-                                                                            account.currency,
-                                                                            numberLocale,
-                                                                        )}
-                                                                    </p>
-                                                                ) : null}
-                                                            </div>
-                                                        </Link>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : null}
-                            </>
-                        ) : null}
-                    </div>
-
-                    <div className="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-4">
-                        {showPendingNewAccount && isRefreshing ? (
-                            <Card className="gap-0 rounded-2xl border border-dashed border-emerald-300/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,252,247,0.98))] py-4 dark:border-emerald-700/45 dark:bg-linear-to-br dark:from-emerald-500/8 dark:via-card dark:to-card">
-                                <CardContent className="flex items-center gap-3 px-4">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                        <Loader2 className="size-5 animate-spin" />
-                                    </div>
-
-                                    <div className="min-w-0">
-                                        <p className="truncate text-[15px] font-medium text-foreground">
-                                            Syncing new account...
-                                        </p>
-                                        <p className="truncate text-xs text-muted-foreground">
-                                            Importing balances and latest
-                                            transactions
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ) : null}
-
-                        {accounts.map((account, index) => {
-                            const title =
-                                account.display_name ??
-                                account.name ??
-                                account.official_name ??
-                                'Linked Account';
-                            const subtitle =
-                                account.institution_name ??
-                                account.subtype ??
-                                account.type ??
-                                'Bank account';
+                                            aria-hidden
+                                        />
+                                        {category.name}
+                                    </span>
+                                    <span className="amount">
+                                        {formatMoney(
+                                            category.amount,
+                                            currency,
+                                            locale,
+                                        )}
+                                    </span>
+                                </>
+                            );
 
                             return (
-                                <Link
-                                    key={account.id}
-                                    href={`/accounts/${account.id}?start_date=${filters.start_date}&end_date=${filters.end_date}`}
-                                    className="block"
+                                <li
+                                    key={`${category.id ?? 'x'}-${category.name}`}
                                 >
-                                    <Card
-                                        className={`gap-0 py-4 transition hover:-translate-y-0.5 hover:border-brand/35 ${dashboardPanelClasses}`}
-                                        style={{
-                                            animationDelay: `${index * 40}ms`,
-                                        }}
-                                    >
-                                        <CardContent className="flex items-center gap-3 px-4">
-                                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                                <Building2 className="size-5" />
-                                            </div>
-
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-[15px] leading-tight font-medium break-words text-foreground">
-                                                    {title}
-                                                </p>
-                                                <p className="mt-1 text-xs break-words text-muted-foreground">
-                                                    {subtitle}
-                                                    {account.mask
-                                                        ? ` • **** ${account.mask}`
-                                                        : ''}
-                                                </p>
-                                                <p
-                                                    className={`mt-2 text-xl leading-none font-semibold tracking-tight ${
-                                                        convertAmount(
-                                                            account.current_balance,
-                                                            account.currency,
-                                                            baseCurrency,
-                                                            eurPerUnit,
-                                                        ) > 0
-                                                            ? 'text-emerald-600 dark:text-emerald-400'
-                                                            : convertAmount(
-                                                                    account.current_balance,
-                                                                    account.currency,
-                                                                    baseCurrency,
-                                                                    eurPerUnit,
-                                                                ) < 0
-                                                              ? 'text-[#ff6f61] dark:text-[#ff8b80]'
-                                                              : 'text-muted-foreground dark:text-slate-400'
-                                                    }`}
-                                                >
-                                                    {formatCurrency(
-                                                        convertAmount(
-                                                            account.current_balance,
-                                                            account.currency,
-                                                            baseCurrency,
-                                                            eurPerUnit,
-                                                        ),
-                                                        baseCurrency,
-                                                        numberLocale,
-                                                    )}
-                                                </p>
-                                                {normalizeCurrencyCode(
-                                                    account.currency,
-                                                ) !== baseCurrency ? (
-                                                    <p className="mt-1 text-[11px] text-muted-foreground">
-                                                        {formatCurrency(
-                                                            account.current_balance,
-                                                            account.currency,
-                                                            numberLocale,
-                                                        )}
-                                                    </p>
-                                                ) : null}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </Link>
+                                    {category.id !== null ? (
+                                        <Link
+                                            href={activityHref(month, {
+                                                type: 'expense',
+                                                category: category.id,
+                                            })}
+                                            className="-mx-2 flex min-h-11 items-center justify-between gap-4 rounded-lg px-2 text-base text-foreground hover:bg-muted"
+                                        >
+                                            {row}
+                                        </Link>
+                                    ) : (
+                                        <div className="flex min-h-11 items-center justify-between gap-4 text-base text-foreground">
+                                            {row}
+                                        </div>
+                                    )}
+                                </li>
                             );
                         })}
+                    </ul>
+                </>
+            )}
+        </Panel>
+    );
+}
 
-                        {accounts.length === 0 && (
-                            <Card className="col-span-full gap-0 rounded-2xl border border-dashed border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,247,0.9))] py-6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card">
-                                <CardContent className="px-4 text-center text-sm text-muted-foreground">
-                                    No connected bank accounts yet. Use Add New
-                                    Wallet to connect your bank or add a cash
-                                    wallet.
-                                </CardContent>
-                            </Card>
-                        )}
+function RecentActivity({
+    month,
+    transactions,
+}: {
+    month: Month;
+    transactions: RecentTransaction[];
+}) {
+    const locale = useLocale();
+    const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
+
+    return (
+        <Panel
+            title="Recent activity"
+            action={
+                <Link
+                    href={activityHref(month)}
+                    className="inline-flex items-center gap-0.5 text-[15px] font-medium text-positive hover:underline"
+                >
+                    View all activity
+                    <ChevronRight className="size-4" strokeWidth={1.75} />
+                </Link>
+            }
+        >
+            {transactions.length === 0 ? (
+                <p className="text-base text-muted-foreground">
+                    Nothing in {monthName} yet.
+                </p>
+            ) : (
+                <div className="-mx-1">
+                    <div className="hidden grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 border-b border-border px-1 pb-3 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase tablet:grid">
+                        <span>Transaction</span>
+                        <span>Category</span>
+                        <span>Date</span>
+                        <span className="text-right">Amount</span>
                     </div>
+                    <ul className="divide-y divide-border">
+                        {transactions.map((transaction) => {
+                            const income = transaction.amount > 0;
 
-                    {accounts.length === 0 && (
-                        <div className="sm:hidden">
-                            <Card className="col-span-full gap-0 rounded-2xl border border-dashed border-brand/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,247,0.9))] py-6 dark:border-brand/15 dark:bg-linear-to-br dark:from-brand/6 dark:via-card dark:to-card">
-                                <CardContent className="px-4 text-center text-sm text-muted-foreground">
-                                    No connected bank accounts yet. Use Add New
-                                    Wallet to connect your bank or add a cash
-                                    wallet.
-                                </CardContent>
-                            </Card>
-                        </div>
+                            return (
+                                <li key={transaction.id}>
+                                    <Link
+                                        href={activityHref(month, {
+                                            focus: transaction.id,
+                                        })}
+                                        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 rounded-lg px-1 py-3 hover:bg-muted/60 tablet:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]"
+                                    >
+                                        <span className="flex min-w-0 items-center gap-4 tablet:col-auto">
+                                            <IconTile
+                                                icon={transaction.category_icon}
+                                                income={income}
+                                            />
+                                            <span className="min-w-0">
+                                                <span className="block truncate text-base font-medium text-foreground">
+                                                    {payee(transaction)}
+                                                </span>
+                                                <span className="block truncate text-sm text-muted-foreground tablet:hidden">
+                                                    {leaf(transaction.category)}
+                                                    {transaction.pending
+                                                        ? ' · pending'
+                                                        : ''}
+                                                </span>
+                                            </span>
+                                        </span>
+                                        <span className="hidden truncate text-base text-muted-foreground tablet:block">
+                                            {leaf(transaction.category)}
+                                            {transaction.pending
+                                                ? ' · pending'
+                                                : ''}
+                                        </span>
+                                        <span className="hidden text-base text-muted-foreground tablet:block">
+                                            {transaction.date
+                                                ? formatDay(
+                                                      transaction.date,
+                                                      locale,
+                                                  )
+                                                : ''}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                'text-right text-base font-medium amount',
+                                                income
+                                                    ? 'text-positive'
+                                                    : 'text-foreground',
+                                            )}
+                                        >
+                                            {formatMoney(
+                                                transaction.amount,
+                                                transaction.currency,
+                                                locale,
+                                                'always',
+                                            )}
+                                        </span>
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
+        </Panel>
+    );
+}
+
+function Wallets({
+    wallets,
+    netWorth,
+    baseCurrency,
+}: {
+    wallets: WalletRow[];
+    netWorth: Props['netWorth'];
+    baseCurrency: string;
+}) {
+    const locale = useLocale();
+    const [popupBlocked, setPopupBlocked] = useState(false);
+    const { isSyncing, successMessage, errorMessage, startSyncAll } =
+        useSyncAllConnections({ only: REFRESH_PROPS });
+    const { isRefreshing } = useBankAccountLinkedRefresh({
+        only: REFRESH_PROPS,
+    });
+    const connectBank = useCallback((): void => {
+        setPopupBlocked(!openBankPopup());
+    }, []);
+    const multiCurrency = netWorth.by_currency.length > 1;
+
+    return (
+        <Panel
+            title="Wallets"
+            action={
+                <div className="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 rounded-lg border-control/70 px-3.5 text-[15px]"
+                        onClick={() => void startSyncAll()}
+                        disabled={isSyncing}
+                    >
+                        {isSyncing ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="size-4" strokeWidth={1.75} />
+                        )}
+                        <span className="hidden sm:inline">
+                            {isSyncing ? 'Syncing…' : 'Sync all'}
+                        </span>
+                    </Button>
+                    <AddNewWalletMenu onConnectBank={connectBank} />
+                </div>
+            }
+        >
+            <div className="mb-5 flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                {netWorth.by_currency.map((row) => (
+                    <p
+                        key={row.currency}
+                        className="text-[1.75rem] leading-tight font-light text-foreground amount"
+                    >
+                        {formatMoney(row.amount, row.currency, locale)}
+                    </p>
+                ))}
+                {multiCurrency ? (
+                    <p className="text-[15px] text-muted-foreground">
+                        about{' '}
+                        {formatMoney(netWorth.total, baseCurrency, locale)} in
+                        total
+                    </p>
+                ) : null}
+            </div>
+
+            {successMessage || errorMessage || popupBlocked || isRefreshing ? (
+                <p
+                    role="status"
+                    className={cn(
+                        'mb-4 rounded-lg px-3 py-2 text-[15px]',
+                        errorMessage || popupBlocked
+                            ? 'bg-error-surface text-destructive'
+                            : 'bg-hero text-hero-foreground',
                     )}
-                </section>
+                >
+                    {popupBlocked
+                        ? 'Your browser blocked the bank window. Allow pop-ups for this site and try again.'
+                        : (errorMessage ??
+                          successMessage ??
+                          'Loading your new account…')}
+                </p>
+            ) : null}
 
-                <section className="relative animate-in duration-500 fade-in-0 [animation-delay:120ms] slide-in-from-bottom-2">
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            Current Period
-                        </h2>
-
-                        <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-start">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className={`size-9 rounded-xl ${dashboardControlClasses}`}
-                                onClick={() => {
-                                    applyDateFilter(
-                                        previousMonthRange.startDate,
-                                        previousMonthRange.endDate,
-                                    );
-                                }}
+            {wallets.length === 0 ? (
+                <p className="text-base text-muted-foreground">
+                    No wallets yet. Connect a bank, import a statement or add a
+                    cash wallet.
+                </p>
+            ) : (
+                <ul className="grid grid-cols-[minmax(0,1fr)] gap-x-8 desk:grid-cols-[repeat(2,minmax(0,1fr))]">
+                    {wallets.map((wallet) => (
+                        <li
+                            key={wallet.id}
+                            className="border-b border-border last:border-b-0 desk:[&:nth-last-child(2):nth-child(odd)]:border-b-0"
+                        >
+                            <Link
+                                href={`/accounts/${wallet.id}`}
+                                className="-mx-2 flex min-h-16 items-center gap-4 rounded-lg px-2 py-3 hover:bg-muted/60"
                             >
-                                <ArrowLeft className="size-4" />
-                            </Button>
-
-                            <div
-                                className={`flex min-w-57.5 items-center gap-2 rounded-xl border px-3 py-2 text-sm shadow-sm ${dashboardControlClasses}`}
-                            >
-                                <CalendarDays className="size-4 text-muted-foreground" />
-                                <span>
-                                    {formatDisplayDate(
-                                        filters.start_date,
-                                        numberLocale,
-                                    )}{' '}
-                                    -{' '}
-                                    {formatDisplayDate(
-                                        filters.end_date,
-                                        numberLocale,
+                                <BankLogo
+                                    src={wallet.logo}
+                                    name={wallet.institution ?? wallet.name}
+                                    className="size-10 rounded-xl"
+                                />
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-base font-medium text-foreground">
+                                        {wallet.name}
+                                        {wallet.mask ? (
+                                            <span className="font-normal text-muted-foreground">
+                                                {' '}
+                                                ··{wallet.mask.slice(-4)}
+                                            </span>
+                                        ) : null}
+                                    </span>
+                                    <span
+                                        className={cn(
+                                            'flex items-center gap-1.5 truncate text-sm',
+                                            wallet.status === 'needs_reauth' ||
+                                                wallet.status === 'sync_failed'
+                                                ? 'text-warning'
+                                                : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {wallet.status === 'needs_reauth' ||
+                                        wallet.status === 'sync_failed' ? (
+                                            <TriangleAlert
+                                                className="size-3.5 shrink-0"
+                                                strokeWidth={1.75}
+                                            />
+                                        ) : null}
+                                        {freshness(wallet, locale)}
+                                    </span>
+                                </span>
+                                <span className="text-right text-base font-medium text-foreground amount">
+                                    {formatMoney(
+                                        wallet.balance,
+                                        wallet.currency,
+                                        locale,
                                     )}
                                 </span>
-                            </div>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </Panel>
+    );
+}
 
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className={`size-9 rounded-xl ${dashboardControlClasses}`}
-                                onClick={() => {
-                                    applyDateFilter(
-                                        nextMonthRange.startDate,
-                                        nextMonthRange.endDate,
-                                    );
-                                }}
-                            >
-                                <ArrowRight className="size-4" />
-                            </Button>
-                        </div>
+export default function Dashboard(props: Props) {
+    const locale = useLocale();
+    const [adding, setAdding] = useState(false);
+    const { month, baseCurrency } = props;
+    const monthName = formatMonth(month.start, locale, 'long').split(' ')[0];
+
+    return (
+        <AppLayout>
+            <Head title="Overview" />
+
+            <PageHeader
+                title="Overview"
+                actions={
+                    <>
+                        <MonthPicker month={month} />
+                        <Button
+                            type="button"
+                            onClick={() => setAdding(true)}
+                            className="h-11 rounded-lg px-5 text-[15px] font-medium"
+                        >
+                            <Plus className="size-5" strokeWidth={1.75} />
+                            Add transaction
+                        </Button>
+                    </>
+                }
+            />
+
+            <div className="space-y-5 desk:space-y-6">
+                <BankAlertsBanner />
+
+                {props.overBudget.map((line) => (
+                    <div
+                        key={line.category_id}
+                        role="status"
+                        className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl bg-warning-surface px-4 py-3 text-[15px] text-warning"
+                    >
+                        <span className="flex items-center gap-2">
+                            <TriangleAlert
+                                className="size-4 shrink-0"
+                                strokeWidth={1.75}
+                            />
+                            {line.name} is{' '}
+                            {formatMoney(line.over, baseCurrency, locale)} over
+                            its {monthName} budget.
+                        </span>
+                        <Link
+                            href={activityHref(month, {
+                                type: 'expense',
+                                category: line.category_id,
+                            })}
+                            className="inline-flex items-center gap-0.5 font-medium hover:underline"
+                        >
+                            Review {line.name.toLowerCase()} expenses
+                            <ChevronRight
+                                className="size-4"
+                                strokeWidth={1.75}
+                            />
+                        </Link>
                     </div>
+                ))}
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <div
-                            className={`hidden rounded-xl p-4 sm:block ${dashboardPanelClasses}`}
-                        >
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Current Wallet Balance
-                            </p>
-                            <p className="mt-1 text-4xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
-                                {formatCurrency(
-                                    totalConvertedBalance,
-                                    baseCurrency,
-                                    numberLocale,
-                                )}
-                            </p>
-                        </div>
+                <div className="grid gap-5 desk:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] desk:gap-6">
+                    <BudgetHero
+                        month={month}
+                        budget={props.budget}
+                        spent={props.spent}
+                        currency={baseCurrency}
+                    />
+                    <CategorySpending
+                        month={month}
+                        categories={props.categories}
+                        currency={baseCurrency}
+                    />
+                </div>
 
-                        <div
-                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
-                        >
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Total Period Income
-                            </p>
-                            <p className="mt-1 text-4xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
-                                {formatCurrency(
-                                    convertedPeriodIncome,
-                                    baseCurrency,
-                                    numberLocale,
-                                )}
-                            </p>
-                        </div>
+                <RecentActivity month={month} transactions={props.recent} />
 
-                        <div
-                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
-                        >
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Total Period Expenses
-                            </p>
-                            <p className="mt-1 text-4xl font-semibold tracking-tight text-[#ff6f61] dark:text-[#ff8b80]">
-                                {formatCurrency(
-                                    convertedPeriodExpenses,
-                                    baseCurrency,
-                                    numberLocale,
-                                )}
-                            </p>
-                        </div>
-
-                        <div
-                            className={`rounded-xl p-4 ${dashboardPanelClasses}`}
-                        >
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Total Period Change
-                            </p>
-                            <p className="mt-1 text-4xl font-semibold tracking-tight text-amber-500 dark:text-amber-400">
-                                {formatCurrency(
-                                    convertedPeriodChange,
-                                    baseCurrency,
-                                    numberLocale,
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                </section>
+                <Wallets
+                    wallets={props.wallets}
+                    netWorth={props.netWorth}
+                    baseCurrency={baseCurrency}
+                />
             </div>
+
+            <AddTransactionSheet
+                open={adding}
+                onOpenChange={setAdding}
+                options={props.addTransaction}
+                from="overview"
+            />
         </AppLayout>
     );
 }

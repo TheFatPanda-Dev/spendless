@@ -15,9 +15,9 @@ export default function BankLogo({
     if (!src || failed) {
         return (
             <span
-                className={`flex shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300 ${className}`}
+                className={`flex shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground ${className}`}
             >
-                <Landmark className="size-4" />
+                <Landmark className="size-5" strokeWidth={1.75} />
             </span>
         );
     }
@@ -29,7 +29,7 @@ export default function BankLogo({
             aria-hidden="true"
             loading="lazy"
             onError={() => setFailed(true)}
-            className={`shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-1 dark:border-slate-700 ${className}`}
+            className={`shrink-0 rounded-xl border border-border bg-white object-contain p-1 ${className}`}
             title={name}
         />
     );

@@ -23,3 +23,7 @@
 /.prettierignore
 /eslint.config.js
 /pint.json
+/design/
+/.impeccable/
+/PRODUCT.md
+/DESIGN.md

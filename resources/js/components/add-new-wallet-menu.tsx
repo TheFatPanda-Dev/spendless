@@ -80,10 +80,10 @@ export default function AddNewWalletMenu({
                 <DropdownMenuTrigger asChild>
                     <Button
                         variant="outline"
-                        className="w-full border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto dark:border-slate-200 dark:bg-white dark:text-slate-700"
+                        className="h-11 rounded-lg px-3.5 text-[15px] font-normal"
                     >
-                        <Plus className="size-4" />
-                        Add New Wallet
+                        <Plus className="size-4" strokeWidth={1.75} />
+                        Add wallet
                     </Button>
                 </DropdownMenuTrigger>
 

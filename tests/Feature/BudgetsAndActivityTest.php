@@ -1,0 +1,195 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\BankAccount;
+use App\Models\BankConnection;
+use App\Models\BankTransaction;
+use App\Models\Budget;
+use App\Models\Category;
+use App\Models\Tag;
+use App\Models\User;
+use App\Models\Wallet;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
+
+class BudgetsAndActivityTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const MONTH = ['start_date' => '2026-11-01', 'end_date' => '2026-11-30'];
+
+    public function test_the_overview_leads_with_what_is_left_of_the_monthly_budget(): void
+    {
+        [$user, $account] = $this->owner();
+        $groceries = $this->category($user, 'Groceries');
+        $dining = $this->category($user, 'Food & Drink');
+        $this->transaction($account, 'Hofer', -300, $groceries);
+        $this->transaction($account, 'Gostilna', -165.40, $dining);
+        $this->transaction($account, 'Salary', 2500, $this->category($user, 'Wages & Salary', 'income'));
+        $this->transaction($account, 'Opening balance', 900, null, 'manual-opening-balance-1');
+
+        $this->actingAs($user)->post(route('budgets.store'), ['amount' => '2000'])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post(route('budgets.store'), ['category_id' => $dining->id, 'amount' => '150'])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->get(route('dashboard', self::MONTH))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('budget.amount', 2000)
+                ->where('budget.spent', 465.4)
+                ->where('budget.left', 1534.6)
+                ->where('budget.percent', 23)
+                ->where('income', 2500, 'Opening balances are not income.')
+                ->where('categories.0.name', 'Groceries')
+                ->where('categories.0.amount', 300)
+                ->where('overBudget.0.name', 'Food & Drink')
+                ->where('overBudget.0.over', 15.4)
+                ->has('recent', 3));
+    }
+
+    public function test_saving_the_monthly_budget_again_changes_it_instead_of_adding_another(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)->post(route('budgets.store'), ['amount' => '2000']);
+        $this->actingAs($user)->post(route('budgets.store'), ['amount' => '1800.50']);
+
+        $this->assertSame(1, Budget::query()->count());
+        $this->assertSame('1800.50', Budget::query()->sole()->amount);
+    }
+
+    public function test_only_your_own_main_expense_categories_can_have_a_budget(): void
+    {
+        [$user] = $this->owner();
+        $transport = $this->category($user, 'Transportation');
+        $fuel = Category::query()->create(['user_id' => $user->id, 'parent_id' => $transport->id, 'name' => 'Fuel', 'type' => 'expense', 'icon' => 'fuel', 'color' => 'sky']);
+        $salary = $this->category($user, 'Wages & Salary', 'income');
+        $foreign = $this->category(User::factory()->create(), 'Groceries');
+
+        foreach ([$fuel, $salary, $foreign] as $category) {
+            $this->actingAs($user)->post(route('budgets.store'), ['category_id' => $category->id, 'amount' => '100'])
+                ->assertSessionHasErrors('category_id');
+        }
+
+        $this->actingAs($user)->post(route('budgets.store'), ['category_id' => $transport->id, 'amount' => '0'])
+            ->assertSessionHasErrors('amount');
+        $this->assertSame(0, Budget::query()->count());
+
+        $budget = Budget::query()->create(['user_id' => User::factory()->create()->id, 'amount' => 50]);
+        $this->actingAs($user)->delete(route('budgets.destroy', $budget))->assertNotFound();
+    }
+
+    public function test_the_budgets_page_lists_category_budgets_and_unbudgeted_spending(): void
+    {
+        [$user, $account] = $this->owner();
+        $groceries = $this->category($user, 'Groceries');
+        $housing = $this->category($user, 'Housing');
+        $this->transaction($account, 'Hofer', -80, $groceries);
+        $this->transaction($account, 'Rent', -650, $housing);
+        Budget::query()->create(['user_id' => $user->id, 'category_id' => $groceries->id, 'amount' => 300]);
+
+        $this->actingAs($user)->get(route('budgets.index', self::MONTH))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('budgets/index')
+                ->where('total', null)
+                ->where('spent', 730)
+                ->where('categories.0.name', 'Groceries')
+                ->where('categories.0.left', 220)
+                ->where('unbudgeted.0.name', 'Housing')
+                ->where('options', fn ($options): bool => collect($options)->pluck('name')->all() === ['Housing']));
+    }
+
+    public function test_activity_lists_every_wallet_and_filters_by_type_category_tag_and_text(): void
+    {
+        [$user, $current] = $this->owner();
+        [, $cash] = $this->owner($user, 'Pocket cash');
+        $transport = $this->category($user, 'Transportation');
+        $fuel = Category::query()->create(['user_id' => $user->id, 'parent_id' => $transport->id, 'name' => 'Fuel', 'type' => 'expense', 'icon' => 'fuel', 'color' => 'sky']);
+        $golf = Tag::query()->create(['user_id' => $user->id, 'name' => 'Golf', 'color' => 'sky']);
+        $omv = $this->transaction($current, 'OMV Ljubljana', -45.2, $fuel);
+        $omv->tags()->attach($golf);
+        $this->transaction($cash, 'Market', -12, $this->category($user, 'Groceries'));
+        $this->transaction($current, 'Salary', 2500, $this->category($user, 'Wages & Salary', 'income'));
+        $this->transaction($current, 'October fuel', -30, $fuel, date: '2026-10-28');
+        [, $foreign] = $this->owner(User::factory()->create());
+        $this->transaction($foreign, 'Not mine', -5);
+
+        $page = fn (array $query) => $this->actingAs($user)->get(route('activity.index', [...self::MONTH, ...$query]));
+
+        $page([])->assertInertia(fn (Assert $page) => $page
+            ->component('activity/index')
+            ->has('transactions', 3)
+            ->where('totals.0.in', 2500)
+            ->where('totals.0.out', -57.2));
+        $page(['type' => 'income'])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.name', 'Salary'));
+        $page(['category' => $transport->id])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.name', 'OMV Ljubljana'));
+        $page(['tag' => $golf->id])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.tag_ids', [$golf->id]));
+        $page(['q' => 'market'])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.account', 'Pocket cash'));
+    }
+
+    public function test_editing_from_activity_returns_to_activity(): void
+    {
+        [$user, $account] = $this->owner();
+        $transaction = $this->transaction($account, 'OMV', -45);
+        $fuel = $this->category($user, 'Fuel');
+
+        $this->actingAs($user)
+            ->from(route('activity.index', self::MONTH))
+            ->patch(route('accounts.transactions.update', [$account, $transaction]).'?from=activity', ['category_id' => $fuel->id])
+            ->assertRedirect(route('activity.index', self::MONTH));
+
+        $this->assertSame($fuel->id, $transaction->fresh()->category_id);
+    }
+
+    /**
+     * @return array{User, BankAccount}
+     */
+    private function owner(?User $user = null, string $name = 'Current'): array
+    {
+        $user ??= User::factory()->create();
+        $wallet = Wallet::query()->create(['user_id' => $user->id, 'name' => $name, 'type' => 'cash', 'currency' => 'EUR']);
+        $connection = BankConnection::query()->create([
+            'wallet_id' => $wallet->id,
+            'user_id' => $user->id,
+            'provider' => BankConnection::PROVIDER_MANUAL,
+            'institution_name' => $name,
+            'aspsp_name' => $name,
+            'aspsp_country' => 'ZZ',
+            'state' => 'state-'.uniqid(),
+            'status' => BankConnection::STATUS_CONNECTED,
+        ]);
+
+        return [$user, BankAccount::query()->create([
+            'bank_connection_id' => $connection->id,
+            'external_uid' => 'manual-'.uniqid(),
+            'name' => $name,
+            'display_name' => $name,
+            'currency' => 'EUR',
+            'balances_encrypted' => ['current' => 0, 'available' => 0],
+            'is_active' => true,
+        ])];
+    }
+
+    private function category(User $user, string $name, string $type = 'expense'): Category
+    {
+        return Category::query()->create(['user_id' => $user->id, 'name' => $name, 'type' => $type, 'icon' => 'package', 'color' => 'slate']);
+    }
+
+    private function transaction(BankAccount $account, string $name, float $amount, ?Category $category = null, ?string $uid = null, string $date = '2026-11-10'): BankTransaction
+    {
+        return BankTransaction::query()->create([
+            'bank_connection_id' => $account->bank_connection_id,
+            'bank_account_id' => $account->id,
+            'category_id' => $category?->id,
+            'category_manually_set' => $category !== null,
+            'external_uid' => $uid ?? 'tx-'.uniqid(),
+            'merchant_name' => $name,
+            'name' => $name,
+            'amount' => $amount,
+            'currency' => 'EUR',
+            'date' => $date,
+            'pending' => false,
+        ]);
+    }
+}

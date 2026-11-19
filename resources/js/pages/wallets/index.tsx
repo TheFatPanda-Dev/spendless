@@ -236,7 +236,7 @@ export default function WalletsIndex({
 
                     {wallets.length === 0 ? (
                         <div className="col-span-full rounded-xl border border-dashed border-border bg-card p-8 text-center text-muted-foreground">
-                            No wallets yet. Use Add New Wallet to connect your
+                            No wallets yet. Use Add wallet to connect your
                             bank or add a cash wallet.
                         </div>
                     ) : null}

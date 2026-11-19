@@ -122,7 +122,7 @@ class AssetAccountsTest extends TestCase
         $account = $this->isa($user, start: now()->toDateString(), years: '1');
 
         $this->actingAs($user)->get(route('dashboard'))
-            ->assertInertia(fn (Assert $page) => $page->where('accounts', fn ($accounts): bool => collect($accounts)->contains('id', $account->id)));
+            ->assertInertia(fn (Assert $page) => $page->where('wallets', fn ($wallets): bool => collect($wallets)->contains('id', $account->id)));
 
         $this->actingAs(User::factory()->create())
             ->patch(route('assets.update', $account->connection), ['amount' => '1', 'rate' => '1', 'start_date' => '2026-01-01', 'years' => '1'])

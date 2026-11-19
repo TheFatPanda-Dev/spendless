@@ -158,6 +158,11 @@ class BankAccountController extends Controller
             $bankTransaction->tags()->sync($request->validated('tag_ids') ?? []);
         }
 
+        // Edited from Overview or Activity: stay there.
+        if ($this->cameFromElsewhere($request)) {
+            return back()->with('success', 'Transaction updated.');
+        }
+
         return to_route('accounts.show', [
             'bankAccount' => $bankAccount,
             'start_date' => (string) $request->query('start_date', now()->startOfMonth()->toDateString()),
@@ -186,11 +191,22 @@ class BankAccountController extends Controller
             'transaction_name' => $request->validated('transaction_name'),
         ]);
 
+        $message = $category->type === 'income' ? 'Income saved.' : 'Expense saved.';
+
+        if ($this->cameFromElsewhere($request)) {
+            return back()->with('success', $message);
+        }
+
         return to_route('accounts.show', [
             'bankAccount' => $bankAccount,
             'start_date' => (string) $request->query('start_date', now()->startOfMonth()->toDateString()),
             'end_date' => (string) $request->query('end_date', now()->endOfMonth()->toDateString()),
-        ])->with('success', 'Manual transaction added.');
+        ])->with('success', $message);
+    }
+
+    private function cameFromElsewhere(Request $request): bool
+    {
+        return in_array($request->query('from'), ['overview', 'activity'], true);
     }
 
     private function ensureAccountIsAccessible(Request $request, BankAccount $bankAccount): void

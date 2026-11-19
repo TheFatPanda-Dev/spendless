@@ -7,19 +7,58 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Roboto from the SpendLess identity kit (design/identity-kit/typefaces, OFL). */
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/roboto/Roboto-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/roboto/Roboto-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/roboto/Roboto-Medium.ttf') format('truetype');
+    font-weight: 500 700;
+    font-display: swap;
+}
+
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'Roboto', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-heading: var(--font-sans);
     --font-mono:
-        'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         'Liberation Mono', 'Courier New', monospace;
 
+    /* Kit breakpoints: phone < 768, tablet 768-1099, desktop >= 1100. */
+    --breakpoint-tablet: 48rem;
+    --breakpoint-desk: 68.75rem;
+
+    /* Kit radii: 12px controls, 20px cards. */
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
+    --radius-card: 1.25rem;
+
+    /* Kit type scale (size / line). */
+    --text-display: 4rem;
+    --text-display--line-height: 4.25rem;
+    --text-page-title: 2.5rem;
+    --text-page-title--line-height: 3rem;
+    --text-screen-title: 2rem;
+    --text-screen-title--line-height: 2.375rem;
+    --text-section: 1.375rem;
+    --text-section--line-height: 1.75rem;
+
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -71,93 +110,130 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Kit roles without a shadcn equivalent. */
+    --color-hero: var(--hero);
+    --color-hero-foreground: var(--hero-foreground);
+    --color-hero-muted: var(--hero-muted);
+    --color-track: var(--track);
+    --color-plot: var(--plot);
+    --color-positive: var(--positive);
+    --color-control: var(--control);
+    --color-warning-surface: var(--warning-surface);
+    --color-error-surface: var(--error-surface);
+    --color-tile: var(--tile);
 }
 
+/*
+ * SpendLess identity kit, semantic roles (design/identity-kit/design-tokens).
+ * Light: guide page 06; dark under .dark (the app's appearance setting).
+ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --brand: oklch(0.696 0.17 162.48);
-    --brand-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: #e06c75;
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --success: oklch(0.6 0.118 184.704);
-    --success-foreground: oklch(0.985 0 0);
-    --warning: oklch(0.828 0.189 84.429);
-    --warning-foreground: oklch(0.205 0 0);
-    --info: oklch(0.646 0.222 41.116);
-    --info-foreground: oklch(0.985 0 0);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --background: #f6f7f2;
+    --foreground: #151a18;
+    --card: #ffffff;
+    --card-foreground: #151a18;
+    --popover: #ffffff;
+    --popover-foreground: #151a18;
+    --primary: #006447;
+    --primary-foreground: #ffffff;
+    --brand: #006447;
+    --brand-foreground: #ffffff;
+    --secondary: #edf1ec;
+    --secondary-foreground: #151a18;
+    --muted: #edf1ec;
+    --muted-foreground: #526158;
+    --accent: #ddf4e6;
+    --accent-foreground: #006447;
+    --destructive: #a02d33;
+    --destructive-foreground: #a02d33;
+    --success: #006447;
+    --success-foreground: #ffffff;
+    --warning: #784500;
+    --warning-foreground: #784500;
+    --info: #36634e;
+    --info-foreground: #ffffff;
+    --border: #d6ded7;
+    --input: #718079;
+    --ring: #006447;
+    --control: #718079;
+    --hero: #daf4e5;
+    --hero-foreground: #103b2a;
+    --hero-muted: #36634e;
+    --track: #a9ceb7;
+    --plot: #08754f;
+    --positive: #006447;
+    --warning-surface: #ffe9c9;
+    --error-surface: #ffe5e6;
+    --tile: #edf1ec;
+    /* Category series, ranked by spend (guide page 10). */
+    --chart-1: #176343;
+    --chart-2: #60aa83;
+    --chart-3: #e5a251;
+    --chart-4: #8aa9bc;
+    --chart-5: #abb6ac;
+    --radius: 0.75rem;
+    --sidebar: #f6f7f2;
+    --sidebar-foreground: #151a18;
+    --sidebar-primary: #006447;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #ddf4e6;
+    --sidebar-accent-foreground: #006447;
+    --sidebar-border: #d6ded7;
+    --sidebar-ring: #006447;
 }
 
 .dark {
-    --background: oklch(0.13 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.175 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.175 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --brand: oklch(0.74 0.16 162.48);
-    --brand-foreground: oklch(0.145 0 0);
-    --secondary: oklch(0.23 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.23 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.23 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: #e06c75;
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --success: oklch(0.696 0.17 162.48);
-    --success-foreground: oklch(0.145 0 0);
-    --warning: oklch(0.769 0.188 70.08);
-    --warning-foreground: oklch(0.145 0 0);
-    --info: oklch(0.488 0.243 264.376);
-    --info-foreground: oklch(0.985 0 0);
-    --border: oklch(0.32 0 0);
-    --input: oklch(0.32 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.17 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.23 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.32 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --background: #111714;
+    --foreground: #f1f5ef;
+    --card: #1b231e;
+    --card-foreground: #f1f5ef;
+    --popover: #1b231e;
+    --popover-foreground: #f1f5ef;
+    --primary: #09c98c;
+    --primary-foreground: #092419;
+    --brand: #09c98c;
+    --brand-foreground: #092419;
+    --secondary: #243029;
+    --secondary-foreground: #f1f5ef;
+    --muted: #243029;
+    --muted-foreground: #b0c0b5;
+    --accent: #243f30;
+    --accent-foreground: #93f5bf;
+    --destructive: #ffb0b3;
+    --destructive-foreground: #ffb0b3;
+    --success: #66e8a9;
+    --success-foreground: #092419;
+    --warning: #ffd096;
+    --warning-foreground: #ffd096;
+    --info: #b3d1bb;
+    --info-foreground: #092419;
+    --border: #38473d;
+    --input: #81958a;
+    --ring: #69f0b7;
+    --control: #81958a;
+    --hero: #193a2b;
+    --hero-foreground: #e6faed;
+    --hero-muted: #b3d1bb;
+    --track: #426f55;
+    --plot: #57fe90;
+    --positive: #66e8a9;
+    --warning-surface: #452e18;
+    --error-surface: #44252a;
+    --tile: #243029;
+    --chart-1: #2f8a63;
+    --chart-2: #60aa83;
+    --chart-3: #e5a251;
+    --chart-4: #8aa9bc;
+    --chart-5: #7d8a80;
+    --sidebar: #111714;
+    --sidebar-foreground: #f1f5ef;
+    --sidebar-primary: #09c98c;
+    --sidebar-primary-foreground: #092419;
+    --sidebar-accent: #243f30;
+    --sidebar-accent-foreground: #93f5bf;
+    --sidebar-border: #38473d;
+    --sidebar-ring: #69f0b7;
 }
 
 @layer base {
@@ -165,7 +241,46 @@
         @apply border-border;
     }
 
+    html {
+        -webkit-text-size-adjust: 100%;
+        scrollbar-color: color-mix(in srgb, var(--control) 55%, transparent)
+            transparent;
+    }
+
     body {
         @apply bg-background text-foreground;
+    }
+
+    ::selection {
+        background: color-mix(in srgb, var(--plot) 28%, transparent);
+        color: var(--foreground);
+    }
+
+    input,
+    textarea {
+        caret-color: var(--primary);
+    }
+
+    a {
+        text-underline-offset: 0.2em;
+    }
+
+    /* Kit: 2px outline with a 2px gap for keyboard focus. */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+}
+
+@utility amount {
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
     }
 }

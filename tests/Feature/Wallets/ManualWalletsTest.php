@@ -82,9 +82,9 @@ class ManualWalletsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('dashboard')
-                ->where('accounts.0.id', $account->id)
-                ->where('accounts.0.display_name', 'Travel Cash')
-                ->where('accounts.0.current_balance', 0));
+                ->where('wallets.0.id', $account->id)
+                ->where('wallets.0.name', 'Travel Cash')
+                ->where('wallets.0.balance', 0));
 
         $this->actingAs($user)
             ->get('/settings/wallets')

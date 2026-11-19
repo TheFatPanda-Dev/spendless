@@ -23,21 +23,23 @@
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #f6f7f2;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #111714;
             }
         </style>
 
         <title inertia>{{ config('app.name', 'SpendLess') }}</title>
 
-        <link rel="icon" href="/favicon.png" type="image/png">
-        <link rel="apple-touch-icon" href="/favicon.png">
-
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <link rel="icon" href="/images/brand/favicon.ico" sizes="any">
+        <link rel="icon" href="/images/brand/favicon.svg" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="/images/brand/app-icon-180.png">
+        <link rel="manifest" href="/images/brand/site.webmanifest">
+        <meta name="theme-color" content="#f6f7f2" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#111714" media="(prefers-color-scheme: dark)">
+        <link rel="preload" href="/fonts/roboto/Roboto-Regular.ttf" as="font" type="font/ttf" crossorigin>
 
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

@@ -59,8 +59,8 @@ class DashboardTest extends TestCase
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
                     ->component('dashboard')
-                    ->where('filters.start_date', '2026-03-01')
-                    ->where('filters.end_date', '2026-03-31'));
+                    ->where('month.start', '2026-03-01')
+                    ->where('month.end', '2026-03-31'));
         } finally {
             Carbon::setTestNow();
         }
@@ -80,11 +80,11 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('dashboard')
-                ->where('filters.start_date', '2026-03-01')
-                ->where('filters.end_date', '2026-03-31'));
+                ->where('month.start', '2026-03-01')
+                ->where('month.end', '2026-03-31'));
     }
 
-    public function test_dashboard_includes_exchange_rates_for_currency_conversion(): void
+    public function test_an_empty_month_has_no_budget_spending_or_activity(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);
@@ -95,11 +95,14 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('dashboard')
-                ->where('exchange_rates.eur_per_unit.EUR', 1)
+                ->where('baseCurrency', 'EUR')
                 ->where('number_locale', 'en-GB')
-                ->where('period_breakdown.change_by_currency', [])
-                ->where('period_breakdown.expenses_by_currency', [])
-                ->where('period_breakdown.income_by_currency', []));
+                ->where('budget', null)
+                ->where('spent', 0)
+                ->where('income', 0)
+                ->where('categories', [])
+                ->where('recent', [])
+                ->where('netWorth.by_currency', []));
     }
 
     public function test_dashboard_uses_users_saved_base_currency_preference(): void
@@ -115,7 +118,7 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('dashboard')
-                ->where('base_currency', 'GBP')
+                ->where('baseCurrency', 'GBP')
                 ->where('number_locale', 'de-DE'));
     }
 }
