@@ -16,7 +16,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -24,13 +24,13 @@ jobs:
           extensions: mbstring, pdo_sqlite, sqlite3, zip, intl, bcmath, openssl
           coverage: none
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
 
       - name: Cache Composer downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/composer/files
           key: composer-${{ hashFiles('composer.lock') }}
@@ -59,7 +59,7 @@ jobs:
       APP_PATH: ${{ secrets.DEPLOY_PATH }}
       PHP_BIN: ${{ secrets.DEPLOY_PHP || 'php' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -67,7 +67,7 @@ jobs:
           extensions: mbstring, zip, intl, bcmath, openssl
           coverage: none
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
