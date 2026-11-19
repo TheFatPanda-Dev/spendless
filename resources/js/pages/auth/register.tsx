@@ -68,9 +68,11 @@ export default function Register() {
                                 asChild
                             >
                                 <a
-                                    href={googleRedirect({
-                                        query: { register: 1 },
-                                    }).url}
+                                    href={
+                                        googleRedirect({
+                                            query: { register: 1 },
+                                        }).url
+                                    }
                                     tabIndex={1}
                                 >
                                     <svg
@@ -95,9 +97,11 @@ export default function Register() {
                                 asChild
                             >
                                 <a
-                                    href={githubRedirect({
-                                        query: { register: 1 },
-                                    }).url}
+                                    href={
+                                        githubRedirect({
+                                            query: { register: 1 },
+                                        }).url
+                                    }
                                     tabIndex={2}
                                 >
                                     <Github
@@ -107,7 +111,6 @@ export default function Register() {
                                     Continue with GitHub
                                 </a>
                             </Button>
-
                         </div>
 
                         <div className="relative text-center text-xs text-muted-foreground uppercase">

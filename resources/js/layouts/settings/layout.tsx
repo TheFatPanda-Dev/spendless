@@ -5,7 +5,6 @@ import Tags from 'lucide-react/dist/esm/icons/tags.js';
 import UserCircle2 from 'lucide-react/dist/esm/icons/user-circle-2.js';
 import WalletCards from 'lucide-react/dist/esm/icons/wallet-cards.js';
 import type { PropsWithChildren } from 'react';
-import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
@@ -56,34 +55,35 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="space-y-6">
-            <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
-            />
+            <h1 className="text-screen-title font-normal text-foreground tablet:text-page-title">
+                Settings
+            </h1>
 
             <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start">
                 <aside className="w-full">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0 rounded-xl border border-brand/20 bg-linear-to-br from-brand/5 via-card to-card p-2 dark:from-brand/10"
+                        className="flex flex-col gap-1 rounded-card border border-border bg-card p-2"
                         aria-label="Settings"
                     >
                         {navItems.map((item, index) => (
                             <Button
                                 key={`${toUrl(item.href)}-${index}`}
-                                size="sm"
                                 variant="ghost"
                                 asChild
                                 className={cn(
-                                    'w-full justify-start gap-2 rounded-lg text-foreground/90 hover:bg-brand/10 hover:text-foreground',
+                                    'h-12 w-full justify-start gap-3.5 rounded-xl px-4 text-[15px] font-normal text-muted-foreground hover:bg-muted hover:text-foreground',
                                     {
-                                        'bg-brand/15 text-foreground ring-1 ring-brand/30':
+                                        'bg-accent font-medium text-accent-foreground hover:bg-accent hover:text-accent-foreground':
                                             isCurrentOrParentUrl(item.href),
                                     },
                                 )}
                             >
                                 <Link href={item.href}>
                                     {item.icon && (
-                                        <item.icon className="size-4.5 shrink-0" />
+                                        <item.icon
+                                            className="size-5 shrink-0"
+                                            strokeWidth={1.75}
+                                        />
                                     )}
                                     {item.title}
                                 </Link>
@@ -95,9 +95,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                 <Separator className="my-1 border-border lg:hidden" />
 
                 <div className="min-w-0">
-                    <section className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/5 via-card to-card p-4 sm:p-6 dark:from-brand/10">
-                        {children}
-                    </section>
+                    <div className="space-y-6">{children}</div>
                 </div>
             </div>
         </div>

@@ -75,7 +75,9 @@ export default function ResetPassword({ token, email }: Props) {
                             <div className="relative">
                                 <Input
                                     id="password"
-                                    type={isPasswordVisible ? 'text' : 'password'}
+                                    type={
+                                        isPasswordVisible ? 'text' : 'password'
+                                    }
                                     name="password"
                                     autoComplete="new-password"
                                     className="mt-1 block w-full pr-10"
@@ -137,7 +139,9 @@ export default function ResetPassword({ token, email }: Props) {
                             <div className="relative">
                                 <Input
                                     id="password_confirmation"
-                                    type={isPasswordVisible ? 'text' : 'password'}
+                                    type={
+                                        isPasswordVisible ? 'text' : 'password'
+                                    }
                                     name="password_confirmation"
                                     autoComplete="new-password"
                                     className="mt-1 block w-full pr-10"

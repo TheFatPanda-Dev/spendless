@@ -5,7 +5,7 @@ import { home } from '@/routes';
 export default function Privacy() {
     const { name, support_email: supportEmail } = usePage().props;
     const sectionClass =
-        'space-y-2 rounded-2xl border border-border/70 bg-card/80 p-5 shadow-sm backdrop-blur-sm';
+        'space-y-2 rounded-2xl border border-border/70 bg-card/80 p-5 shadow-sm-sm';
 
     return (
         <>
@@ -13,10 +13,10 @@ export default function Privacy() {
 
             <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.14),transparent_48%),radial-gradient(circle_at_90%_20%,rgba(45,212,191,0.12),transparent_36%)] text-foreground">
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
-                    <div className="rounded-2xl border border-brand/20 bg-linear-to-br from-brand/15 via-background to-brand/5 p-6 shadow-sm">
+                    <div className="rounded-card border border-border bg-card p-6 shadow-sm">
                         <div className="flex items-start justify-between gap-4">
                             <div className="space-y-2">
-                                <p className="inline-flex rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-medium tracking-wide text-brand">
+                                <p className="inline-flex rounded-full border border-border bg-brand/10 px-3 py-1 text-xs font-medium tracking-wide text-brand">
                                     EU Privacy
                                 </p>
                                 <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
@@ -30,7 +30,7 @@ export default function Privacy() {
 
                             <Link
                                 href={home()}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-brand/25 bg-background/70 px-3 py-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand/10 hover:text-brand"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-3 py-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand/10 hover:text-brand"
                             >
                                 <ArrowLeft
                                     className="h-4 w-4"

@@ -31,7 +31,8 @@ class WalletController extends Controller
             ->wallets()
             ->with(['bankConnections' => fn ($query) => $query
                 ->where('status', '!=', BankConnection::STATUS_PENDING)
-                ->withCount('accounts')])
+                ->withCount('accounts')
+                ->with(['accounts' => fn ($accounts) => $accounts->where('is_active', true)])])
             ->latest()
             ->get()
             ->map(fn (Wallet $wallet): array => [
@@ -42,6 +43,15 @@ class WalletController extends Controller
                 'last_synced_at' => $wallet->last_synced_at?->toIso8601String(),
                 'connections_count' => $wallet->bankConnections->count(),
                 'accounts_count' => $wallet->bankConnections->sum('accounts_count'),
+                // What the wallet holds, per currency (money owed on cards is negative).
+                'balances' => $wallet->bankConnections
+                    ->flatMap(fn (BankConnection $connection) => $connection->accounts)
+                    ->groupBy(fn ($account): string => strtoupper((string) ($account->currency ?: $wallet->currency ?: 'EUR')))
+                    ->map(fn ($accounts, string $currency): array => [
+                        'currency' => $currency,
+                        'amount' => round((float) $accounts->sum(fn ($account): float => (float) (($account->balances_encrypted ?? [])['current'] ?? 0)), 2),
+                    ])
+                    ->values(),
                 'connections' => $wallet->bankConnections
                     ->map(fn (BankConnection $connection): array => $connection->toStatusArray())
                     ->values(),

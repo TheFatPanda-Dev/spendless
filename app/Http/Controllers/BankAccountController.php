@@ -11,10 +11,9 @@ use App\Models\BankConnection;
 use App\Models\BankTransaction;
 use App\Models\Category;
 use App\Support\Categories\CategoryOptions;
-use Carbon\Carbon;
+use App\Support\Transactions\TransactionPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,59 +27,22 @@ class BankAccountController extends Controller
     ): Response {
         $this->ensureAccountIsAccessible($request, $bankAccount);
 
-        $startDate = Carbon::parse((string) $request->query('start_date', now()->startOfMonth()->toDateString()))->startOfDay();
-        $endDate = Carbon::parse((string) $request->query('end_date', now()->endOfMonth()->toDateString()))->endOfDay();
+        [$startDate, $endDate] = DashboardController::month($request);
         $user = $request->user();
-        $categories = $user->categories()
-            ->select(['id', 'user_id', 'parent_id', 'name', 'type', 'icon', 'color'])
-            ->orderBy('name')
-            ->get();
-        $categoriesById = $categories->keyBy('id');
+        $presenter = new TransactionPresenter($user, $resolveBankTransactionCategory);
 
         $bankAccount->load([
             'connection',
             'transactions' => fn ($query) => $query
-                ->with(['assignedCategory', 'tags' => fn ($tags) => $tags->select('tags.id')])
+                ->with(['tags' => fn ($tags) => $tags->select('tags.id')])
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->latest('date')
-                ->limit(200),
+                ->latest('id')
+                ->limit(300),
         ]);
 
         $transactions = $bankAccount->transactions
-            ->map(function (BankTransaction $transaction) use ($categoriesById, $resolveBankTransactionCategory, $user): array {
-                $resolvedCategory = $transaction->assignedCategory
-                    ?? ($resolveBankTransactionCategory)($transaction, $user);
-                $inferredTransactionType = ResolveBankTransactionCategory::resolveTransactionType($transaction);
-                $displayCategoryType = $resolvedCategory instanceof Category
-                    ? $resolvedCategory->type
-                    : $inferredTransactionType;
-                $fallbackCategory = $displayCategoryType === 'income' ? 'Other Income' : 'Other';
-
-                return [
-                    'id' => $transaction->id,
-                    'name' => $transaction->name,
-                    'merchant_name' => $transaction->merchant_name,
-                    'counterparty' => $transaction->payee,
-                    'category' => $resolvedCategory instanceof Category
-                        ? $this->formatCategoryPath($resolvedCategory, $categoriesById)
-                        : $fallbackCategory,
-                    'category_id' => $resolvedCategory?->id,
-                    'assigned_category_id' => $transaction->category_id,
-                    'category_icon' => $resolvedCategory?->icon ?? 'package',
-                    'category_color' => $resolvedCategory?->color ?? ($displayCategoryType === 'income' ? 'emerald' : 'slate'),
-                    'category_source' => $transaction->category_manually_set
-                        ? 'manual'
-                        : ($resolvedCategory instanceof Category ? 'automatic' : 'fallback'),
-                    'category_type' => $displayCategoryType,
-                    'amount' => $displayCategoryType === 'income'
-                        ? abs((float) $transaction->amount)
-                        : -abs((float) $transaction->amount),
-                    'currency' => $transaction->currency,
-                    'date' => $transaction->date?->toDateString(),
-                    'pending' => $transaction->pending,
-                    'tag_ids' => $transaction->tags->modelKeys(),
-                ];
-            })
+            ->map(fn (BankTransaction $transaction): array => $presenter->present($transaction, $bankAccount))
             ->values();
 
         return Inertia::render('accounts/show', [
@@ -104,17 +66,17 @@ class BankAccountController extends Controller
                 'balances' => $bankAccount->balances_encrypted,
                 'last_synced_at' => $bankAccount->last_synced_at?->toIso8601String(),
             ],
-            'filters' => [
-                'start_date' => $startDate->toDateString(),
-                'end_date' => $endDate->toDateString(),
-            ],
-            'categoryOptions' => [
-                'expense' => $this->buildCategoryOptions($categories, 'expense'),
-                'income' => $this->buildCategoryOptions($categories, 'income'),
-            ],
+            'month' => ['start' => $startDate->toDateString(), 'end' => $endDate->toDateString()],
+            'categoryOptions' => $presenter->categoryOptions(),
             'categoryColors' => CategoryOptions::colors(),
             'tags' => $user->tags()->orderBy('name')->get(['id', 'name', 'color']),
             'transactions' => $transactions,
+            'addTransaction' => [
+                'accounts' => $bankAccount->connection?->isManual()
+                    ? [['id' => $bankAccount->id, 'name' => (string) ($bankAccount->display_name ?: $bankAccount->name), 'currency' => strtoupper((string) ($bankAccount->currency ?: 'EUR'))]]
+                    : [],
+                'categories' => $presenter->categoryOptions(),
+            ],
         ]);
     }
 
@@ -206,7 +168,7 @@ class BankAccountController extends Controller
 
     private function cameFromElsewhere(Request $request): bool
     {
-        return in_array($request->query('from'), ['overview', 'activity'], true);
+        return in_array($request->query('from'), ['overview', 'activity', 'account'], true);
     }
 
     private function ensureAccountIsAccessible(Request $request, BankAccount $bankAccount): void
@@ -216,50 +178,5 @@ class BankAccountController extends Controller
             && $bankAccount->connection->user_id === $request->user()->id,
             403,
         );
-    }
-
-    /**
-     * @return list<array{id: int, name: string, path: string, type: string, icon: string, color: string}>
-     */
-    private function buildCategoryOptions(Collection $categories, string $type, ?int $parentId = null, array $trail = []): array
-    {
-        return $categories
-            ->filter(fn (Category $category): bool => $category->type === $type && $category->parent_id === $parentId)
-            ->sortBy('name')
-            ->values()
-            ->flatMap(function (Category $category) use ($categories, $type, $trail): array {
-                $pathSegments = [...$trail, $category->name];
-
-                return [
-                    [
-                        'id' => $category->id,
-                        'name' => $category->name,
-                        'path' => implode(' / ', $pathSegments),
-                        'type' => $type,
-                        'icon' => $category->icon,
-                        'color' => $category->color,
-                    ],
-                    ...$this->buildCategoryOptions($categories, $type, $category->id, $pathSegments),
-                ];
-            })
-            ->all();
-    }
-
-    /**
-     * @param  Collection<int|string, Category>  $categoriesById
-     */
-    private function formatCategoryPath(Category $category, Collection $categoriesById): string
-    {
-        $segments = [];
-        $current = $category;
-
-        while ($current instanceof Category) {
-            array_unshift($segments, $current->name);
-            $current = $current->parent_id !== null
-                ? $categoriesById->get($current->parent_id)
-                : null;
-        }
-
-        return implode(' / ', $segments);
     }
 }

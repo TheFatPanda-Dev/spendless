@@ -96,7 +96,7 @@ export function TransactionTagPicker({
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase dark:text-slate-500">
+                <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                     Tags
                 </p>
                 <Link

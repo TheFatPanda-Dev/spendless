@@ -43,7 +43,7 @@ export function TagChip({
             <span
                 className={cn(
                     baseClasses,
-                    'border-border/70 bg-background/60 px-2 py-0.5 text-foreground/80 dark:border-white/10 dark:bg-white/4 dark:text-slate-300',
+                    'border-border/70 bg-background/60 px-2 py-0.5 text-foreground/80',
                     className,
                 )}
             >
@@ -68,7 +68,7 @@ export function TagChip({
                 'px-2.5 py-1 transition outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-60',
                 selected
                     ? 'shadow-sm'
-                    : 'border-border bg-background/70 text-muted-foreground hover:border-brand/40 hover:text-foreground dark:border-white/12 dark:bg-white/3',
+                    : 'border-border bg-background/70 text-muted-foreground hover:border-brand/40 hover:text-foreground',
                 className,
             )}
             style={

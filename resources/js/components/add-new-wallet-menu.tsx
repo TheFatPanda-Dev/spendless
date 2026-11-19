@@ -44,8 +44,7 @@ export default function AddNewWalletMenu({
         typeof page.props.number_locale === 'string'
             ? page.props.number_locale
             : 'en-GB';
-    const focusClasses =
-        'border-input bg-background focus-visible:border-[#39ff14] focus-visible:ring-2 focus-visible:ring-[#39ff14]/35 focus-visible:ring-offset-0';
+    const focusClasses = 'border-input bg-background';
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
             name: '',

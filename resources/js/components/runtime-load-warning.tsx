@@ -84,7 +84,8 @@ export default function RuntimeLoadWarning() {
                 /ERR_BLOCKED_BY_CLIENT/i.test(reasonMessage) ||
                 (/Failed to fetch dynamically imported module/i.test(
                     reasonMessage,
-                ) && LOCAL_DEV_HOST_PATTERN.test(reasonMessage))
+                ) &&
+                    LOCAL_DEV_HOST_PATTERN.test(reasonMessage))
             ) {
                 setWarning(buildWarning(null));
             }
@@ -108,12 +109,14 @@ export default function RuntimeLoadWarning() {
             <div className="pointer-events-auto mx-auto w-full max-w-3xl rounded-xl border border-warning/40 bg-warning/15 px-4 py-3 text-warning-foreground shadow-lg backdrop-blur-sm">
                 <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1 space-y-1">
-                        <p className="text-sm font-semibold">Local resource blocked</p>
+                        <p className="text-sm font-semibold">
+                            Local resource blocked
+                        </p>
                         <p className="text-xs leading-5 text-warning-foreground/90">
                             {warning.message}
                         </p>
                         {warning.resourceUrl ? (
-                            <p className="break-all text-[11px] leading-5 text-warning-foreground/75">
+                            <p className="text-[11px] leading-5 break-all text-warning-foreground/75">
                                 Resource: {warning.resourceUrl}
                             </p>
                         ) : null}

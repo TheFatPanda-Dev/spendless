@@ -54,25 +54,25 @@ export default function BankingComplete({ success, message }: CompleteProps) {
         <>
             <Head title={success ? 'Bank connected' : 'Bank not connected'} />
 
-            <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
-                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex min-h-dvh items-center justify-center bg-muted p-4">
+                <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-sm">
                     <div className="flex items-start gap-3">
                         {success ? (
-                            <CircleCheck className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                            <CircleCheck className="mt-0.5 size-5 shrink-0 text-positive" />
                         ) : (
                             <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
                         )}
                         <div>
-                            <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            <h1 className="text-lg font-semibold text-foreground">
                                 {success
                                     ? 'Bank connected'
                                     : 'Bank not connected'}
                             </h1>
-                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 {message}
                             </p>
                             {success ? (
-                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                <p className="mt-2 text-xs text-muted-foreground">
                                     {hasOpener
                                         ? 'This window closes automatically.'
                                         : 'Taking you to your dashboard…'}

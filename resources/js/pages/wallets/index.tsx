@@ -14,6 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { openBankPopup } from '@/lib/bank-popup';
 import { bankStatusLabel, bankStatusVariant } from '@/lib/bank-status';
 import { formatLocalizedDateTime } from '@/lib/date-filters';
+import { formatMoney } from '@/lib/money';
 import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type WalletSummary = {
@@ -24,6 +25,7 @@ type WalletSummary = {
     last_synced_at: string | null;
     connections_count: number;
     accounts_count: number;
+    balances: Array<{ currency: string; amount: number }>;
     connections: BankConnectionStatus[];
 };
 
@@ -70,6 +72,7 @@ export default function WalletsIndex({
             <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Heading
+                        variant="page"
                         title="Wallets"
                         description="Your connected banks and cash wallets. Banks sync automatically four times a day."
                     />
@@ -119,7 +122,7 @@ export default function WalletsIndex({
                 ) : null}
 
                 {successMessage ? (
-                    <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-300/60 bg-emerald-100/60 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-transparent bg-hero px-3 py-2 text-sm text-positive">
                         <span>{successMessage}</span>
                         <button
                             type="button"
@@ -136,15 +139,17 @@ export default function WalletsIndex({
                         <Link
                             key={wallet.id}
                             href={`/wallets/${wallet.id}`}
-                            className="rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 transition hover:border-brand/35 dark:from-brand/10"
+                            className="rounded-card border border-border bg-card p-5 transition-colors hover:bg-muted/40"
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div>
-                                    <p className="text-lg font-semibold">
+                                    <p className="text-lg font-medium text-foreground">
                                         {wallet.name}
                                     </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {wallet.type} · {wallet.currency}
+                                    <p className="text-sm text-muted-foreground capitalize">
+                                        {wallet.type === 'cash'
+                                            ? 'Cash wallet'
+                                            : wallet.type}
                                     </p>
                                 </div>
                                 {wallet.connections[0]?.institution_logo ? (
@@ -161,23 +166,30 @@ export default function WalletsIndex({
                                 )}
                             </div>
 
-                            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                <div className="rounded-lg border border-border bg-background/70 px-3 py-2">
-                                    <p className="text-muted-foreground">
-                                        Connections
+                            <div className="mt-5 space-y-0.5">
+                                {wallet.balances.length === 0 ? (
+                                    <p className="text-[15px] text-muted-foreground">
+                                        No accounts yet
                                     </p>
-                                    <p className="font-medium">
-                                        {wallet.connections_count}
+                                ) : (
+                                    wallet.balances.map((balance) => (
+                                        <p
+                                            key={balance.currency}
+                                            className="text-[1.75rem] leading-tight font-light text-foreground amount"
+                                        >
+                                            {formatMoney(
+                                                balance.amount,
+                                                balance.currency,
+                                                numberLocale,
+                                            )}
+                                        </p>
+                                    ))
+                                )}
+                                {wallet.accounts_count > 1 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        {wallet.accounts_count} accounts
                                     </p>
-                                </div>
-                                <div className="rounded-lg border border-border bg-background/70 px-3 py-2">
-                                    <p className="text-muted-foreground">
-                                        Accounts
-                                    </p>
-                                    <p className="font-medium">
-                                        {wallet.accounts_count}
-                                    </p>
-                                </div>
+                                ) : null}
                             </div>
 
                             {wallet.type !== 'cash' ? (
@@ -236,8 +248,8 @@ export default function WalletsIndex({
 
                     {wallets.length === 0 ? (
                         <div className="col-span-full rounded-xl border border-dashed border-border bg-card p-8 text-center text-muted-foreground">
-                            No wallets yet. Use Add wallet to connect your
-                            bank or add a cash wallet.
+                            No wallets yet. Use Add wallet to connect your bank
+                            or add a cash wallet.
                         </div>
                     ) : null}
                 </div>

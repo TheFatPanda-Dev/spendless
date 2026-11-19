@@ -49,7 +49,7 @@ export function AddTransactionSheet({
     open: boolean;
     onOpenChange: (open: boolean) => void;
     options: AddTransactionOptions;
-    from: 'overview' | 'activity';
+    from: 'overview' | 'activity' | 'account';
 }) {
     const form = useForm({
         type: 'expense' as 'expense' | 'income',

@@ -30,8 +30,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Import statement', href: '/imports/new' },
 ];
 
-const panelClasses =
-    'rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10';
+const panelClasses = 'rounded-card border border-border bg-card p-5 tablet:p-6';
 
 const selectClasses =
     'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
@@ -90,6 +89,7 @@ export default function ImportCreate({
 
             <div className="mx-auto w-full max-w-3xl space-y-6">
                 <Heading
+                    variant="page"
                     title="Import a bank statement"
                     description="For banks SpendLess can't connect to directly. Download a statement from your bank and drop it here; you'll see what changes before anything is saved, and transactions already imported are skipped."
                 />
@@ -140,7 +140,7 @@ export default function ImportCreate({
                         className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors ${
                             isDragging
                                 ? 'border-brand bg-brand/10'
-                                : 'border-border hover:border-brand/50 hover:bg-brand/5'
+                                : 'border-border hover:border-border hover:bg-brand/5'
                         }`}
                     >
                         <FileUp className="size-7 text-brand" />

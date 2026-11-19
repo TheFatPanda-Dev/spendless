@@ -107,19 +107,19 @@ export default function PlaidLink({
         <>
             <Head title={title} />
 
-            <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
-                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <div className="flex min-h-dvh items-center justify-center bg-muted p-4">
+                <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-sm">
+                    <h1 className="text-lg font-semibold text-foreground">
                         {title}
                     </h1>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {mode === 'reconnect'
                             ? 'Log in to your bank again through Plaid. Your transactions, categories and tags are kept.'
                             : 'Plaid connects UK banks such as Revolut, Barclays, Nationwide and Santander. You log in at your bank and approve read-only access; SpendLess never sees your bank password.'}
                     </p>
 
                     {phase === 'loading' || phase === 'saving' ? (
-                        <p className="mt-5 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="size-4 animate-spin" />
                             {phase === 'saving'
                                 ? 'Saving the connection…'
@@ -130,7 +130,7 @@ export default function PlaidLink({
                     ) : null}
 
                     {phase === 'open' ? (
-                        <p className="mt-5 text-sm text-slate-600 dark:text-slate-300">
+                        <p className="mt-5 text-sm text-muted-foreground">
                             Continue in the Plaid window.
                         </p>
                     ) : null}
@@ -140,7 +140,7 @@ export default function PlaidLink({
                             className={`mt-4 rounded-md border px-3 py-2 text-sm ${
                                 phase === 'error'
                                     ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                                    : 'border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-300'
+                                    : 'border-border text-muted-foreground'
                             }`}
                         >
                             {message}

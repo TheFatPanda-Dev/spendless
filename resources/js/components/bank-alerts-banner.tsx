@@ -33,7 +33,7 @@ export default function BankAlertsBanner() {
                 return (
                     <div
                         key={alert.id}
-                        className="flex flex-col gap-3 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 sm:flex-row sm:items-center dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200"
+                        className="flex flex-col gap-3 rounded-xl border border-transparent bg-warning-surface px-3 py-2.5 text-sm text-warning sm:flex-row sm:items-center"
                     >
                         <div className="flex min-w-0 flex-1 items-center gap-3">
                             <TriangleAlert className="size-4 shrink-0" />

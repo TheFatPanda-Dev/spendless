@@ -3,11 +3,10 @@ import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { useEffect, useState } from 'react';
 import {
     categoryIconNames,
-
     isHexColor,
-    normalizeHexColor
+    normalizeHexColor,
 } from '@/components/category-icon-utils';
-import type {CategoryColorPresentation} from '@/components/category-icon-utils';
+import type { CategoryColorPresentation } from '@/components/category-icon-utils';
 
 type CategoryIconProps = {
     name: string;
@@ -26,10 +25,16 @@ function joinClasses(...classes: Array<string | undefined | false>): string {
 }
 
 function hasRoundedClass(value?: string): boolean {
-    return value?.split(/\s+/).some((className) => /^rounded(?:-|$|\[)/.test(className)) ?? false;
+    return (
+        value
+            ?.split(/\s+/)
+            .some((className) => /^rounded(?:-|$|\[)/.test(className)) ?? false
+    );
 }
 
-function parseColorToRgb(value: string): { red: number; green: number; blue: number } | null {
+function parseColorToRgb(
+    value: string,
+): { red: number; green: number; blue: number } | null {
     if (isHexColor(value)) {
         const normalized = normalizeHexColor(value);
 
@@ -87,10 +92,15 @@ export function CategoryIcon({
     presentation,
     variant = 'glyph',
 }: CategoryIconProps) {
-    const [IconComponent, setIconComponent] = useState<LucideIconComponent | null>(null);
+    const [IconComponent, setIconComponent] =
+        useState<LucideIconComponent | null>(null);
 
     useEffect(() => {
-        if (!categoryIconNames.includes(name as (typeof categoryIconNames)[number])) {
+        if (
+            !categoryIconNames.includes(
+                name as (typeof categoryIconNames)[number],
+            )
+        ) {
             return;
         }
 
@@ -102,7 +112,9 @@ export function CategoryIcon({
                     return;
                 }
 
-                setIconComponent(() => iconModule.default as LucideIconComponent);
+                setIconComponent(
+                    () => iconModule.default as LucideIconComponent,
+                );
             })
             .catch(() => {
                 if (active) {
@@ -115,10 +127,22 @@ export function CategoryIcon({
         };
     }, [name]);
 
-    const icon = categoryIconNames.includes(name as (typeof categoryIconNames)[number])
-        && IconComponent !== null
-        ? <IconComponent size={iconSize} strokeWidth={strokeWidth} className={iconClassName} />
-        : <Layers3 size={iconSize} strokeWidth={strokeWidth} className={iconClassName} />;
+    const icon =
+        categoryIconNames.includes(
+            name as (typeof categoryIconNames)[number],
+        ) && IconComponent !== null ? (
+            <IconComponent
+                size={iconSize}
+                strokeWidth={strokeWidth}
+                className={iconClassName}
+            />
+        ) : (
+            <Layers3
+                size={iconSize}
+                strokeWidth={strokeWidth}
+                className={iconClassName}
+            />
+        );
 
     if (variant !== 'badge') {
         return icon;
@@ -132,7 +156,9 @@ export function CategoryIcon({
                 hasRoundedClass(className) ? undefined : 'rounded-[18px]',
                 className,
             )}
-            style={presentation ? buildCategoryBadgeStyle(presentation) : undefined}
+            style={
+                presentation ? buildCategoryBadgeStyle(presentation) : undefined
+            }
         >
             {icon}
         </div>

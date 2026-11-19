@@ -98,7 +98,7 @@ export default function Welcome({
                         }`}
                     >
                         <nav className="flex justify-end">
-                            <div className="min-w-42.5 rounded-2xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
+                            <div className="min-w-42.5 rounded-2xl border border-border bg-background/95 p-2 shadow-lg">
                                 {auth.user ? (
                                     <Link
                                         href={dashboardHref}

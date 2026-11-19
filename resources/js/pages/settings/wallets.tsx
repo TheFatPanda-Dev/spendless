@@ -227,7 +227,7 @@ export default function WalletSettings({
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-200 dark:bg-white dark:text-slate-700"
+                                className="border-border bg-white text-foreground shadow-sm hover:bg-muted"
                                 onClick={() => {
                                     void startSyncAll();
                                 }}
@@ -358,7 +358,7 @@ export default function WalletSettings({
                             ) : null}
 
                             {syncSuccessMessage ? (
-                                <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-300/60 bg-emerald-100/60 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                <div className="flex items-center justify-between gap-2 rounded-lg border border-transparent bg-hero px-3 py-2 text-sm text-positive">
                                     <span>{syncSuccessMessage}</span>
                                     <button
                                         type="button"
@@ -405,7 +405,7 @@ export default function WalletSettings({
                                                 </p>
                                                 {account.connection?.status ===
                                                 'needs_reauth' ? (
-                                                    <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                                                    <p className="mt-1 text-xs font-medium text-warning">
                                                         Not syncing: reconnect
                                                         this bank from the
                                                         dashboard or Wallets

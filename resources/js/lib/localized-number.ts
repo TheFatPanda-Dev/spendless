@@ -6,8 +6,7 @@ export function localizedSeparators(numberLocale: string): {
     const parts = formatter.formatToParts(12345.6);
 
     return {
-        decimal:
-            parts.find((part) => part.type === 'decimal')?.value ?? '.',
+        decimal: parts.find((part) => part.type === 'decimal')?.value ?? '.',
         group: parts.find((part) => part.type === 'group')?.value ?? ',',
     };
 }

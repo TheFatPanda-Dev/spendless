@@ -125,15 +125,15 @@ export default function AddAccount({
                 title={reconnect ? 'Reconnect bank' : 'Connect bank account'}
             />
 
-            <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
-                <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <div className="flex min-h-dvh items-center justify-center bg-muted p-4">
+                <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-2xl border border-border bg-white p-5 shadow-sm">
+                    <h1 className="text-lg font-semibold text-foreground">
                         {reconnect
                             ? `Reconnect ${reconnectName}`
                             : 'Connect your bank account'}
                     </h1>
 
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {reconnect
                             ? 'Approve access again at your bank. Your existing transactions and categories are kept.'
                             : 'Pick your bank. You will sign in at your bank and approve read-only access to your balances and transactions. SpendLess never sees your bank password.'}
@@ -146,12 +146,12 @@ export default function AddAccount({
                     ) : null}
 
                     {reconnect ? (
-                        <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                        <div className="mt-5 flex items-center gap-3 rounded-xl border border-border p-3">
                             <BankLogo
                                 src={reconnect.institution_logo}
                                 name={reconnectName}
                             />
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                            <span className="font-medium text-foreground">
                                 {reconnectName}
                             </span>
                         </div>
@@ -159,7 +159,7 @@ export default function AddAccount({
                         <>
                             {countries.length > 1 ? (
                                 <div
-                                    className="mt-5 grid gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800"
+                                    className="mt-5 grid gap-1 rounded-lg bg-muted p-1"
                                     style={{
                                         gridTemplateColumns: `repeat(${countries.length}, minmax(0, 1fr))`,
                                     }}
@@ -179,8 +179,8 @@ export default function AddAccount({
                                             }
                                             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                                                 option.code === country
-                                                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-slate-100'
-                                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100'
+                                                    ? 'bg-white text-foreground shadow-sm'
+                                                    : 'text-muted-foreground hover:text-foreground'
                                             }`}
                                         >
                                             {option.name}
@@ -190,7 +190,7 @@ export default function AddAccount({
                             ) : null}
 
                             <div className="relative mt-3">
-                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     type="search"
                                     value={query}
@@ -205,18 +205,18 @@ export default function AddAccount({
 
                             <div className="mt-3 min-h-40 flex-1 overflow-y-auto">
                                 {isSwitchingCountry ? (
-                                    <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+                                    <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
                                         <Loader2 className="size-4 animate-spin" />
                                         Loading banks…
                                     </div>
                                 ) : filteredInstitutions.length === 0 ? (
-                                    <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    <p className="py-10 text-center text-sm text-muted-foreground">
                                         {institutions.length === 0
                                             ? 'No banks available.'
                                             : 'No bank matches your search.'}
                                     </p>
                                 ) : (
-                                    <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <ul className="divide-y divide-border">
                                         {filteredInstitutions.map(
                                             (institution) => (
                                                 <li key={institution.name}>
@@ -229,7 +229,7 @@ export default function AddAccount({
                                                             connectingTo !==
                                                             null
                                                         }
-                                                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800/60"
+                                                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         <BankLogo
                                                             src={
@@ -239,17 +239,17 @@ export default function AddAccount({
                                                                 institution.name
                                                             }
                                                         />
-                                                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                                                             {institution.name}
                                                         </span>
                                                         {institution.beta ? (
-                                                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                                            <span className="rounded-full bg-warning-surface px-2 py-0.5 text-[11px] font-medium text-warning">
                                                                 Beta
                                                             </span>
                                                         ) : null}
                                                         {connectingTo ===
                                                         institution.name ? (
-                                                            <Loader2 className="size-4 animate-spin text-slate-500" />
+                                                            <Loader2 className="size-4 animate-spin text-muted-foreground" />
                                                         ) : null}
                                                     </button>
                                                 </li>

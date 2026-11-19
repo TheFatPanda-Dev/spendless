@@ -65,14 +65,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 function CheckIcon({ status }: { status: Check['status'] }) {
     if (status === 'ok') {
-        return (
-            <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        );
+        return <CircleCheck className="mt-0.5 size-4 shrink-0 text-positive" />;
     }
 
     if (status === 'warn') {
         return (
-            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
         );
     }
 

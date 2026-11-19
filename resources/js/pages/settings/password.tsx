@@ -74,7 +74,7 @@ export default function Password() {
             <h1 className="sr-only">Password settings</h1>
 
             <SettingsLayout>
-                <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">
+                <div className="space-y-6 rounded-card border border-border bg-card p-5 tablet:p-6">
                     <Heading
                         variant="small"
                         title="Update password"

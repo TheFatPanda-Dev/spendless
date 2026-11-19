@@ -53,9 +53,9 @@ export function formatLocalizedNumericDate(
         .formatToParts(parsed)
         .filter(
             (part) =>
-                part.type === 'day'
-                || part.type === 'month'
-                || part.type === 'year',
+                part.type === 'day' ||
+                part.type === 'month' ||
+                part.type === 'year',
         )
         .map((part) => part.value);
 
@@ -100,10 +100,7 @@ export function formatLocalizedDateTime(
     });
 }
 
-export function formatDisplayDate(
-    dateValue: string,
-    locale = 'en-GB',
-): string {
+export function formatDisplayDate(dateValue: string, locale = 'en-GB'): string {
     return formatLocalizedNumericDate(dateValue, locale);
 }
 

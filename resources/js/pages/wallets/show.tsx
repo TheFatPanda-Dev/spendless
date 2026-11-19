@@ -18,6 +18,7 @@ import AppLayout from '@/layouts/app-layout';
 import { openBankPopup } from '@/lib/bank-popup';
 import { bankStatusLabel, bankStatusVariant } from '@/lib/bank-status';
 import { formatDisplayDate, formatLocalizedDateTime } from '@/lib/date-filters';
+import { formatMoney } from '@/lib/money';
 import type { BankConnectionStatus, BreadcrumbItem } from '@/types';
 
 type SyncRun = {
@@ -269,10 +270,11 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
             <Head title={`${wallet.name} Wallet`} />
 
             <div className="space-y-6">
-                <div className="rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-5 dark:from-brand/10">
+                <div>
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <Heading
+                                variant="page"
                                 title={wallet.name}
                                 description={
                                     isCashWallet
@@ -347,7 +349,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                 ) : null}
 
                 {successMessage ? (
-                    <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-300/60 bg-emerald-100/60 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-transparent bg-hero px-3 py-2 text-sm text-positive">
                         <span>{successMessage}</span>
                         <button
                             type="button"
@@ -363,7 +365,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                     {wallet.connections.map((connection) => (
                         <section
                             key={connection.id}
-                            className="space-y-4 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 dark:from-brand/10"
+                            className="space-y-5 rounded-card border border-border bg-card p-5 tablet:p-6"
                         >
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="space-y-1">
@@ -434,7 +436,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 <span
                                                     className={
                                                         connection.consent_expires_soon
-                                                            ? 'font-medium text-amber-700 dark:text-amber-300'
+                                                            ? 'font-medium text-warning'
                                                             : undefined
                                                     }
                                                 >
@@ -590,7 +592,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                             </div>
 
                             {connection.asset?.isa ? (
-                                <div className="space-y-3 rounded-lg border border-border bg-background/75 p-3">
+                                <div className="space-y-3 border-t border-border pt-5">
                                     <div className="grid gap-3 sm:grid-cols-3">
                                         {[
                                             {
@@ -626,7 +628,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                         ].map((item) => (
                                             <div
                                                 key={item.label}
-                                                className="rounded-md border border-border bg-card px-3 py-2"
+                                                className="border-b border-border py-3 last:border-b-0"
                                             >
                                                 <p className="text-xs text-muted-foreground">
                                                     {item.label}
@@ -678,7 +680,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                             ) : null}
 
                             {connection.asset?.kind === 'pension' ? (
-                                <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
+                                <div className="space-y-2 border-t border-border pt-5">
                                     <h3 className="font-medium">
                                         Value history
                                     </h3>
@@ -693,7 +695,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 (valuation) => (
                                                     <div
                                                         key={valuation.id}
-                                                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5 text-sm"
+                                                        className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 text-sm last:border-b-0"
                                                     >
                                                         <span className="text-muted-foreground">
                                                             {formatDisplayDate(
@@ -708,8 +710,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                     className={`text-xs ${
                                                                         valuation.change <
                                                                         0
-                                                                            ? 'text-rose-600 dark:text-rose-400'
-                                                                            : 'text-emerald-600 dark:text-emerald-400'
+                                                                            ? 'text-destructive'
+                                                                            : 'text-positive'
                                                                     }`}
                                                                 >
                                                                     {valuation.change >=
@@ -764,7 +766,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                             ) : null}
 
                             {connection.investments ? (
-                                <div className="space-y-4 rounded-lg border border-border bg-background/75 p-3">
+                                <div className="space-y-4 border-t border-border pt-5">
                                     <div className="grid gap-3 sm:grid-cols-3">
                                         {[
                                             {
@@ -797,13 +799,13 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                 tone:
                                                     connection.investments
                                                         .unrealized_pnl < 0
-                                                        ? 'text-rose-600 dark:text-rose-400'
-                                                        : 'text-emerald-600 dark:text-emerald-400',
+                                                        ? 'text-destructive'
+                                                        : 'text-positive',
                                             },
                                         ].map((item) => (
                                             <div
                                                 key={item.label}
-                                                className="rounded-md border border-border bg-card px-3 py-2"
+                                                className="border-b border-border py-3 last:border-b-0"
                                             >
                                                 <p className="text-xs text-muted-foreground">
                                                     {item.label}
@@ -903,8 +905,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                             (holding.unrealized_pnl ??
                                                                                 0) <
                                                                             0
-                                                                                ? 'text-rose-600 dark:text-rose-400'
-                                                                                : 'text-emerald-600 dark:text-emerald-400'
+                                                                                ? 'text-destructive'
+                                                                                : 'text-positive'
                                                                         }`}
                                                                     >
                                                                         {holding.unrealized_pnl !==
@@ -940,7 +942,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                     (activity) => (
                                                         <div
                                                             key={activity.id}
-                                                            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5 text-sm"
+                                                            className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 text-sm last:border-b-0"
                                                         >
                                                             <div className="flex min-w-0 items-center gap-2">
                                                                 <Badge variant="outline">
@@ -974,8 +976,8 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                     className={
                                                                         activity.amount <
                                                                         0
-                                                                            ? 'text-rose-600 dark:text-rose-400'
-                                                                            : 'text-emerald-600 dark:text-emerald-400'
+                                                                            ? 'text-destructive'
+                                                                            : 'text-positive'
                                                                     }
                                                                 >
                                                                     {money(
@@ -995,7 +997,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
 
                             {connection.provider !== 'asset' ? (
                                 <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-                                    <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
+                                    <div className="space-y-2 border-t border-border pt-5">
                                         <h3 className="font-medium">
                                             Linked Accounts
                                         </h3>
@@ -1009,7 +1011,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                     (account) => (
                                                         <div
                                                             key={account.id}
-                                                            className="rounded-md border border-border bg-card p-3"
+                                                            className="border-b border-border py-3 last:border-b-0"
                                                         >
                                                             <div className="flex items-start justify-between gap-3">
                                                                 <div>
@@ -1071,7 +1073,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                         )}
                                     </div>
 
-                                    <div className="space-y-2 rounded-lg border border-border bg-background/75 p-3">
+                                    <div className="space-y-2 border-t border-border pt-5">
                                         <h3 className="font-medium">
                                             Recent Transactions
                                         </h3>
@@ -1087,7 +1089,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                     .map((transaction) => (
                                                         <div
                                                             key={transaction.id}
-                                                            className="rounded-md border border-border bg-card p-2.5"
+                                                            className="border-b border-border py-3 last:border-b-0"
                                                         >
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <div>
@@ -1107,11 +1109,13 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                                                 </div>
                                                                 <div className="text-right">
                                                                     <p className="text-sm font-medium">
-                                                                        {transaction.amount.toFixed(
-                                                                            2,
-                                                                        )}{' '}
-                                                                        {transaction.currency ??
-                                                                            wallet.currency}
+                                                                        {formatMoney(
+                                                                            transaction.amount,
+                                                                            transaction.currency ??
+                                                                                wallet.currency,
+                                                                            numberLocale,
+                                                                            'always',
+                                                                        )}
                                                                     </p>
                                                                     {transaction.pending ? (
                                                                         <Badge
@@ -1132,7 +1136,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                             ) : null}
 
                             {connection.provider === 'import' ? (
-                                <div className="rounded-lg border border-border bg-background/75 p-3">
+                                <div className="border-t border-border pt-5">
                                     <h3 className="mb-2 font-medium">
                                         Recent Imports
                                     </h3>
@@ -1145,7 +1149,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             {connection.imports.map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5 text-sm"
+                                                    className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 text-sm last:border-b-0"
                                                 >
                                                     <span className="min-w-0 truncate">
                                                         {item.filename}
@@ -1171,7 +1175,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                 </div>
                             ) : isCashWallet ||
                               connection.provider === 'asset' ? null : (
-                                <div className="rounded-lg border border-border bg-background/75 p-3">
+                                <div className="border-t border-border pt-5">
                                     <h3 className="mb-2 font-medium">
                                         Recent Sync Runs
                                     </h3>
@@ -1184,7 +1188,7 @@ export default function WalletShow({ wallet }: { wallet: Wallet }) {
                                             {connection.sync_runs.map((run) => (
                                                 <div
                                                     key={run.id}
-                                                    className="rounded-md border border-border bg-card p-2.5 text-sm"
+                                                    className="border-b border-border py-3 text-sm last:border-b-0"
                                                 >
                                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2">

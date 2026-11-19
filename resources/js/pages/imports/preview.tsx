@@ -67,8 +67,7 @@ type Props = {
     dateFormats: string[];
 };
 
-const panelClasses =
-    'rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10';
+const panelClasses = 'rounded-card border border-border bg-card p-5 tablet:p-6';
 
 const selectClasses =
     'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
@@ -237,6 +236,7 @@ export default function ImportPreview({
 
             <div className="mx-auto w-full max-w-4xl space-y-6">
                 <Heading
+                    variant="page"
                     title="Check before importing"
                     description={`${filename} · ${statement.format_label}${statement.bank ? ` · ${statement.bank}` : ''}${statement.account_hint ? ` · ${statement.account_hint}` : ''}`}
                 />
@@ -244,7 +244,7 @@ export default function ImportPreview({
                 {statement.warnings.map((warning) => (
                     <p
                         key={warning}
-                        className="flex items-start gap-2 rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200"
+                        className="flex items-start gap-2 rounded-md border border-transparent bg-warning-surface px-3 py-2 text-sm text-warning"
                     >
                         <TriangleAlert className="mt-0.5 size-4 shrink-0" />
                         {warning}
@@ -663,8 +663,8 @@ export default function ImportPreview({
                                                 <td
                                                     className={`px-3 py-2 text-right font-medium whitespace-nowrap ${
                                                         row.amount < 0
-                                                            ? 'text-rose-600 dark:text-rose-400'
-                                                            : 'text-emerald-600 dark:text-emerald-400'
+                                                            ? 'text-destructive'
+                                                            : 'text-positive'
                                                     }`}
                                                 >
                                                     {money(

@@ -97,8 +97,7 @@ const PERIOD_PHRASES: Record<Period, string> = {
     all: 'in total',
 };
 
-const panelClasses =
-    'rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10';
+const panelClasses = 'rounded-card border border-border bg-card p-5 tablet:p-6';
 
 const selectClasses =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm';
@@ -498,7 +497,7 @@ function TagCard({
                                     ? ` (${total.currency})`
                                     : ''}
                             </p>
-                            <p className="text-xl font-semibold text-rose-500 tabular-nums dark:text-rose-400">
+                            <p className="text-xl font-semibold text-destructive tabular-nums">
                                 {formatMoney(
                                     total.spent,
                                     total.currency,
@@ -506,7 +505,7 @@ function TagCard({
                                 )}
                             </p>
                             {total.received > 0 ? (
-                                <p className="text-xs text-emerald-600 tabular-nums dark:text-emerald-400">
+                                <p className="text-xs text-positive tabular-nums">
                                     Received{' '}
                                     {formatMoney(
                                         total.received,
@@ -611,8 +610,8 @@ function TagCard({
                                         <span
                                             className={`shrink-0 font-semibold tabular-nums ${
                                                 transaction.amount < 0
-                                                    ? 'text-rose-500 dark:text-rose-400'
-                                                    : 'text-emerald-600 dark:text-emerald-400'
+                                                    ? 'text-destructive'
+                                                    : 'text-positive'
                                             }`}
                                         >
                                             {formatMoney(
@@ -647,7 +646,7 @@ function TagCard({
                 </div>
             ) : null}
 
-            <div className="space-y-2 border-t border-brand/10 pt-3 dark:border-white/8">
+            <div className="space-y-2 border-t border-border pt-3">
                 <div className="flex items-center justify-between gap-2">
                     <h4 className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                         Tag automatically
@@ -738,6 +737,7 @@ export default function TagsIndex({ period, tags, accounts, colors }: Props) {
             <div className="mx-auto w-full max-w-5xl space-y-6">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <Heading
+                        variant="page"
                         title="Tags"
                         description="Tags say which car, flat or project a payment was for; categories still say what it was. Tag a transaction from its account page, or let rules do it."
                     />

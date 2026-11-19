@@ -60,7 +60,7 @@ export default function Profile({
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">
+                    <div className="space-y-6 rounded-card border border-border bg-card p-5 tablet:p-6">
                         <Heading
                             variant="small"
                             title="Profile information"
@@ -157,7 +157,7 @@ export default function Profile({
                                         </button>
 
                                         {isChangingEmail ? (
-                                            <div className="grid gap-2 rounded-lg border border-brand/20 bg-brand/5 p-3 dark:bg-brand/10">
+                                            <div className="grid gap-2 rounded-lg border border-border bg-brand/5 p-3 dark:bg-brand/10">
                                                 <Label htmlFor="new_email">
                                                     New email address
                                                 </Label>
@@ -198,7 +198,7 @@ export default function Profile({
                                         <Label htmlFor="avatar">Avatar</Label>
 
                                         <div className="flex items-center gap-4">
-                                            <Avatar className="size-12 border border-brand/25 bg-brand/5">
+                                            <Avatar className="size-12 border border-border bg-brand/5">
                                                 <AvatarImage
                                                     src={auth.user.avatar}
                                                     alt={displayName}
@@ -282,7 +282,7 @@ export default function Profile({
 
                     <div
                         id="cookie-preferences"
-                        className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10"
+                        className="space-y-6 rounded-card border border-border bg-card p-5 tablet:p-6"
                     >
                         <header>
                             <h2 className="mb-0.5 inline-flex items-center gap-2 text-base font-medium">
@@ -317,7 +317,7 @@ export default function Profile({
                                     </p>
                                 </div>
 
-                                <div className="inline-flex w-full gap-1 rounded-lg border border-brand/20 bg-brand/5 p-1 sm:w-auto sm:self-end dark:bg-brand/10">
+                                <div className="inline-flex w-full gap-1 rounded-lg border border-border bg-brand/5 p-1 sm:w-auto sm:self-end dark:bg-brand/10">
                                     <button
                                         type="button"
                                         onClick={() =>
@@ -352,7 +352,7 @@ export default function Profile({
                         </div>
                     </div>
 
-                    <div className="space-y-6 rounded-xl border border-brand/20 bg-linear-to-br from-brand/6 via-card to-card p-4 sm:p-5 dark:from-brand/10">
+                    <div className="space-y-6 rounded-card border border-border bg-card p-5 tablet:p-6">
                         <Heading
                             variant="small"
                             title="Appearance settings"

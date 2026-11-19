@@ -141,6 +141,7 @@ export function TransactionEditor({
     colors,
     reload,
     onClose,
+    from = 'activity',
 }: {
     transaction: EditableTransaction;
     categories: { expense: CategoryOptionLite[]; income: CategoryOptionLite[] };
@@ -148,6 +149,7 @@ export function TransactionEditor({
     colors: TagColorOption[];
     reload: string[];
     onClose: () => void;
+    from?: 'activity' | 'account';
 }) {
     const [categoryId, setCategoryId] = useState<number | null>(
         transaction.category_id,
@@ -187,7 +189,7 @@ export function TransactionEditor({
         }
 
         router.patch(
-            `/accounts/${transaction.account_id}/transactions/${transaction.id}?from=activity`,
+            `/accounts/${transaction.account_id}/transactions/${transaction.id}?from=${from}`,
             payload,
             {
                 preserveScroll: true,
