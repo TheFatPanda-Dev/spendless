@@ -413,7 +413,7 @@ function RecentActivity({
                                         href={activityHref(month, {
                                             focus: transaction.id,
                                         })}
-                                        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 rounded-lg px-1 py-3 hover:bg-muted/60 tablet:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]"
+                                        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 rounded-lg px-1 py-3 hover:bg-muted/60 tablet:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]"
                                     >
                                         <span className="flex min-w-0 items-center gap-4 tablet:col-auto">
                                             <IconTile
