@@ -15,6 +15,25 @@ class DefaultSubcategoriesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_work_lunch_is_added_once_without_restoring_deleted_defaults(): void
+    {
+        $user = User::factory()->create();
+        app(CreateDefaultMainCategories::class)->handle($user);
+        $food = Category::query()->where('user_id', $user->id)->whereNull('parent_id')->where('name', 'Food & Drink')->sole();
+        $children = fn () => Category::query()->where('parent_id', $food->id)->pluck('name')->sort()->values()->all();
+
+        $this->assertContains('Work Lunch', $children(), 'New accounts start with it');
+
+        Category::query()->where('parent_id', $food->id)->whereIn('name', ['Work Lunch', 'Bars & Pubs'])->delete();
+
+        $migration = require database_path('migrations/2026_11_19_000002_add_work_lunch_subcategory.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame(['Coffee & Cafés', 'Restaurants', 'Takeaway & Delivery', 'Work Lunch'], $children());
+        $this->assertSame($food->color, Category::query()->where('parent_id', $food->id)->where('name', 'Work Lunch')->value('color'));
+    }
+
     public function test_new_accounts_get_main_categories_with_subcategories(): void
     {
         $user = User::factory()->create();

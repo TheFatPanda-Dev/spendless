@@ -218,6 +218,24 @@ final class CsvLayouts
     }
 
     /**
+     * "CARD_PAYMENT" or "Card Payment" => "Card payment"; "TOPUP" => "Top-up".
+     */
+    private static function revolutType(string $type): ?string
+    {
+        $words = strtolower(trim(str_replace('_', ' ', $type)));
+
+        if ($words === '') {
+            return null;
+        }
+
+        return match ($words) {
+            'topup', 'top up' => 'Top-up',
+            'atm' => 'Cash withdrawal',
+            default => ucfirst($words),
+        };
+    }
+
+    /**
      * @param  array<string, string>  $row
      */
     private static function revolut(array $row): ?ParsedTransaction
@@ -237,7 +255,9 @@ final class CsvLayouts
         return new ParsedTransaction(
             date: $started['date'],
             amount: round($amount - abs($fee), 2),
-            description: $description,
+            // Revolut's one text column is the merchant; its type ("Card payment",
+            // "Transfer") is the description, so the two say different things.
+            description: self::revolutType($row['type'] ?? '') ?? $description,
             payee: $description,
             balanceAfter: ImportValueParser::amount($row['balance'] ?? ''),
             pending: $state === 'PENDING',

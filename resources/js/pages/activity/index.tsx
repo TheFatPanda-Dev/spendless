@@ -573,7 +573,6 @@ export default function ActivityIndex(props: Props) {
                 <>
                     <TransactionLedger
                         transactions={transactions}
-                        variant="activity"
                         openId={openId}
                         onToggle={setOpenId}
                         openRowRef={openRowRef}

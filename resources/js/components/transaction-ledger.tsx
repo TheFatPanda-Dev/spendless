@@ -54,12 +54,11 @@ function dayLabel(date: string, locale: string): string {
  * and wallet line up across days. On phones the rows sit on the canvas with a
  * hairline between days (kit phone-activity). A row opens its editor in place.
  *
- * `variant` picks the third column: the wallet on Activity, nothing extra on an
- * account page (the description moves under the payee instead).
+ * Columns: merchant, category, the bank's description (when it says more than the
+ * merchant) and the amount. Phones show "Category · description" under the merchant.
  */
 export function TransactionLedger<T extends LedgerTransaction>({
     transactions,
-    variant,
     openId,
     onToggle,
     renderEditor,
@@ -68,7 +67,6 @@ export function TransactionLedger<T extends LedgerTransaction>({
     openRowRef,
 }: {
     transactions: T[];
-    variant: 'activity' | 'account';
     openId: number | null;
     onToggle: (id: number | null) => void;
     renderEditor: (transaction: T) => ReactNode;
@@ -96,11 +94,6 @@ export function TransactionLedger<T extends LedgerTransaction>({
         return [...byDay.entries()];
     }, [transactions]);
 
-    const columns =
-        variant === 'activity'
-            ? 'tablet:grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_8.5rem]'
-            : 'tablet:grid-cols-[2.5rem_minmax(0,2fr)_minmax(0,1.2fr)_8.5rem]';
-
     return (
         <div className="tablet:overflow-hidden tablet:rounded-card tablet:border tablet:border-border tablet:bg-card">
             {groups.map(([day, items], groupIndex) => (
@@ -126,16 +119,14 @@ export function TransactionLedger<T extends LedgerTransaction>({
                             const payee = payeeOf(transaction);
                             const category = leafCategory(transaction.category);
                             const description =
-                                variant === 'account' &&
                                 transaction.name &&
-                                transaction.name !== payee
+                                transaction.name.trim().toLowerCase() !==
+                                    payee.trim().toLowerCase()
                                     ? transaction.name
                                     : null;
                             const phoneMeta = [
                                 category,
-                                variant === 'activity'
-                                    ? transaction.account
-                                    : description,
+                                description,
                                 transaction.pending ? 'pending' : null,
                             ]
                                 .filter(Boolean)
@@ -156,7 +147,7 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                         }
                                         className={cn(
                                             '-mx-3 grid w-[calc(100%+1.5rem)] grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl px-3 py-3 text-left transition-colors tablet:mx-0 tablet:w-full tablet:rounded-none tablet:px-5 tablet:py-3.5',
-                                            columns,
+                                            'tablet:grid-cols-[2.5rem_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.6fr)_8.5rem]',
                                             open
                                                 ? 'bg-accent/40'
                                                 : 'hover:bg-muted/60',
@@ -174,11 +165,6 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                             <span className="block truncate text-sm text-muted-foreground tablet:hidden">
                                                 {phoneMeta}
                                             </span>
-                                            {description ? (
-                                                <span className="hidden truncate text-sm text-muted-foreground tablet:block">
-                                                    {description}
-                                                </span>
-                                            ) : null}
                                             {transaction.tag_ids.length > 0 ? (
                                                 <span className="mt-1 flex flex-wrap gap-1">
                                                     {transaction.tag_ids.map(
@@ -208,11 +194,12 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                                 ? ' · pending'
                                                 : ''}
                                         </span>
-                                        {variant === 'activity' ? (
-                                            <span className="hidden truncate text-base text-muted-foreground tablet:block">
-                                                {transaction.account}
-                                            </span>
-                                        ) : null}
+                                        <span
+                                            className="hidden truncate text-base text-muted-foreground tablet:block"
+                                            title={description ?? undefined}
+                                        >
+                                            {description}
+                                        </span>
                                         <span
                                             className={cn(
                                                 'text-right text-base font-medium whitespace-nowrap amount',

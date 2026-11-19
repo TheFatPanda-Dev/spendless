@@ -68,10 +68,14 @@ CSV, 'csv'));
         $this->assertCount(5, $statement->transactions, 'The savings product row is left out');
         $this->assertNotEmpty($statement->warnings);
 
-        $byDescription = $this->byDescription($statement->transactions);
-        $this->assertSame(-50.25, $byDescription['Exchanged to EUR']->amount, 'Fee is added to the amount');
-        $this->assertTrue($byDescription['Pret A Manger']->pending);
-        $this->assertTrue($byDescription['Cancelled order']->cancelled);
+        // Revolut's text column is the merchant (payee); its type is the description.
+        $byPayee = $this->byPayee($statement->transactions);
+        $this->assertSame(-50.25, $byPayee['Exchanged to EUR']->amount, 'Fee is added to the amount');
+        $this->assertSame('Exchange', $byPayee['Exchanged to EUR']->description);
+        $this->assertSame('Top-up', $byPayee['Payment from John']->description);
+        $this->assertSame('Card payment', $byPayee['Tesco']->description);
+        $this->assertTrue($byPayee['Pret A Manger']->pending);
+        $this->assertTrue($byPayee['Cancelled order']->cancelled);
         $this->assertSame(937.35, $statement->closingBalance, 'Latest completed running balance');
         $this->assertSame('2026-10-02', $statement->balanceDate);
     }
@@ -278,12 +282,12 @@ CSV, 'csv');
      * @param  list<ParsedTransaction>  $transactions
      * @return array<string, ParsedTransaction>
      */
-    private function byDescription(array $transactions): array
+    private function byPayee(array $transactions): array
     {
         $map = [];
 
         foreach ($transactions as $transaction) {
-            $map[$transaction->description] = $transaction;
+            $map[$transaction->payee] = $transaction;
         }
 
         return $map;

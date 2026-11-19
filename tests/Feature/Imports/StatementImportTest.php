@@ -118,7 +118,8 @@ class StatementImportTest extends TestCase
             ."CARD_PAYMENT,Current,2026-10-03 19:00:00,,Online shop,-30.00,0.00,GBP,REVERTED,\n", $account), $account);
 
         $this->assertSame(2, $account->transactions()->count());
-        $pret = $account->transactions()->where('name', 'Pret A Manger')->sole();
+        $pret = $account->transactions()->where('merchant_name', 'Pret A Manger')->sole();
+        $this->assertSame('Card payment', $pret->name, "Revolut's type is the description");
         $this->assertFalse($pret->pending);
         $this->assertSame('-4.55', $pret->amount, 'Settled amount replaces the pending one');
         $this->assertSame(983.05, (float) $account->fresh()->balances_encrypted['current']);

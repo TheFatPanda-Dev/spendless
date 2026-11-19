@@ -84,6 +84,7 @@ class CreateDefaultMainCategories
                 ['Coffee & Cafés', 'coffee'],
                 ['Takeaway & Delivery', 'bike'],
                 ['Bars & Pubs', 'beer'],
+                ['Work Lunch', 'sandwich'],
             ],
             'Health & Wellness' => [
                 ['Pharmacy', 'pill'],

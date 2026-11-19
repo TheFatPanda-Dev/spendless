@@ -436,7 +436,6 @@ export default function AccountShow({
                 ) : (
                     <TransactionLedger
                         transactions={visible}
-                        variant="account"
                         openId={openId}
                         onToggle={setOpenId}
                         tags={tags}
