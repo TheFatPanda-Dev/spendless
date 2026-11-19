@@ -1,27 +1,44 @@
 {
+  "id": "/",
   "name": "SpendLess",
   "short_name": "SpendLess",
+  "description": "See what went out. Know what's left.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#080808",
+  "background_color": "#F6F7F2",
+  "categories": ["finance", "productivity"],
   "icons": [
     {
-      "src": "app-icon-192.png",
+      "src": "/images/brand/app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "app-icon-512.png",
+      "src": "/images/brand/app-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "maskable-512.png",
+      "src": "/images/brand/maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#080808",
-  "background_color": "#F6F7F2",
-  "display": "standalone"
+  "shortcuts": [
+    {
+      "name": "Activity",
+      "url": "/activity",
+      "icons": [{ "src": "/images/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Budgets",
+      "url": "/budgets",
+      "icons": [{ "src": "/images/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
 }

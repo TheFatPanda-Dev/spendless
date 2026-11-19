@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <meta name="theme-color" content="#080808">
+        <meta name="robots" content="noindex">
+        <title>Offline - SpendLess</title>
+        <style>
+            @font-face {
+                font-family: 'Roboto';
+                src: url('/fonts/roboto/Roboto-Light.ttf') format('truetype');
+                font-weight: 300;
+                font-display: swap;
+            }
+
+            @font-face {
+                font-family: 'Roboto';
+                src: url('/fonts/roboto/Roboto-Regular.ttf') format('truetype');
+                font-weight: 400;
+                font-display: swap;
+            }
+
+            :root {
+                color-scheme: dark;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                margin: 0;
+                min-height: 100%;
+                background: #080808;
+            }
+
+            body {
+                display: flex;
+                min-height: 100svh;
+                flex-direction: column;
+                padding: max(24px, env(safe-area-inset-top)) 20px max(32px, env(safe-area-inset-bottom));
+                color: #fafafa;
+                font-family: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            main {
+                width: 100%;
+                max-width: 28rem;
+                margin: auto 0;
+            }
+
+            img {
+                display: block;
+                height: 40px;
+                width: auto;
+            }
+
+            h1 {
+                margin: 56px 0 0;
+                font-size: clamp(2.75rem, 12vw, 4rem);
+                line-height: 1;
+                font-weight: 300;
+                letter-spacing: -0.03em;
+            }
+
+            p {
+                margin: 24px 0 0;
+                padding-top: 24px;
+                border-top: 1px solid #2c302e;
+                color: #a9b4ad;
+                font-size: 1rem;
+                line-height: 1.6;
+            }
+
+            button {
+                margin-top: 32px;
+                height: 48px;
+                padding: 0 28px;
+                border: 0;
+                border-radius: 12px;
+                background: #09c98c;
+                color: #092419;
+                font: inherit;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+            }
+
+            button:hover {
+                background: #3fd9a6;
+            }
+
+            button:focus-visible {
+                outline: 2px solid #09c98c;
+                outline-offset: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <img src="/images/brand/lockup-on-dark.svg" alt="SpendLess" width="179" height="48">
+            <h1>You’re offline</h1>
+            <p>SpendLess needs a connection to show your balances and transactions. Nothing is stored on this device. Reconnect and try again.</p>
+            <button type="button" onclick="location.reload()">Try again</button>
+        </main>
+        <script>
+            window.addEventListener('online', () => location.reload());
+        </script>
+    </body>
+</html>

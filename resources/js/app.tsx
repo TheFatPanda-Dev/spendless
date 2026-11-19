@@ -6,6 +6,7 @@ import RuntimeLoadWarning from '@/components/runtime-load-warning';
 import SitePrefsBanner from '@/components/site-prefs-banner';
 import '../css/app.css';
 import { initializeTheme } from '@/hooks/use-appearance';
+import { registerServiceWorker } from '@/lib/service-worker';
 
 const appName = import.meta.env.VITE_APP_NAME || 'SpendLess';
 
@@ -40,3 +41,5 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+registerServiceWorker();
