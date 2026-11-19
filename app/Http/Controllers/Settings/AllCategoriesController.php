@@ -31,12 +31,18 @@ class AllCategoriesController extends Controller
             'expenseCategories' => $this->buildTree(
                 $categories->where('type', 'expense')->values(),
             ),
+            'transferCategories' => $this->buildTree(
+                $categories->where('type', 'transfer')->values(),
+            ),
             'parentOptions' => [
                 'income' => $this->buildParentOptions(
                     $categories->where('type', 'income')->values(),
                 ),
                 'expense' => $this->buildParentOptions(
                     $categories->where('type', 'expense')->values(),
+                ),
+                'transfer' => $this->buildParentOptions(
+                    $categories->where('type', 'transfer')->values(),
                 ),
             ],
             'categoryTypes' => CategoryOptions::types(),

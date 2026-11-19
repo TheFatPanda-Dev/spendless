@@ -15,7 +15,7 @@ export type LedgerTransaction = {
     category: string;
     category_icon: string;
     category_color?: string | null;
-    category_type?: 'expense' | 'income';
+    category_type?: 'expense' | 'income' | 'transfer';
     amount: number;
     currency: string;
     date: string | null;
@@ -233,7 +233,12 @@ export function TransactionLedger<T extends LedgerTransaction>({
                                         <span
                                             className={cn(
                                                 'text-right text-base font-medium whitespace-nowrap amount',
-                                                amountTone(transaction.amount),
+                                                transaction.category_type ===
+                                                    'transfer'
+                                                    ? 'text-foreground'
+                                                    : amountTone(
+                                                          transaction.amount,
+                                                      ),
                                             )}
                                         >
                                             {formatMoney(

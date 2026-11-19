@@ -59,7 +59,7 @@ type RecentTransaction = {
     category: string;
     category_icon: string;
     category_color?: string | null;
-    category_type: 'expense' | 'income';
+    category_type: 'expense' | 'income' | 'transfer';
     amount: number;
     currency: string;
     date: string | null;
@@ -456,7 +456,12 @@ function RecentActivity({
                                         <span
                                             className={cn(
                                                 'text-right text-base font-medium amount',
-                                                amountTone(transaction.amount),
+                                                transaction.category_type ===
+                                                    'transfer'
+                                                    ? 'text-foreground'
+                                                    : amountTone(
+                                                          transaction.amount,
+                                                      ),
                                             )}
                                         >
                                             {formatMoney(

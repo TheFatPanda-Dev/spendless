@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import ArrowDownCircle from 'lucide-react/dist/esm/icons/arrow-down-circle.js';
+import ArrowLeftRight from 'lucide-react/dist/esm/icons/arrow-left-right.js';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js';
 import ArrowUpCircle from 'lucide-react/dist/esm/icons/arrow-up-circle.js';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.js';
@@ -44,7 +45,7 @@ import type { BreadcrumbItem } from '@/types';
 type CategoryNode = {
     id: number;
     name: string;
-    type: 'expense' | 'income';
+    type: 'expense' | 'income' | 'transfer';
     icon: string;
     color: string;
     parent_id: number | null;
@@ -85,7 +86,7 @@ type CategoryColorOption = CategoryOption & {
 
 type FormState = {
     name: string;
-    type: 'expense' | 'income';
+    type: 'expense' | 'income' | 'transfer';
     icon: string;
     color: string;
     parent_id: string;
@@ -94,9 +95,12 @@ type FormState = {
 type Props = {
     incomeCategories: CategoryNode[];
     expenseCategories: CategoryNode[];
+    /** Money moved between your own accounts: neither income nor spending. */
+    transferCategories?: CategoryNode[];
     parentOptions: {
         income: ParentOption[];
         expense: ParentOption[];
+        transfer?: ParentOption[];
     };
     categoryTypes: CategoryOption[];
     categoryColors: CategoryColorOption[];
@@ -529,6 +533,7 @@ function ParentCategoryTree({
 export default function AllCategories({
     incomeCategories,
     expenseCategories,
+    transferCategories = [],
     parentOptions,
     categoryTypes,
     categoryColors,
@@ -568,7 +573,11 @@ export default function AllCategories({
 
     const activeParentOptions = parentOptions[data.type] ?? [];
     const activeCategoryTree =
-        data.type === 'income' ? incomeCategories : expenseCategories;
+        data.type === 'income'
+            ? incomeCategories
+            : data.type === 'transfer'
+              ? transferCategories
+              : expenseCategories;
     const colorMap = new Map(
         categoryColors.map((option) => [option.value, option]),
     );
@@ -584,6 +593,13 @@ export default function AllCategories({
         () => new Set(),
     );
     const [expandedExpenseIds, setExpandedExpenseIds] = useState<Set<number>>(
+        () => new Set(),
+    );
+    const transferBranchIds = useMemo(
+        () => collectBranchCategoryIds(transferCategories),
+        [transferCategories],
+    );
+    const [expandedTransferIds, setExpandedTransferIds] = useState<Set<number>>(
         () => new Set(),
     );
     const [expandedParentIds, setExpandedParentIds] = useState<Set<number>>(
@@ -831,6 +847,14 @@ export default function AllCategories({
         );
     }, [expandedExpenseIds, expenseBranchIds]);
 
+    const filteredExpandedTransferIds = useMemo(() => {
+        const availableIds = new Set(transferBranchIds);
+
+        return new Set(
+            [...expandedTransferIds].filter((id) => availableIds.has(id)),
+        );
+    }, [expandedTransferIds, transferBranchIds]);
+
     const filteredExpandedParentIds = useMemo(() => {
         const availableIds = new Set(collectAllCategoryIds(activeCategoryTree));
 
@@ -966,6 +990,20 @@ export default function AllCategories({
 
     const toggleExpenseCategory = (categoryId: number): void => {
         setExpandedExpenseIds((current) => {
+            const next = new Set(current);
+
+            if (next.has(categoryId)) {
+                next.delete(categoryId);
+            } else {
+                next.add(categoryId);
+            }
+
+            return next;
+        });
+    };
+
+    const toggleTransferCategory = (categoryId: number): void => {
+        setExpandedTransferIds((current) => {
             const next = new Set(current);
 
             if (next.has(categoryId)) {
@@ -1429,11 +1467,18 @@ export default function AllCategories({
                                                     >
                                                         <div className="flex min-w-0 items-center gap-2.5">
                                                             <div
-                                                                className={`flex size-7 shrink-0 items-center justify-center rounded-full border ${data.type === 'income' ? 'border-transparent bg-hero text-positive' : 'border-red-400/35 bg-red-500/18 text-red-300'}`}
+                                                                className={`flex size-7 shrink-0 items-center justify-center rounded-full border ${data.type === 'income' ? 'border-transparent bg-hero text-positive' : data.type === 'transfer' ? 'border-border bg-muted text-muted-foreground' : 'border-red-400/35 bg-red-500/18 text-red-300'}`}
                                                             >
                                                                 {data.type ===
                                                                 'income' ? (
                                                                     <ArrowUpCircle
+                                                                        size={
+                                                                            18
+                                                                        }
+                                                                    />
+                                                                ) : data.type ===
+                                                                  'transfer' ? (
+                                                                    <ArrowLeftRight
                                                                         size={
                                                                             18
                                                                         }
@@ -1469,6 +1514,9 @@ export default function AllCategories({
                                                                         const isIncome =
                                                                             typeOption.value ===
                                                                             'income';
+                                                                        const isTransfer =
+                                                                            typeOption.value ===
+                                                                            'transfer';
 
                                                                         return (
                                                                             <button
@@ -1496,10 +1544,12 @@ export default function AllCategories({
                                                                                 }`}
                                                                             >
                                                                                 <div
-                                                                                    className={`flex size-9 shrink-0 items-center justify-center rounded-2xl border ${isIncome ? 'border-transparent bg-hero text-positive' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-400/35 dark:bg-red-500/18 dark:text-red-300'}`}
+                                                                                    className={`flex size-9 shrink-0 items-center justify-center rounded-2xl border ${isIncome ? 'border-transparent bg-hero text-positive' : isTransfer ? 'border-border bg-muted text-muted-foreground' : 'border-red-200 bg-red-50 text-red-500 dark:border-red-400/35 dark:bg-red-500/18 dark:text-red-300'}`}
                                                                                 >
                                                                                     {isIncome ? (
                                                                                         <ArrowUpCircle className="size-4.5" />
+                                                                                    ) : isTransfer ? (
+                                                                                        <ArrowLeftRight className="size-4.5" />
                                                                                     ) : (
                                                                                         <ArrowDownCircle className="size-4.5" />
                                                                                     )}
@@ -2117,6 +2167,42 @@ export default function AllCategories({
                                                 }
                                             />
                                         </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card className="min-w-0 border-border bg-card shadow-none">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <ArrowLeftRight className="size-5 text-muted-foreground" />
+                                        Transfer categories
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Money moved between your own accounts,
+                                        to investments and savings, or between
+                                        currencies. It never counts as income or
+                                        spending.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="min-w-0">
+                                    {transferCategories.length === 0 ? (
+                                        <div className="rounded-2xl border border-dashed border-border bg-black/10 p-4 text-sm text-muted-foreground">
+                                            No transfer categories yet. Create
+                                            one with the type Transfer.
+                                        </div>
+                                    ) : (
+                                        <CategoryTree
+                                            categories={transferCategories}
+                                            colorMap={colorMap}
+                                            expandedIds={
+                                                filteredExpandedTransferIds
+                                            }
+                                            onToggle={toggleTransferCategory}
+                                            onDelete={setDeleteCandidate}
+                                            deletingCategoryId={
+                                                deletingCategoryId
+                                            }
+                                        />
                                     )}
                                 </CardContent>
                             </Card>

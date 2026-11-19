@@ -41,7 +41,10 @@ class DefaultSubcategoriesTest extends TestCase
         app(CreateDefaultMainCategories::class)->handle($user);
 
         $housing = Category::query()->where('user_id', $user->id)->whereNull('parent_id')->where('name', 'Housing')->sole();
-        $this->assertSame(36, Category::query()->where('user_id', $user->id)->whereNull('parent_id')->count());
+        $this->assertSame(37, Category::query()->where('user_id', $user->id)->whereNull('parent_id')->count());
+        $transfers = Category::query()->where('user_id', $user->id)->whereNull('parent_id')->where('type', 'transfer')->sole();
+        $this->assertSame('Transfers', $transfers->name);
+        $this->assertSame(['Between My Accounts', 'Currency Exchange', 'Investments & Savings'], $transfers->children()->pluck('name')->sort()->values()->all());
         $this->assertSame(
             ['Council Tax', 'Furniture & Household', 'Home Insurance', 'Internet & Phone', 'Mortgage', 'Rent', 'Repairs & Maintenance', 'Utilities'],
             $housing->children()->get()->pluck('name')->sort()->values()->all(),

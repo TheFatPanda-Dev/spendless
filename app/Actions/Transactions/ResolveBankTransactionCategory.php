@@ -98,6 +98,17 @@ class ResolveBankTransactionCategory
     ];
 
     /**
+     * Money moved rather than earned or spent, in either direction; checked before the
+     * income and expense rules.
+     *
+     * @var list<array{keywords: list<string>, preferred: list<string>}>
+     */
+    private const TRANSFER_RULES = [
+        ['keywords' => ['exchanged to', 'exchanged from'], 'preferred' => ['Currency Exchange', 'Transfers']],
+        ['keywords' => ['interactive brokers', 'pensionbee', 'al rayan', 'trading 212', 'trading212', 'vanguard'], 'preferred' => ['Investments & Savings', 'Transfers']],
+    ];
+
+    /**
      * Words in category names too common in bank text to mean anything on their own
      * ("CARD PAYMENT", "BANK TRANSFER", "ONLINE PAYMENT").
      */
@@ -115,14 +126,27 @@ class ResolveBankTransactionCategory
 
     public function __invoke(BankTransaction $transaction, User $user): ?Category
     {
+        $signalText = $this->buildSignalText($transaction);
+        $transfers = $this->categoriesFor($user, 'transfer');
+
+        if ($transfers->isNotEmpty()) {
+            foreach (self::TRANSFER_RULES as $rule) {
+                if ($this->containsAnyKeyword($signalText, $rule['keywords'])) {
+                    $matched = $this->matchPreferredCategory($transfers, $rule['preferred']);
+
+                    if ($matched instanceof Category) {
+                        return $matched;
+                    }
+                }
+            }
+        }
+
         $type = self::resolveTransactionType($transaction);
         $categories = $this->categoriesFor($user, $type);
 
         if ($categories->isEmpty()) {
             return null;
         }
-
-        $signalText = $this->buildSignalText($transaction);
 
         foreach (self::KEYWORD_RULES[$type] ?? [] as $rule) {
             if (! $this->containsAnyKeyword($signalText, $rule['keywords'])) {

@@ -157,6 +157,7 @@ class BankAccountController extends Controller
         ]);
 
         $message = match (true) {
+            $category->type === 'transfer' => 'Transfer saved.',
             $request->validated('direction') === 'in' && $category->type === 'expense' => 'Money back saved.',
             ($request->validated('direction') ?? ($category->type === 'income' ? 'in' : 'out')) === 'in' => 'Income saved.',
             default => 'Expense saved.',

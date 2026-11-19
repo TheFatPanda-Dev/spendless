@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Transactions\RecognizeTransfers;
 use App\Models\BankAccount;
 use App\Models\BankConnection;
 use App\Models\BankTransaction;
@@ -89,6 +90,48 @@ class BudgetsAndActivityTest extends TestCase
         $activity(['type' => 'income'])->assertInertia(fn (Assert $page) => $page
             ->has('transactions', 1)
             ->where('transactions.0.name', 'Payment from employer'));
+    }
+
+    public function test_moving_money_between_my_accounts_is_neither_income_nor_spending(): void
+    {
+        [$user, $barclays] = $this->owner(name: 'Barclays');
+        [, $nationwide] = $this->owner($user, 'Nationwide');
+        $transfers = $this->category($user, 'Transfers', 'transfer');
+        $between = Category::query()->create(['user_id' => $user->id, 'parent_id' => $transfers->id, 'name' => 'Between My Accounts', 'type' => 'transfer', 'icon' => 'arrow-left-right', 'color' => 'stone']);
+        $investments = Category::query()->create(['user_id' => $user->id, 'parent_id' => $transfers->id, 'name' => 'Investments & Savings', 'type' => 'transfer', 'icon' => 'piggy-bank', 'color' => 'stone']);
+        $groceries = $this->category($user, 'Groceries');
+        $otherIncome = $this->category($user, 'Other Income', 'income');
+
+        $this->transaction($barclays, 'To Nationwide', -1200, $between);
+        $this->transaction($nationwide, 'From Barclays', 1200, $between);
+        $this->transaction($barclays, 'Tesco', -40, $groceries);
+        $this->transaction($nationwide, 'Gift from Mum', 100, $otherIncome);
+        $this->transaction($nationwide, 'Uncategorised refund', 25);
+        // Imported before transfers existed: automatically filed as income.
+        $ibkr = $this->transaction($nationwide, 'Payment from INTERACTIVE BROKERS', 500, $otherIncome);
+        $ibkr->forceFill(['category_manually_set' => false])->save();
+        $handPicked = $this->transaction($nationwide, 'Interactive Brokers dividend I filed myself', 7, $otherIncome);
+
+        $this->assertSame(1, app(RecognizeTransfers::class)->handle($user));
+        $this->assertSame($investments->id, $ibkr->fresh()->category_id);
+        $this->assertSame($otherIncome->id, $handPicked->fresh()->category_id, 'Hand-picked categories are kept');
+
+        $this->actingAs($user)->get(route('dashboard', self::MONTH))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('spent', 40)
+                ->where('income', 132)
+                ->has('categories', 1));
+
+        $activity = fn (array $query = []) => $this->actingAs($user)->get(route('activity.index', [...self::MONTH, ...$query]));
+
+        $activity()->assertInertia(fn (Assert $page) => $page
+            ->where('totals.0.out', -40)
+            ->where('totals.0.in', 132));
+        $activity(['type' => 'transfer'])->assertInertia(fn (Assert $page) => $page->has('transactions', 3));
+        $activity(['type' => 'expense'])->assertInertia(fn (Assert $page) => $page->has('transactions', 1)->where('transactions.0.name', 'Tesco'));
+        $activity(['type' => 'income'])->assertInertia(fn (Assert $page) => $page
+            ->has('transactions', 3)
+            ->where('transactions', fn ($transactions): bool => collect($transactions)->pluck('name')->contains('Uncategorised refund')));
     }
 
     public function test_saving_the_monthly_budget_again_changes_it_instead_of_adding_another(): void

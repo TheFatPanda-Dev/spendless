@@ -69,7 +69,7 @@ type Transaction = {
     category: string;
     category_id: number | null;
     category_icon: string;
-    category_type: 'expense' | 'income';
+    category_type: 'expense' | 'income' | 'transfer';
     category_source: 'manual' | 'automatic' | 'fallback';
     amount: number;
     currency: string;
@@ -84,6 +84,7 @@ type Props = {
     categoryOptions: {
         expense: CategoryOptionLite[];
         income: CategoryOptionLite[];
+        transfer?: CategoryOptionLite[];
     };
     categoryColors: TagColorOption[];
     tags: TagOption[];
@@ -106,6 +107,20 @@ function when(iso: string | null, locale: string): string | null {
     }).format(new Date(iso));
 }
 
+/**
+ * What a transaction is for the totals and the type filter: a transfer (money moved
+ * between your own accounts), spending (including money back, which lowers it) or income.
+ */
+function kindOf(transaction: Transaction): 'expense' | 'income' | 'transfer' {
+    if (transaction.category_type === 'transfer') {
+        return 'transfer';
+    }
+
+    return transaction.amount < 0 || transaction.category_type === 'expense'
+        ? 'expense'
+        : 'income';
+}
+
 export default function AccountShow({
     account,
     month,
@@ -119,7 +134,9 @@ export default function AccountShow({
     const [openId, setOpenId] = useState<number | null>(null);
     const [adding, setAdding] = useState(false);
     const [search, setSearch] = useState('');
-    const [type, setType] = useState<'all' | 'expense' | 'income'>('all');
+    const [type, setType] = useState<'all' | 'expense' | 'income' | 'transfer'>(
+        'all',
+    );
     const { isSyncing, errorMessage, startSyncConnection } =
         useSyncAllConnections({ only: RELOAD });
     const currency = account.currency ?? 'EUR';
@@ -140,11 +157,7 @@ export default function AccountShow({
         const needle = search.trim().toLowerCase();
 
         return transactions.filter((transaction) => {
-            if (type === 'expense' && transaction.amount >= 0) {
-                return false;
-            }
-
-            if (type === 'income' && transaction.amount <= 0) {
+            if (type !== 'all' && kindOf(transaction) !== type) {
                 return false;
             }
 
@@ -164,10 +177,19 @@ export default function AccountShow({
     const totals = useMemo(
         () =>
             visible.reduce(
-                (sum, transaction) => ({
-                    in: sum.in + Math.max(transaction.amount, 0),
-                    out: sum.out + Math.min(transaction.amount, 0),
-                }),
+                // Transfers are neither; money back counts against spending.
+                (sum, transaction) => {
+                    const kind = kindOf(transaction);
+
+                    return {
+                        in:
+                            sum.in +
+                            (kind === 'income' ? transaction.amount : 0),
+                        out:
+                            sum.out +
+                            (kind === 'expense' ? transaction.amount : 0),
+                    };
+                },
                 { in: 0, out: 0 },
             ),
         [visible],
@@ -446,6 +468,7 @@ export default function AccountShow({
                         <option value="all">All types</option>
                         <option value="expense">Expenses</option>
                         <option value="income">Income</option>
+                        <option value="transfer">Transfers</option>
                     </select>
                     <div className="flex min-w-[12rem] flex-1 items-center gap-2 rounded-lg border border-control/70 bg-card px-3">
                         <Search

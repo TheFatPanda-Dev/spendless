@@ -18,7 +18,7 @@ export type CategoryOptionLite = {
     id: number;
     name: string;
     path: string;
-    type: 'expense' | 'income';
+    type: 'expense' | 'income' | 'transfer';
     icon: string;
     tint?: string | null;
     depth?: number;
@@ -26,7 +26,11 @@ export type CategoryOptionLite = {
 
 export type AddTransactionOptions = {
     accounts: Array<{ id: number; name: string; currency: string }>;
-    categories: { expense: CategoryOptionLite[]; income: CategoryOptionLite[] };
+    categories: {
+        expense: CategoryOptionLite[];
+        income: CategoryOptionLite[];
+        transfer?: CategoryOptionLite[];
+    };
 };
 
 const fieldClasses =
@@ -67,6 +71,11 @@ export function AddTransactionSheet({
     const moneyBack =
         form.data.type === 'income' ? options.categories.expense : [];
     const isMoneyBack = moneyBack.some(
+        (category) => String(category.id) === form.data.category_id,
+    );
+    // Money moved: e.g. cash taken out of a bank, saved to the cash wallet.
+    const transfers = options.categories.transfer ?? [];
+    const isTransfer = transfers.some(
         (category) => String(category.id) === form.data.category_id,
     );
     const account = options.accounts.find(
@@ -256,6 +265,11 @@ export function AddTransactionSheet({
                                         label: 'Money back · lowers spending',
                                         options: moneyBack,
                                     },
+                                    {
+                                        key: 'transfer',
+                                        label: 'Transfer · not income or spending',
+                                        options: transfers,
+                                    },
                                 ]}
                                 value={
                                     form.data.category_id === ''
@@ -274,6 +288,12 @@ export function AddTransactionSheet({
                                     Saved as money back: it lowers this
                                     category&apos;s spending and doesn&apos;t
                                     count as income.
+                                </p>
+                            ) : null}
+                            {isTransfer ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Saved as a transfer: money moved between
+                                    your own accounts, not income or spending.
                                 </p>
                             ) : null}
                             <InputError message={form.errors.category_id} />
@@ -339,6 +359,8 @@ export function AddTransactionSheet({
                                     <Loader2 className="size-5 animate-spin" />
                                     Saving…
                                 </>
+                            ) : isTransfer ? (
+                                'Save transfer'
                             ) : form.data.type === 'expense' ? (
                                 'Save expense'
                             ) : isMoneyBack ? (

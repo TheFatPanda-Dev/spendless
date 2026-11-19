@@ -82,7 +82,12 @@ class MonthlySpending
 
             $category = $transaction->category_id !== null
                 ? $categories->get($transaction->category_id)
-                : ($amount < 0 ? ($this->resolveCategory)($transaction, $user) : null);
+                : ($this->resolveCategory)($transaction, $user);
+
+            // Money moved between your own accounts is neither income nor spending.
+            if ($category instanceof Category && $category->type === 'transfer') {
+                continue;
+            }
 
             // Money in under a spending category is money back (a friend paying their
             // share, a refund): it lowers that category's spending and is not income.

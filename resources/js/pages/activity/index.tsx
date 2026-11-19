@@ -45,7 +45,7 @@ type Transaction = {
     category: string;
     category_id: number | null;
     category_icon: string;
-    category_type: 'expense' | 'income';
+    category_type: 'expense' | 'income' | 'transfer';
     category_source: 'manual' | 'automatic' | 'fallback';
     amount: number;
     currency: string;
@@ -55,7 +55,7 @@ type Transaction = {
 };
 
 type Filters = {
-    type: 'all' | 'expense' | 'income';
+    type: 'all' | 'expense' | 'income' | 'transfer';
     account: number | null;
     category: number | null;
     tag: number | null;
@@ -72,6 +72,7 @@ type Props = {
     categoryOptions: {
         expense: CategoryOptionLite[];
         income: CategoryOptionLite[];
+        transfer?: CategoryOptionLite[];
     };
     categoryColors: TagColorOption[];
     tags: TagOption[];
@@ -95,6 +96,7 @@ const TYPES: Array<{ value: Filters['type']; label: string }> = [
     { value: 'all', label: 'All types' },
     { value: 'expense', label: 'Expenses' },
     { value: 'income', label: 'Income' },
+    { value: 'transfer', label: 'Transfers' },
 ];
 
 function focusFromUrl(): number | null {
@@ -176,7 +178,7 @@ function FilterSheet({
                     className="flex flex-col gap-5 px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
                 >
                     <div
-                        className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-card p-1"
+                        className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-card p-1"
                         role="radiogroup"
                         aria-label="Type"
                     >
@@ -330,6 +332,11 @@ export default function ActivityIndex(props: Props) {
                 options: categoryOptions.expense,
             },
             { key: 'income', label: 'Income', options: categoryOptions.income },
+            {
+                key: 'transfer',
+                label: 'Transfers',
+                options: categoryOptions.transfer ?? [],
+            },
         ],
         [categoryOptions],
     );

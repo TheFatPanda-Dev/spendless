@@ -51,6 +51,20 @@ class CreateDefaultMainCategories
             ['name' => 'Sales (Selling Personal Items)', 'icon' => 'store', 'color' => 'red'],
             ['name' => 'Other Income', 'icon' => 'banknote', 'color' => 'pink'],
         ],
+        'transfer' => [
+            ['name' => 'Transfers', 'icon' => 'arrow-left-right', 'color' => 'stone'],
+        ],
+    ];
+
+    /**
+     * The transfer subcategories, also added to existing accounts by a migration.
+     *
+     * @var list<array{string, string}>
+     */
+    public const TRANSFER_SUBCATEGORIES = [
+        ['Between My Accounts', 'arrow-left-right'],
+        ['Investments & Savings', 'piggy-bank'],
+        ['Currency Exchange', 'repeat'],
     ];
 
     /**
@@ -146,6 +160,9 @@ class CreateDefaultMainCategories
                 ['Purchase Refunds', 'undo-2'],
                 ['Expense Claims', 'file-check'],
             ],
+        ],
+        'transfer' => [
+            'Transfers' => self::TRANSFER_SUBCATEGORIES,
         ],
     ];
 

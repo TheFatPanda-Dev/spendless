@@ -12,6 +12,9 @@ class CategoryOptions
         return [
             ['value' => 'expense', 'label' => 'Expense'],
             ['value' => 'income', 'label' => 'Income'],
+            // Money moved between your own accounts (or to investments and savings):
+            // neither income nor spending.
+            ['value' => 'transfer', 'label' => 'Transfer'],
         ];
     }
 

@@ -70,13 +70,14 @@ class TransactionPresenter
     /**
      * Flat, tree-ordered category options for pickers: "Transportation / Fuel".
      *
-     * @return array{expense: list<array<string, mixed>>, income: list<array<string, mixed>>}
+     * @return array{expense: list<array<string, mixed>>, income: list<array<string, mixed>>, transfer: list<array<string, mixed>>}
      */
     public function categoryOptions(): array
     {
         return [
             'expense' => $this->options('expense'),
             'income' => $this->options('income'),
+            'transfer' => $this->options('transfer'),
         ];
     }
 

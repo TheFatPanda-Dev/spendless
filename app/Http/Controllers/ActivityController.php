@@ -25,7 +25,7 @@ class ActivityController extends Controller
         $user = $request->user();
         [$from, $to] = DashboardController::month($request);
         $presenter = new TransactionPresenter($user, $resolveCategory);
-        $type = in_array($request->query('type'), ['expense', 'income'], true) ? (string) $request->query('type') : 'all';
+        $type = in_array($request->query('type'), ['expense', 'income', 'transfer'], true) ? (string) $request->query('type') : 'all';
         $search = trim((string) $request->query('q', ''));
 
         $accounts = BankAccount::query()
@@ -43,15 +43,23 @@ class ActivityController extends Controller
 
         // Money in under a spending category is money back, which counts with spending.
         $spendingIds = $presenter->categories()->where('type', 'expense')->keys()->map(fn ($id): int => (int) $id)->all() ?: [0];
-        $isMoneyBack = 'amount > 0 and category_id in ('.implode(',', $spendingIds).')';
+        // "is not null" keeps uncategorised rows false rather than NULL, so NOT (...) holds.
+        $isMoneyBack = 'amount > 0 and category_id is not null and category_id in ('.implode(',', $spendingIds).')';
+        // Money moved between your own accounts: neither income nor spending.
+        $transferIds = $presenter->categories()->where('type', 'transfer')->keys()->map(fn ($id): int => (int) $id)->all() ?: [0];
+        $isTransfer = 'category_id is not null and category_id in ('.implode(',', $transferIds).')';
 
         $query = BankTransaction::query()
             ->whereIn('bank_account_id', $accountId !== null ? [$accountId] : $accounts->keys()->all())
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->when($type === 'expense', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('amount', '<', 0)
-                ->orWhereRaw($isMoneyBack)))
-            ->when($type === 'income', fn ($query) => $query->where('amount', '>', 0)->whereRaw('not ('.$isMoneyBack.')'))
+            ->when($type === 'expense', fn ($query) => $query
+                ->where(fn ($inner) => $inner->where('amount', '<', 0)->orWhereRaw($isMoneyBack))
+                ->whereRaw('not ('.$isTransfer.')'))
+            ->when($type === 'income', fn ($query) => $query
+                ->where('amount', '>', 0)
+                ->whereRaw('not ('.$isMoneyBack.')')
+                ->whereRaw('not ('.$isTransfer.')'))
+            ->when($type === 'transfer', fn ($query) => $query->whereRaw($isTransfer))
             ->when($category instanceof Category, fn ($query) => $query->whereIn('category_id', $this->withDescendants($category, $presenter)))
             ->when($tagId !== null, fn ($query) => $query->whereHas('tags', fn ($tags) => $tags->whereKey($tagId)))
             ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
@@ -61,7 +69,7 @@ class ActivityController extends Controller
                 ->orWhere('description', 'like', '%'.$search.'%')));
 
         $totals = (clone $query)
-            ->selectRaw("currency, sum(case when amount < 0 or ({$isMoneyBack}) then amount else 0 end) as out_total, sum(case when amount > 0 and not ({$isMoneyBack}) then amount else 0 end) as in_total, count(*) as total")
+            ->selectRaw("currency, sum(case when ({$isTransfer}) then 0 when amount < 0 or ({$isMoneyBack}) then amount else 0 end) as out_total, sum(case when ({$isTransfer}) then 0 when amount > 0 and not ({$isMoneyBack}) then amount else 0 end) as in_total, count(*) as total")
             ->groupBy('currency')
             ->get()
             ->map(fn ($row): array => [

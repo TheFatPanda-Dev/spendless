@@ -13,7 +13,7 @@ export type EditableTransaction = {
     name: string | null;
     merchant_name: string | null;
     category_id: number | null;
-    category_type: 'expense' | 'income';
+    category_type: 'expense' | 'income' | 'transfer';
     amount: number;
     tag_ids: number[];
 };
@@ -34,7 +34,11 @@ function CategoryList({
     onSelect,
     incoming = false,
 }: {
-    options: { expense: CategoryOptionLite[]; income: CategoryOptionLite[] };
+    options: {
+        expense: CategoryOptionLite[];
+        income: CategoryOptionLite[];
+        transfer?: CategoryOptionLite[];
+    };
     selectedId: number | null;
     onSelect: (option: PickerCategory) => void;
     incoming?: boolean;
@@ -51,7 +55,15 @@ function CategoryList({
             options: options.income,
         };
 
-        return incoming ? [income, expense] : [expense, income];
+        const transfer = {
+            key: 'transfer',
+            label: 'Transfer · not income or spending',
+            options: options.transfer ?? [],
+        };
+
+        return incoming
+            ? [income, expense, transfer]
+            : [expense, income, transfer];
     }, [options, incoming]);
 
     return (
@@ -78,7 +90,11 @@ export function TransactionEditor({
     from = 'activity',
 }: {
     transaction: EditableTransaction;
-    categories: { expense: CategoryOptionLite[]; income: CategoryOptionLite[] };
+    categories: {
+        expense: CategoryOptionLite[];
+        income: CategoryOptionLite[];
+        transfer?: CategoryOptionLite[];
+    };
     tags: TagOption[];
     colors: TagColorOption[];
     reload: string[];

@@ -504,7 +504,7 @@
       {
         "name": "The Money Direction Rule",
         "section": "colors",
-        "body": "Owner's decision, 2026-11-19. Money out is rose (text-negative: #cf1746 light, #fb7185 dark) with a true minus sign, wherever an amount is negative. Money in is green with \"+\". Over budget and failures keep the deeper budget-red."
+        "body": "Owner's decision, 2026-11-19. Money out is rose (text-negative: #cf1746 light, #fb7185 dark) with a true minus sign, wherever an amount is negative. Money in is green with \"+\". Over budget and failures keep the deeper budget-red. Transfers (money moved between your own accounts; category type transfer) keep their sign in ink: they are neither income nor spending."
       },
       {
         "name": "The Category Colour Rule",
